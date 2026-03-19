@@ -1,0 +1,284 @@
+/* ============================================
+   Janitza Monitor - Monitor Page Styles
+   Canvas, signal flow, drag-drop
+   ============================================ */
+
+/* ==================== MONITOR LAYOUT ==================== */
+.monitor-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 16px;
+    height: calc(100vh - 200px);
+}
+
+.monitor-sidebar {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.monitor-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ==================== PANEL HEADER ==================== */
+.panel-header {
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.panel-header h3 {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.panel-hint {
+    padding: 10px 16px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.panel-hint i {
+    color: var(--accent);
+}
+
+/* ==================== MONITOR CATEGORIES ==================== */
+.monitor-categories {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.monitor-category {
+    margin-bottom: 8px;
+}
+
+.monitor-category-header {
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.monitor-category-items {
+    padding: 4px 0;
+}
+
+.monitor-item {
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: grab;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s;
+}
+
+.monitor-item:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.monitor-item.dragging {
+    opacity: 0.5;
+}
+
+/* ==================== MONITOR MAIN AREA ==================== */
+.monitor-main {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Graph Toolbar */
+.graph-toolbar {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.graph-controls,
+.graph-actions {
+    display: flex;
+    gap: 4px;
+}
+
+/* Graph Container */
+.graph-container {
+    flex: 1;
+    position: relative;
+    min-height: 250px;
+}
+
+.graph-container canvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* Graph Legend */
+.graph-legend {
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 11px;
+}
+
+/* ==================== ACTIVE MONITORS ==================== */
+.monitor-active {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    height: 180px;
+}
+
+.monitor-active-header {
+    padding: 8px 16px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+}
+
+.monitor-active-header h4 {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.monitor-table-wrapper {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.monitor-table-container {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Monitor Table */
+.monitor-table {
+    width: 100%;
+    font-size: 11px;
+    border-collapse: collapse;
+}
+
+.monitor-table th,
+.monitor-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.monitor-table th {
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    font-size: 10px;
+}
+
+/* ==================== MONITOR TOOLTIP ==================== */
+.monitor-tooltip {
+    position: fixed;
+    z-index: 1000;
+    background: rgba(30, 30, 34, 0.95);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    min-width: 180px;
+}
+
+.tooltip-time {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.tooltip-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.tooltip-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.tooltip-name {
+    flex: 1;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.tooltip-value {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 1200px) {
+    .monitor-layout {
+        grid-template-columns: 180px 1fr;
+    }
+}
+
+@media (max-width: 1024px) {
+    .monitor-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .monitor-sidebar {
+        max-height: 250px;
+    }
+
+    .monitor-main {
+        min-height: 300px;
+    }
+}

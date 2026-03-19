@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Janitza UMG 512-PRO Monitor{% endblock %}</title>
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Base CSS (always loaded) -->
+    <link rel="stylesheet" href="/static/css/base.css">
+
+    <!-- Page-specific CSS -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Main Window -->
+    <div class="window">
+        {% include "partials/titlebar.html" %}
+
+        <!-- Content Area -->
+        <div class="content">
+            {% block content %}{% endblock %}
+        </div>
+
+        {% include "partials/statusbar.html" %}
+    </div>
+
+    {% include "partials/modals.html" %}
+
+    <!-- Core JS (always loaded) -->
+    <script src="/static/js/app.js"></script>
+
+    <!-- Page-specific JS -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

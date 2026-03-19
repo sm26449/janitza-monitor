@@ -1,0 +1,84 @@
+services:
+  janitza-monitor:
+    build: .
+    container_name: janitza-monitor
+    restart: unless-stopped
+    ports:
+      - "${UI_PORT}:${UI_PORT}"
+    volumes:
+      - ./config:/app/config
+      - ./docs:/app/docs:ro
+    environment:
+      # Modbus
+      - MODBUS_HOST
+      - MODBUS_PORT
+      - MODBUS_UNIT_ID
+      # MQTT
+      - MQTT_ENABLED
+      - MQTT_BROKER
+      - MQTT_PORT
+      - MQTT_USERNAME
+      - MQTT_PASSWORD
+      - MQTT_PREFIX
+      - MQTT_PUBLISH_MODE
+      # InfluxDB
+      - INFLUXDB_ENABLED
+      - INFLUXDB_URL
+      - INFLUXDB_TOKEN
+      - INFLUXDB_ORG
+      - INFLUXDB_BUCKET
+      - INFLUXDB_PUBLISH_MODE
+      # UI
+      - UI_PORT
+    networks:
+      - monitoring
+      - pv-stack-network
+
+  # Optional: InfluxDB for local storage
+  influxdb:
+    image: influxdb:2.7
+    container_name: janitza-influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME
+      - DOCKER_INFLUXDB_INIT_PASSWORD
+      - DOCKER_INFLUXDB_INIT_ORG
+      - DOCKER_INFLUXDB_INIT_BUCKET
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+    networks:
+      - monitoring
+    profiles:
+      - influxdb
+
+  # Optional: Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: janitza-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD
+    networks:
+      - monitoring
+    profiles:
+      - grafana
+
+networks:
+  monitoring:
+    driver: bridge
+  pv-stack-network:
+    external: true
+
+volumes:
+  influxdb-data:
+  influxdb-config:
+  grafana-data:

@@ -1,0 +1,50 @@
+<!-- Titlebar -->
+<div class="titlebar">
+    <div class="titlebar-left">
+        <div class="logo">
+            <i class="bi bi-lightning-charge-fill"></i>
+            <span>Janitza UMG 512-PRO</span>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+        <button class="nav-tab{% if active_page == 'dashboard' %} active{% endif %}" data-page="dashboard">
+            <i class="bi bi-grid-1x2-fill"></i>
+            <span>Dashboard</span>
+        </button>
+        <button class="nav-tab{% if active_page == 'monitor' %} active{% endif %}" data-page="monitor">
+            <i class="bi bi-graph-up"></i>
+            <span>Monitor</span>
+        </button>
+        <button class="nav-tab{% if active_page == 'registers' %} active{% endif %}" data-page="registers">
+            <i class="bi bi-list-ul"></i>
+            <span>Registers</span>
+        </button>
+        <button class="nav-tab{% if active_page == 'config' %} active{% endif %}" data-page="config">
+            <i class="bi bi-gear"></i>
+            <span>Config</span>
+        </button>
+    </nav>
+
+    <!-- Status Indicators -->
+    <div class="titlebar-right">
+        <div class="status-indicators">
+            <button class="status-item clickable" id="statusModbus" title="Click for details">
+                <span class="status-dot"></span>
+                <span class="status-label">Modbus</span>
+            </button>
+            <button class="status-item clickable" id="statusMqtt" title="Click for details">
+                <span class="status-dot"></span>
+                <span class="status-label">MQTT</span>
+            </button>
+            <button class="status-item clickable" id="statusInflux" title="Click for details">
+                <span class="status-dot"></span>
+                <span class="status-label">InfluxDB</span>
+            </button>
+        </div>
+        <div class="theme-toggle" id="themeToggle" title="Toggle theme">
+            <i class="bi bi-moon-fill"></i>
+        </div>
+    </div>
+</div>

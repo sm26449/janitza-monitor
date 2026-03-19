@@ -1,0 +1,598 @@
+# Janitza UMG 512-PRO - Configurare si altele
+# Address | Type | Access | Name | Unit | Description
+
+6462   short   RD/WR _W_TARIF                            -      Current rate, real/apparent energy
+6463   short   RD/WR _Q_TARIF                            -      Current rate, reactive energy
+6572   float   RD/WR _IQH[0]                             varh   Reactive energy L1, inductive
+6574   float   RD/WR _IQH[1]                             varh   Reactive energy L2, inductive
+6576   float   RD/WR _IQH[2]                             varh   Reactive energy L3, inductive
+6578   float   RD/WR _IQH[3]                             varh   Reactive energy L4, inductive
+6580   float   RD/WR _IQH[4]                             varh   Reactive energy L1..L3, inductive
+6582   float   RD/WR _IQH[5]                             varh   Reactive energy L1..L4, inductive
+6584   float   RD/WR _CQH[0]                             varh   Reactive energy L1, capacitive
+6586   float   RD/WR _CQH[1]                             varh   Reactive energy L2, capacitive
+6588   float   RD/WR _CQH[2]                             varh   Reactive energy L3, capacitive
+6590   float   RD/WR _CQH[3]                             varh   Reactive energy L4, capacitive
+6592   float   RD/WR _CQH[4]                             varh   Reactive energy L1..L3, capacitive
+6594   float   RD/WR _CQH[5]                             varh   Reactive energy L1..L4, capacitive
+6596   float   RD/WR _IQH_HT[0]                          varh   Reactive energy L1, inductive, rate 1
+6598   float   RD/WR _IQH_HT[1]                          varh   Reactive energy L2, inductive, rate 1
+6600   float   RD/WR _IQH_HT[2]                          varh   Reactive energy L3, inductive, rate 1
+6602   float   RD/WR _IQH_HT[3]                          varh   Reactive energy L4, inductive, rate 1
+6604   float   RD/WR _IQH_HT[4]                          varh   Reactive energy L1..L3, inductive, rate 1
+6606   float   RD/WR _IQH_HT[5]                          varh   Reactive energy L1..L4, inductive, rate 1
+6608   float   RD/WR _IQH_NT[0]                          varh   Reactive energy L1, inductive, rate 2
+6610   float   RD/WR _IQH_NT[1]                          varh   Reactive energy L2, inductive, rate 2
+6612   float   RD/WR _IQH_NT[2]                          varh   Reactive energy L3, inductive, rate 2
+6614   float   RD/WR _IQH_NT[3]                          varh   Reactive energy L4, inductive, rate 2
+6616   float   RD/WR _IQH_NT[4]                          varh   Reactive energy L1..L3, inductive, rate 2
+6618   float   RD/WR _IQH_NT[5]                          varh   Reactive energy L1..L4, inductive, rate 2
+6628   float   RD    _SPU012                             V      Star connection voltage
+6630   short   RD/WR _DIGOUT_STAT[0]                     -      Status digital output 1, 0=not active, 1=active
+6631   short   RD/WR _DIGOUT_STAT[1]                     -      Status digital output 2, 0=not active, 1=active
+6632   short   RD    _DIGIN_STAT[0]                      -      Status digital input 1, 0=not active, 1=active
+6633   short   RD    _DIGIN_STAT[1]                      -      Status digital input 2, 0=not active, 1=active
+6634   uint    RD/WR _EVT_COUNT                          -      Event counter
+6636   uint    RD/WR _FLAG_COUNT                         -      Flag counter
+6638   uint    RD/WR _TRANS_COUNT                        -      Error counter, transients
+6640   uint    RD/WR _HWW_COUNT                          -      Error counter, half-cycle effektive val.
+6642   uint    RD/WR _RX232_COUNT                        -      Error counter, receive RS232
+6644   uint    RD/WR _TX232_COUNT                        -      Error counter, send RS232
+6646   uint    RD/WR _ERR232_COUNT                       -      Error counter, RS232
+6648   uint    RD/WR _RX485_COUNT                        -      Error counter, receive RS485
+6650   uint    RD/WR _TX485_COUNT                        -      Error counter, send RS485
+6652   uint    RD/WR _ERR485_COUNT                       -      Error counter, RS485
+6689   float   RD/WR _CTPRIM[0]                          A      L1, L2, L3; Current transformer, primary
+6691   float   RD/WR _CTPRIM[1]                          A      L4; Current transformer, primary
+6693   float   RD/WR _CTSEC[0]                           A      L1, L2, L3; Current transf., secondary
+6695   float   RD/WR _CTSEC[1]                           A      L4; Current transformer, secondary
+6697   float   RD/WR _VTPRIM[0]                          V      L1, L2, L3; Voltage transformer, primary
+6699   float   RD/WR _VTPRIM[1]                          V      L4; Voltage transformer, primary
+6701   float   RD/WR _VTSEC[0]                           V      L1, L2, L3; Voltage transformer, secondary
+6703   float   RD/WR _VTSEC[1]                           V      L4; Voltage transformer, secondary
+6705   float   RD/WR _IRATED[0]                          A      Nominal current transf.; I L1, I L2, I L3
+6707   float   RD/WR _IRATED[1]                          A      Nominal current transformer; I L4
+6709   float   RD/WR _NOMINAL_U[0]                       V      Nominal voltage; L1, L2, L3
+6711   float   RD/WR _NOMINAL_U[1]                       V      Nominal voltage; L4
+6713   float   RD/WR _NOMINAL_I[0]                       A      Nominal current; L1, L2, L3
+6715   float   RD/WR _NOMINAL_I[1]                       A      Nominal current; L4
+6717   float   RD/WR _TRNS_DELTA[0]                      %      Only for internal use
+6719   float   RD/WR _TRNS_DELTA[1]                      %      Only for internal use
+6721   float   RD/WR _TRNS_I_ABS[0]                      %      Only for internal use
+6723   float   RD/WR _TRNS_I_ABS[1]                      %      Only for internal use
+6725   float   RD/WR _TRNS_U_ABS[0]                      %      Only for internal use
+6727   float   RD/WR _TRNS_U_ABS[1]                      %      Only for internal use
+6741   float   RD/WR _U_EVT_OFF[0]                       %      Only for internal use
+6743   float   RD/WR _U_EVT_OFF[1]                       %      Only for internal use
+6745   float   RD/WR _NOMINAL_F                          Hz     Nominal frequency 50Hz or 60Hz
+6747   short   RD/WR _FLICKER_SYSTEM                     -      Only for internal use
+6854   int     RD/WR _DISP_LANGUAGE                      -      Only for internal use
+6856   uint    RD    _SERNR                              -      Only for internal use
+6858   uint    RD    _PRODNR                             -      Only for internal use
+6860   int     RD/WR _MBUSADDR                           -      Only for internal use
+6862   int     RD/WR _MODE485                            -      Only for internal use
+6864   int     RD/WR _BAUD485                            -      Only for internal use
+6866   uint    RD    _IP_ADDR                            -      Network address
+6868   uint    RD    _IP_MASK                            -      Network mask
+6870   uint    RD    _IP_GATE                            -      Gateway
+6872   int     RD/WR _DHCPMODE                           -      Bootp = 1; off = 0; DHCP = 2
+6874   int     RD/WR _BRIGHTNESS                         -      Brightness display
+6876   short   RD/WR _STBY_TIME                          -      Standby time
+6877   short   RD/WR _STBY_CONTRAST                      -      Standby contrast
+6878   short   RD/WR _SCREENSASVE                        -      Screensaver, 1=on, 0=off
+6879   short   RD/WR _DISP_SPEED                         -      Display change time
+6880   short   RD/WR _DISP_ROT                           -      0= Autom. display change on
+6881   short   RD/WR _ROT_TIME                           -      Rotation time display
+6882   int     RD/WR _KEY1                               -      Status button 1
+6884   int     RD/WR _KEY2                               -      Status button 2
+6886   int     RD/WR _KEY3                               -      Status button 3
+6888   int     RD/WR _KEY4                               -      Status button 4
+6890   int     RD/WR _KEY5                               -      Status button 5
+6892   int     RD/WR _KEY6                               -      Status button 6
+6894   uint    RD/WR _DEBUG_IP                           -      Only for internal use
+6896   int     RD/WR _TIME_ZONE                          s      Time zone
+6898   int     RD/WR _STIME                              s      Only for internal use
+6900   short   RD/WR _SDAY                               -      Start day of summer/winter switchover (spring)
+6901   short   RD/WR _SHOUR                              h      Start hour of summer/winter switchover
+6902   short   RD/WR _SMON                               -      Start month of summer/winter switchover
+6903   short   RD/WR _SMIN                               min    Start minute of summer/winter switchover
+6904   short   RD/WR _SDOW                               -      Summer/winter switchover (spring)
+6905   short   RD/WR _EDAY                               -      Start day of summer/winter switchover (autumn)
+6906   short   RD/WR _EHOUR                              h      Start hour of summer/winter switchover
+6907   short   RD/WR _EMON                               -      Start month of summer/winter switchover
+6908   short   RD/WR _EMIN                               min    Start minute of summer/winter switchover
+6909   short   RD/WR _EDOW                               -      Summer/winter switchover (autumn)
+6910   int     RD/WR _WAVE_START_PRE                     -      Only for internal use
+6912   int     RD/WR _WAVE_START_POST                    -      Only for internal use
+6916   int     RD/WR _EVT_VAL_PRE                        -      Only for internal use
+6918   int     RD/WR _EVT_VAL_POST                       -      Only for internal use
+6920   int     RD/WR _TRNS_MODE                          -      Only for internal use
+6922   int     RD/WR _CON_AUX_MODE                       -      Only for internal use
+6924   int     RD/WR _CON_MODE                           -      Only for internal use
+6926   int     RD/WR _PHASE_MODE                         -      Only for internal use
+6928   short   RD/WR _COLOR[0]                           -      Only for internal use
+6929   short   RD/WR _COLOR[1]                           -      Only for internal use
+6930   short   RD/WR _COLOR[2]                           -      Only for internal use
+6931   short   RD/WR _COLOR[3]                           -      Only for internal use
+6932   short   RD/WR _COLOR[4]                           -      Only for internal use
+6933   short   RD/WR _COLOR[5]                           -      Only for internal use
+6934   short   RD/WR _COLOR[6]                           -      Only for internal use
+6935   short   RD/WR _COLOR[7]                           -      Only for internal use
+8424   float   RD/WR _PULSWERT[0]                        -      Wh/n Pulse value for input 1
+8426   float   RD/WR _PULSWERT[1]                        -      Wh/n Pulse value for input 2
+8438   int     RD/WR _TFTP_FILE_NR                       -      Only for internal use
+8440   int     RD/WR _TFTP_NEWFILE                       -      Only for internal use
+8442   int     RD/WR _DIGOUTEVT[0]                       -      bin Only for internal use
+8446   int     RD/WR _DIGOUTEVT[1]                       -      bin Only for internal use
+8450   int     RD/WR _DIGOUTEVT_TIME[0]                  -      0.01s Only for internal use
+8452   int     RD/WR _DIGOUTEVT_TIME[1]                  -      0.01s Only for internal use
+8454   short   RD/WR _INVERT_DIGOUT[0]                   -      bool Only for internal use
+8455   short   RD/WR _INVERT_DIGOUT[1]                   -      bool Only for internal use
+10258  int     RD    _KORR_INT                           -      Only for internal use
+10260  int     RD/WR _QUARZ_KORR_NTP                     -      ppm Only for internal use
+10262  float   RD/WR _RC_FREQ                            Hz     Only for internal use
+10264  int     RD/WR _BACNET_SENDIAM_TIME                s      Only for internal use
+10459  int     RD/WR _FILEMAGIC                          -      Only for internal use
+10461  int     RD/WR _MODE_NTP                           -      Only for internal use
+10463  int     RD/WR _QUARZ_KORR                         -      ppm Only for internal use
+11529  int     RD/WR _JASIC_VAR                          -      Only for internal use
+11533  uint    RD/WR _MASTER_TIMEOUT                     -      msec Only for internal use
+11535  int     RD/WR _ED_PASSWD                          -      Only for internal use
+11537  int     RD/WR _HTML_PASSWD                        -      Password HTML
+11539  int     RD/WR _PASSWD_MODE                        -      Password mode
+11541  float   RD    _CHALLENGE                          -      Only for internal use
+11543  uint    RD    _EMAX_PASSWORD                      -      Passwort EMAX
+11545  uint    RD    _BACNET_PASSWORD                    -      Passwort BACnet
+11547  short   RD    _FORBID_HTML                        -      Only for internal use
+11548  short   RD    _FORBID_CFG_HTML                    -      Only for internal use
+11549  short   RD    _FORBID_FTP                         -      Only for internal use
+11550  short   RD    _FORBID_CFG_FTP                     -      Only for internal use
+11551  short   RD    _FORBID_MODETH                      -      Only for internal use
+11552  short   RD    _FORBID_CFG_MODETH                  -      Only for internal use
+11553  short   RD    _FORBID_BACNET                      -      Only for internal use
+11554  short   RD    _IP_UP                              -      Only for internal use
+11684  short   RD/WR _CH_MAP[0]                          -      Only for internal use
+11685  short   RD/WR _CH_MAP[1]                          -      Only for internal use
+11686  short   RD/WR _CH_MAP[2]                          -      Only for internal use
+11687  short   RD/WR _CH_MAP[3]                          -      Only for internal use
+11688  short   RD/WR _CH_MAP[4]                          -      Only for internal use
+11689  short   RD/WR _CH_MAP[5]                          -      Only for internal use
+11690  short   RD/WR _CH_MAP[6]                          -      Only for internal use
+11691  short   RD/WR _CH_MAP[7]                          -      Only for internal use
+11692  float   RD    _NTP_DIV                            s      Only for internal use
+11694  float   RD    _NTP_TURNAROUND                     s      Only for internal use
+11696  float   RD    _NTP_KORR                           -      ppm Only for internal use
+11754  int     RD/WR _MTU_SIZE                           -      Only for internal use
+11808  float   RD/WR _IQH_T3[0]                          varh   Reactive energy L1, inductive, rate 3
+11810  float   RD/WR _IQH_T3[1]                          varh   Reactive energy L2, inductive, rate 3
+11812  float   RD/WR _IQH_T3[2]                          varh   Reactive energy L3, inductive, rate 3
+11814  float   RD/WR _IQH_T3[3]                          varh   Reactive energy L4, inductive, rate 3
+11816  float   RD/WR _IQH_T3[4]                          varh   Reactive energy L1..L3, inductive, rate 3
+11818  float   RD/WR _IQH_T3[5]                          varh   Reactive energy L1..L4, inductive, rate 3
+11820  float   RD/WR _IQH_T4[0]                          varh   Reactive energy L1, inductive, rate 4
+11822  float   RD/WR _IQH_T4[1]                          varh   Reactive energy L2, inductive, rate 4
+11824  float   RD/WR _IQH_T4[2]                          varh   Reactive energy L3, inductive, rate 4
+11826  float   RD/WR _IQH_T4[3]                          varh   Reactive energy L4, inductive, rate 4
+11828  float   RD/WR _IQH_T4[4]                          varh   Reactive energy L1..L3, inductive, rate 4
+11830  float   RD/WR _IQH_T4[5]                          varh   Reactive energy L1..L4, inductive, rate 4
+11832  float   RD/WR _SNMP_USERVAR[0]                    -      Only for internal use
+11834  float   RD/WR _SNMP_USERVAR[1]                    -      Only for internal use
+11836  float   RD/WR _SNMP_USERVAR[2]                    -      Only for internal use
+11838  float   RD/WR _SNMP_USERVAR[3]                    -      Only for internal use
+11840  float   RD/WR _SNMP_USERVAR[4]                    -      Only for internal use
+11842  float   RD/WR _SNMP_USERVAR[5]                    -      Only for internal use
+11844  float   RD/WR _SNMP_USERVAR[6]                    -      Only for internal use
+11846  float   RD/WR _SNMP_USERVAR[7]                    -      Only for internal use
+11848  float   RD/WR _SNMP_USERVAR[8]                    -      Only for internal use
+11850  float   RD/WR _SNMP_USERVAR[9]                    -      Only for internal use
+11852  float   RD/WR _SNMP_USERVAR[10]                   -      Only for internal use
+11854  float   RD/WR _SNMP_USERVAR[11]                   -      Only for internal use
+11856  float   RD/WR _SNMP_USERVAR[12]                   -      Only for internal use
+11858  float   RD/WR _SNMP_USERVAR[13]                   -      Only for internal use
+11860  float   RD/WR _SNMP_USERVAR[14]                   -      Only for internal use
+11862  float   RD/WR _SNMP_USERVAR[15]                   -      Only for internal use
+11928  float   RD    _AKT_EVT_BOUND[0]                   -      Only for internal use
+11930  float   RD    _AKT_EVT_BOUND[1]                   -      Only for internal use
+11932  float   RD    _AKT_EVT_BOUND[2]                   -      Only for internal use
+11934  float   RD    _AKT_EVT_BOUND[3]                   -      Only for internal use
+11936  float   RD    _AKT_EVT_BOUND[4]                   -      Only for internal use
+11938  float   RD    _AKT_EVT_BOUND[5]                   -      Only for internal use
+11940  float   RD    _AKT_EVT_BOUND[6]                   -      Only for internal use
+11942  float   RD    _AKT_EVT_BOUND[7]                   -      Only for internal use
+12040  int     RD/WR _HW_INDEX                           -      Device hardware index
+12042  float   RD    _S0_POWER[0]                        W      Input 1, measured value
+12044  float   RD    _S0_POWER[1]                        W      Input 2, measured value
+12046  float   RD/WR _VWH_MONTH[0]                       Wh     Real energy, month high, january, even year
+12048  float   RD/WR _VWH_MONTH[1]                       Wh     Real energy, month high, february, even year
+12050  float   RD/WR _VWH_MONTH[2]                       Wh     Real energy, month high, march, even year
+12052  float   RD/WR _VWH_MONTH[3]                       Wh     Real energy, month high, april, even year
+12054  float   RD/WR _VWH_MONTH[4]                       Wh     Real energy, month high, may, even year
+12056  float   RD/WR _VWH_MONTH[5]                       Wh     Real energy, month high, june, even year
+12058  float   RD/WR _VWH_MONTH[6]                       Wh     Real energy, month high, july, even year
+12060  float   RD/WR _VWH_MONTH[7]                       Wh     Real energy, month high, august, even year
+12062  float   RD/WR _VWH_MONTH[8]                       Wh     Real energy, month high, september, even year
+12064  float   RD/WR _VWH_MONTH[9]                       Wh     Real energy, month high, october, even year
+12066  float   RD/WR _VWH_MONTH[10]                      Wh     Real energy, month high, november, even year
+12068  float   RD/WR _VWH_MONTH[11]                      Wh     Real energy, month high, december, even year
+12070  float   RD/WR _VWH_MONTH[12]                      Wh     Real energy, month high, january, uneven year
+12072  float   RD/WR _VWH_MONTH[13]                      Wh     Real energy, month high, february, uneven year
+12074  float   RD/WR _VWH_MONTH[14]                      Wh     Real energy, month high, march, uneven year
+12076  float   RD/WR _VWH_MONTH[15]                      Wh     Real energy, month high, april, uneven year
+12078  float   RD/WR _VWH_MONTH[16]                      Wh     Real energy, month high, may, uneven year
+12080  float   RD/WR _VWH_MONTH[17]                      Wh     Real energy, month high, june, uneven year
+12082  float   RD/WR _VWH_MONTH[18]                      Wh     Real energy, month high, july, uneven year
+12084  float   RD/WR _VWH_MONTH[19]                      Wh     Real energy, month high, august, uneven year
+12086  float   RD/WR _VWH_MONTH[20]                      Wh     Real energy, month high, september, uneven year
+12088  float   RD/WR _VWH_MONTH[21]                      Wh     Real energy, month high, october, uneven year
+12090  float   RD/WR _VWH_MONTH[22]                      Wh     Real energy, month high, november, uneven year
+12092  float   RD/WR _VWH_MONTH[23]                      Wh     Real energy, month high, december, uneven year
+12094  float   RD/WR _SH_MONTH[0]                        VAh    Apparent energy, month high, january, even year
+12096  float   RD/WR _SH_MONTH[1]                        VAh    Apparent energy, month high, february, even year
+12098  float   RD/WR _SH_MONTH[2]                        VAh    Apparent energy, month high, march, even year
+12100  float   RD/WR _SH_MONTH[3]                        VAh    Apparent energy, month high, april, even year
+12102  float   RD/WR _SH_MONTH[4]                        VAh    Apparent energy, month high, may, even year
+12104  float   RD/WR _SH_MONTH[5]                        VAh    Apparent energy, month high, june, even year
+12106  float   RD/WR _SH_MONTH[6]                        VAh    Apparent energy, month high, july, even year
+12108  float   RD/WR _SH_MONTH[7]                        VAh    Apparent energy, month high, august, even year
+12110  float   RD/WR _SH_MONTH[8]                        VAh    Apparent energy, month high, september, even year
+12112  float   RD/WR _SH_MONTH[9]                        VAh    Apparent energy, month high, october, even year
+12114  float   RD/WR _SH_MONTH[10]                       VAh    Apparent energy, month high, november, even year
+12116  float   RD/WR _SH_MONTH[11]                       VAh    Apparent energy, month high, december, even year
+12118  float   RD/WR _SH_MONTH[12]                       VAh    Apparent energy, month high, january, uneven year
+12120  float   RD/WR _SH_MONTH[13]                       VAh    Apparent energy, month high, february, uneven year
+12122  float   RD/WR _SH_MONTH[14]                       VAh    Apparent energy, month high, march, uneven year
+12124  float   RD/WR _SH_MONTH[15]                       VAh    Apparent energy, month high, april, uneven year
+12126  float   RD/WR _SH_MONTH[16]                       VAh    Apparent energy, month high, may, uneven year
+12128  float   RD/WR _SH_MONTH[17]                       VAh    Apparent energy, month high, june, uneven year
+12130  float   RD/WR _SH_MONTH[18]                       VAh    Apparent energy, month high, july, uneven year
+12132  float   RD/WR _SH_MONTH[19]                       VAh    Apparent energy, month high, august, uneven year
+12134  float   RD/WR _SH_MONTH[20]                       VAh    Apparent energy, month high, september, uneven year
+12136  float   RD/WR _SH_MONTH[21]                       VAh    Apparent energy, month high, october, uneven year
+12138  float   RD/WR _SH_MONTH[22]                       VAh    Apparent energy, month high, november, uneven year
+12140  float   RD/WR _SH_MONTH[23]                       VAh    Apparent energy, month high, december, uneven year
+12142  float   RD/WR _IQH_MONTH[0]                       -      Varh Reactive energy, month high, january, even year
+12144  float   RD/WR _IQH_MONTH[1]                       -      Varh Reactive energy, month high, february, even year
+12146  float   RD/WR _IQH_MONTH[2]                       -      Varh Reactive energy, month high, march, even year
+12148  float   RD/WR _IQH_MONTH[3]                       -      Varh Reactive energy, month high, april, even year
+12150  float   RD/WR _IQH_MONTH[4]                       -      Varh Reactive energy, month high, may, even year
+12152  float   RD/WR _IQH_MONTH[5]                       -      Varh Reactive energy, month high, june, even year
+12154  float   RD/WR _IQH_MONTH[6]                       -      Varh Reactive energy, month high, july, even year
+12156  float   RD/WR _IQH_MONTH[7]                       -      Varh Reactive energy, month high, august, even year
+12158  float   RD/WR _IQH_MONTH[8]                       -      Varh Reactive energy, month high, september, even year
+12160  float   RD/WR _IQH_MONTH[9]                       -      Varh Reactive energy, month high, october, even year
+12162  float   RD/WR _IQH_MONTH[10]                      -      Varh Reactive energy, month high, november, even year
+12164  float   RD/WR _IQH_MONTH[11]                      -      Varh Reactive energy, month high, december, even year
+12166  float   RD/WR _IQH_MONTH[12]                      -      Varh Reactive energy, month high, january, uneven year
+12168  float   RD/WR _IQH_MONTH[13]                      -      Varh Reactive energy, month high, february, uneven year
+12170  float   RD/WR _IQH_MONTH[14]                      -      Varh Reactive energy, month high, march, uneven year
+12172  float   RD/WR _IQH_MONTH[15]                      -      Varh Reactive energy, month high, april, uneven year
+12174  float   RD/WR _IQH_MONTH[16]                      -      Varh Reactive energy, month high, may, uneven year
+12176  float   RD/WR _IQH_MONTH[17]                      -      Varh Reactive energy, month high, june, uneven year
+12178  float   RD/WR _IQH_MONTH[18]                      -      Varh Reactive energy, month high, july, uneven year
+12180  float   RD/WR _IQH_MONTH[19]                      -      Varh Reactive energy, month high, august, uneven year
+12182  float   RD/WR _IQH_MONTH[20]                      -      Varh Reactive energy, month high, september, uneven year
+12184  float   RD/WR _IQH_MONTH[21]                      -      Varh Reactive energy, month high, october, uneven year
+12186  float   RD/WR _IQH_MONTH[22]                      -      Varh Reactive energy, month high, november, uneven year
+12188  float   RD/WR _IQH_MONTH[23]                      -      Varh Reactive energy, month high, december, uneven year
+12190  float   RD/WR _P15_MONTH[0]                       W      EMAX, 15minutes month 1st high, jan., even year
+12192  float   RD/WR _P15_MONTH[1]                       W      EMAX, 15minutes month 1st high, feb., even year
+12194  float   RD/WR _P15_MONTH[2]                       W      EMAX, 15minutes month 1st high, march, even year
+12196  float   RD/WR _P15_MONTH[3]                       W      EMAX, 15minutes month 1st high, april, even year
+12198  float   RD/WR _P15_MONTH[4]                       W      EMAX, 15minutes month 1st high, may, even year
+12200  float   RD/WR _P15_MONTH[5]                       W      EMAX, 15minutes month 1st high, june, even year
+12202  float   RD/WR _P15_MONTH[6]                       W      EMAX, 15minutes month 1st high, july, even year
+12204  float   RD/WR _P15_MONTH[7]                       W      EMAX, 15minutes month 1st high, aug., even year
+12206  float   RD/WR _P15_MONTH[8]                       W      EMAX, 15minutes month 1st high, sep., even year
+12208  float   RD/WR _P15_MONTH[9]                       W      EMAX, 15minutes month 1st high, oct., even year
+12210  float   RD/WR _P15_MONTH[10]                      W      EMAX, 15minutes month 1st high, nov., even year
+12212  float   RD/WR _P15_MONTH[11]                      W      EMAX, 15minutes month 1st high, dec., even year
+12214  float   RD/WR _P15_MONTH[12]                      W      EMAX, 15minutes month 1st high, jan., uneven year
+12216  float   RD/WR _P15_MONTH[13]                      W      EMAX, 15minutes month 1st high, feb., uneven year
+12218  float   RD/WR _P15_MONTH[14]                      W      EMAX, 15minutes month 1st high, march, uneven year
+12220  float   RD/WR _P15_MONTH[15]                      W      EMAX, 15minutes month 1st high, april, uneven year
+12222  float   RD/WR _P15_MONTH[16]                      W      EMAX, 15minutes month 1st high, may, uneven year
+12224  float   RD/WR _P15_MONTH[17]                      W      EMAX, 15minutes month 1st high, june., uneven year
+12226  float   RD/WR _P15_MONTH[18]                      W      EMAX, 15minutes month 1st high, july, uneven year
+12228  float   RD/WR _P15_MONTH[19]                      W      EMAX, 15minutes month 1st high, aug., uneven year
+12230  float   RD/WR _P15_MONTH[20]                      W      EMAX, 15minutes month 1st high, sep., uneven year
+12232  float   RD/WR _P15_MONTH[21]                      W      EMAX, 15minutes month 1st high, oct., uneven year
+12234  float   RD/WR _P15_MONTH[22]                      W      EMAX, 15minutes month 1st high, nov., uneven year
+12236  float   RD/WR _P15_MONTH[23]                      W      EMAX, 15minutes month 1st high, dec., uneven year
+12238  float   RD/WR _P15_MONTH[24]                      W      EMAX, 15minutes month 2nd high, jan., even year
+12240  float   RD/WR _P15_MONTH[25]                      W      EMAX, 15minutes month 2nd high, feb., even year
+12242  float   RD/WR _P15_MONTH[26]                      W      EMAX, 15minutes month 2nd high, march, even year
+12244  float   RD/WR _P15_MONTH[27]                      W      EMAX, 15minutes month 2nd high, april, even year
+12246  float   RD/WR _P15_MONTH[28]                      W      EMAX, 15minutes month 2nd high, may, even year
+12248  float   RD/WR _P15_MONTH[29]                      W      EMAX, 15minutes month 2nd high, june, even year
+12250  float   RD/WR _P15_MONTH[30]                      W      EMAX, 15minutes month 2nd high, july, even year
+12252  float   RD/WR _P15_MONTH[31]                      W      EMAX, 15minutes month 2nd high, aug., even year
+12254  float   RD/WR _P15_MONTH[32]                      W      EMAX, 15minutes month 2nd high, sep., even year
+12256  float   RD/WR _P15_MONTH[33]                      W      EMAX, 15minutes month 2nd high, oct., even year
+12258  float   RD/WR _P15_MONTH[34]                      W      EMAX, 15minutes month 2nd high, nov., even year
+12260  float   RD/WR _P15_MONTH[35]                      W      EMAX, 15minutes month 2nd high, dec., even year
+12262  float   RD/WR _P15_MONTH[36]                      W      EMAX, 15minutes month 2nd high, jan., uneven year
+12264  float   RD/WR _P15_MONTH[37]                      W      EMAX, 15minutes month 2nd high, feb., uneven year
+12266  float   RD/WR _P15_MONTH[38]                      W      EMAX, 15minutes month 2nd high, march, uneven year
+12268  float   RD/WR _P15_MONTH[39]                      W      EMAX, 15minutes month 2nd high, april., uneven year
+12270  float   RD/WR _P15_MONTH[40]                      W      EMAX, 15minutes month 2nd high, may, uneven year
+12272  float   RD/WR _P15_MONTH[41]                      W      EMAX, 15minutes month 2nd high, june., uneven year
+12274  float   RD/WR _P15_MONTH[42]                      W      EMAX, 15minutes month 2nd high, july, uneven year
+12276  float   RD/WR _P15_MONTH[43]                      W      EMAX, 15minutes month 2nd high, aug., uneven year
+12278  float   RD/WR _P15_MONTH[44]                      W      EMAX, 15minutes month 2nd high, sep., uneven year
+12280  float   RD/WR _P15_MONTH[45]                      W      EMAX, 15minutes month 2nd high, oct., uneven year
+12282  float   RD/WR _P15_MONTH[46]                      W      EMAX, 15minutes month 2nd high, nov., uneven year
+12284  float   RD/WR _P15_MONTH[47]                      W      EMAX, 15minutes month 2nd high, dec., uneven year
+12286  float   RD/WR _P15_MONTH[48]                      W      EMAX, 15minutes month 3rd high, jan., even year
+12288  float   RD/WR _P15_MONTH[49]                      W      EMAX, 15minutes month 3rd high, feb., even year
+12290  float   RD/WR _P15_MONTH[50]                      W      EMAX, 15minutes month 3rd high, march., even year
+12292  float   RD/WR _P15_MONTH[51]                      W      EMAX, 15minutes month 3rd high, april, even year
+12294  float   RD/WR _P15_MONTH[52]                      W      EMAX, 15minutes month 3rd high, may., even year
+12296  float   RD/WR _P15_MONTH[53]                      W      EMAX, 15minutes month 3rd high, june, even year
+12298  float   RD/WR _P15_MONTH[54]                      W      EMAX, 15minutes month 3rd high, july, even year
+12300  float   RD/WR _P15_MONTH[55]                      W      EMAX, 15minutes month 3rd high, aug., even year
+12302  float   RD/WR _P15_MONTH[56]                      W      EMAX, 15minutes month 3rd high, sep., even year
+12304  float   RD/WR _P15_MONTH[57]                      W      EMAX, 15minutes month 3rd high, oct., even year
+12306  float   RD/WR _P15_MONTH[58]                      W      EMAX, 15minutes month 3rd high, nov., even year
+12308  float   RD/WR _P15_MONTH[59]                      W      EMAX, 15minutes month 3rd high, dec., even year
+12310  float   RD/WR _P15_MONTH[60]                      W      EMAX, 15minutes month 3rd high, jan., uneven year
+12312  float   RD/WR _P15_MONTH[61]                      W      EMAX, 15minutes month 3rd high, feb., uneven year
+12314  float   RD/WR _P15_MONTH[62]                      W      EMAX, 15minutes month 3rd high, march, uneven year
+12316  float   RD/WR _P15_MONTH[63]                      W      EMAX, 15minutes month 3rd high, april, uneven year
+12318  float   RD/WR _P15_MONTH[64]                      W      EMAX, 15minutes month 3rd high, may, uneven year
+12320  float   RD/WR _P15_MONTH[65]                      W      EMAX, 15minutes month 3rd high, june, uneven year
+12322  float   RD/WR _P15_MONTH[66]                      W      EMAX, 15minutes month 3rd high, july, uneven year
+12324  float   RD/WR _P15_MONTH[67]                      W      EMAX, 15minutes month 3rd high, aug., uneven year
+12326  float   RD/WR _P15_MONTH[68]                      W      EMAX, 15minutes month 3rd high, sep., uneven year
+12328  float   RD/WR _P15_MONTH[69]                      W      EMAX, 15minutes month 3rd high, oct., uneven year
+12330  float   RD/WR _P15_MONTH[70]                      W      EMAX, 15minutes month 3rd high, nov., uneven year
+12332  float   RD/WR _P15_MONTH[71]                      W      EMAX, 15minutes month 3rd high, dec., uneven year
+12334  uint    RD/WR _P15_T_MONTH[0]                     s      Time of 15min. month 1st high (UTC), jan., even year
+12336  uint    RD/WR _P15_T_MONTH[1]                     s      Time of 15min. month 1st high (UTC), feb., even year
+12338  uint    RD/WR _P15_T_MONTH[2]                     s      Time of 15min. month 1st high (UTC), march, even year
+12340  uint    RD/WR _P15_T_MONTH[3]                     s      Time of 15min. month 1st high (UTC), april, even year
+12342  uint    RD/WR _P15_T_MONTH[4]                     s      Time of 15min. month 1st high (UTC), may, even year
+12344  uint    RD/WR _P15_T_MONTH[5]                     s      Time of 15min. month 1st high (UTC), june, even year
+12346  uint    RD/WR _P15_T_MONTH[6]                     s      Time of 15min. month 1st high (UTC), july, even year
+12348  uint    RD/WR _P15_T_MONTH[7]                     s      Time of 15min. month 1st high (UTC), aug., even year
+12350  uint    RD/WR _P15_T_MONTH[8]                     s      Time of 15min. month 1st high (UTC), sep., even year
+12352  uint    RD/WR _P15_T_MONTH[9]                     s      Time of 15min. month 1st high (UTC), oct., even year
+12354  uint    RD/WR _P15_T_MONTH[10]                    s      Time of 15min. month 1st high (UTC), nov., even year
+12356  uint    RD/WR _P15_T_MONTH[11]                    s      Time of 15min. month 1st high (UTC), dec., even year
+12358  uint    RD/WR _P15_T_MONTH[12]                    s      Time of 15min. month 1st high (UTC), jan., uneven year
+12360  uint    RD/WR _P15_T_MONTH[13]                    s      Time of 15min. month 1st high (UTC), feb., uneven year
+12362  uint    RD/WR _P15_T_MONTH[14]                    s      Time of 15min. month 1st high (UTC), march, uneven year
+12364  uint    RD/WR _P15_T_MONTH[15]                    s      Time of 15min. month 1st high (UTC), april, uneven year
+12366  uint    RD/WR _P15_T_MONTH[16]                    s      Time of 15min. month 1st high (UTC), may, uneven year
+12368  uint    RD/WR _P15_T_MONTH[17]                    s      Time of 15min. month 1st high (UTC), june, uneven year
+12370  uint    RD/WR _P15_T_MONTH[18]                    s      Time of 15min. month 1st high (UTC), july, uneven year
+12372  uint    RD/WR _P15_T_MONTH[19]                    s      Time of 15min. month 1st high (UTC), aug., uneven year
+12374  uint    RD/WR _P15_T_MONTH[20]                    s      Time of 15min. month 1st high (UTC), sep., uneven year
+12376  uint    RD/WR _P15_T_MONTH[21]                    s      Time of 15min. month 1st high (UTC), oct., uneven year
+12378  uint    RD/WR _P15_T_MONTH[22]                    s      Time of 15min. month 1st high (UTC), nov., uneven year
+12380  uint    RD/WR _P15_T_MONTH[23]                    s      Time of 15min. month 1st high (UTC), dec., uneven year
+12382  uint    RD/WR _P15_T_MONTH[24]                    s      Time of 15min. month 2nd high (UTC), jan., even year
+12384  uint    RD/WR _P15_T_MONTH[25]                    s      Time of 15min. month 2nd high (UTC), feb., even year
+12386  uint    RD/WR _P15_T_MONTH[26]                    s      Time of 15min. month 2nd high (UTC), march, even year
+12388  uint    RD/WR _P15_T_MONTH[27]                    s      Time of 15min. month 2nd high (UTC), april, even year
+12390  uint    RD/WR _P15_T_MONTH[28]                    s      Time of 15min. month 2nd high (UTC), may, even year
+12392  uint    RD/WR _P15_T_MONTH[29]                    s      Time of 15min. month 2nd high (UTC), june, even year
+12394  uint    RD/WR _P15_T_MONTH[30]                    s      Time of 15min. month 2nd high (UTC), july, even year
+12396  uint    RD/WR _P15_T_MONTH[31]                    s      Time of 15min. month 2nd high (UTC), aug., even year
+12398  uint    RD/WR _P15_T_MONTH[32]                    s      Time of 15min. month 2nd high (UTC), sep., even year
+12400  uint    RD/WR _P15_T_MONTH[33]                    s      Time of 15min. month 2nd high (UTC), oct., even year
+12402  uint    RD/WR _P15_T_MONTH[34]                    s      Time of 15min. month 2nd high (UTC), nov., even year
+12404  uint    RD/WR _P15_T_MONTH[35]                    s      Time of 15min. month 2nd high (UTC), dec., even year
+12406  uint    RD/WR _P15_T_MONTH[36]                    s      Time of 15min. month 2nd high (UTC), jan., uneven year
+12408  uint    RD/WR _P15_T_MONTH[37]                    s      Time of 15min. month 2nd high (UTC), feb., uneven year
+12410  uint    RD/WR _P15_T_MONTH[38]                    s      Time of 15min. month 2nd high (UTC), march, uneven year
+12412  uint    RD/WR _P15_T_MONTH[39]                    s      Time of 15min. month 2nd high (UTC), april, uneven year
+12414  uint    RD/WR _P15_T_MONTH[40]                    s      Time of 15min. month 2nd high (UTC), may, uneven year
+12416  uint    RD/WR _P15_T_MONTH[41]                    s      Time of 15min. month 2nd high (UTC), june, uneven year
+12418  uint    RD/WR _P15_T_MONTH[42]                    s      Time of 15min. month 2nd high (UTC), july, uneven year
+12420  uint    RD/WR _P15_T_MONTH[43]                    s      Time of 15min. month 2nd high (UTC), aug., uneven year
+12422  uint    RD/WR _P15_T_MONTH[44]                    s      Time of 15min. month 2nd high (UTC), sep., uneven year
+12424  uint    RD/WR _P15_T_MONTH[45]                    s      Time of 15min. month 2nd high (UTC), oct., uneven year
+12426  uint    RD/WR _P15_T_MONTH[46]                    s      Time of 15min. month 2nd high (UTC), nov., uneven year
+12428  uint    RD/WR _P15_T_MONTH[47]                    s      Time of 15min. month 2nd high (UTC), dec., uneven year
+12430  uint    RD/WR _P15_T_MONTH[48]                    s      Time of 15min. month 3nd high (UTC), jan., even year
+12432  uint    RD/WR _P15_T_MONTH[49]                    s      Time of 15min. month 3nd high (UTC), feb., even year
+12434  uint    RD/WR _P15_T_MONTH[50]                    s      Time of 15min. month 3nd high (UTC), march, even year
+12436  uint    RD/WR _P15_T_MONTH[51]                    s      Time of 15min. month 3nd high (UTC), april, even year
+12438  uint    RD/WR _P15_T_MONTH[52]                    s      Time of 15min. month 3nd high (UTC), may, even year
+12440  uint    RD/WR _P15_T_MONTH[53]                    s      Time of 15min. month 3nd high (UTC), june, even year
+12442  uint    RD/WR _P15_T_MONTH[54]                    s      Time of 15min. month 3nd high (UTC), july, even year
+12444  uint    RD/WR _P15_T_MONTH[55]                    s      Time of 15min. month 3nd high (UTC), aug., even year
+12446  uint    RD/WR _P15_T_MONTH[56]                    s      Time of 15min. month 3nd high (UTC), sep., even year
+12448  uint    RD/WR _P15_T_MONTH[57]                    s      Time of 15min. month 3nd high (UTC), oct., even year
+12450  uint    RD/WR _P15_T_MONTH[58]                    s      Time of 15min. month 3nd high (UTC), nov., even year
+12452  uint    RD/WR _P15_T_MONTH[59]                    s      Time of 15min. month 3nd high (UTC), dec., even year
+12454  uint    RD/WR _P15_T_MONTH[60]                    s      Time of 15min. month 3nd high (UTC), jan., uneven year
+12456  uint    RD/WR _P15_T_MONTH[61]                    s      Time of 15min. month 3nd high (UTC), feb., uneven year
+12458  uint    RD/WR _P15_T_MONTH[62]                    s      Time of 15min. month 3nd high (UTC), march, uneven year
+12460  uint    RD/WR _P15_T_MONTH[63]                    s      Time of 15min. month 3nd high (UTC), april, uneven year
+12462  uint    RD/WR _P15_T_MONTH[64]                    s      Time of 15min. month 3nd high (UTC), may, uneven year
+12464  uint    RD/WR _P15_T_MONTH[65]                    s      Time of 15min. month 3nd high (UTC), june, uneven year
+12466  uint    RD/WR _P15_T_MONTH[66]                    s      Time of 15min. month 3nd high (UTC), july, uneven year
+12468  uint    RD/WR _P15_T_MONTH[67]                    s      Time of 15min. month 3nd high (UTC), aug., uneven year
+12470  uint    RD/WR _P15_T_MONTH[68]                    s      Time of 15min. month 3nd high (UTC), sep., uneven year
+12472  uint    RD/WR _P15_T_MONTH[69]                    s      Time of 15min. month 3nd high (UTC), oct., uneven year
+12474  uint    RD/WR _P15_T_MONTH[70]                    s      Time of 15min. month 3nd high (UTC), nov., uneven year
+12476  uint    RD/WR _P15_T_MONTH[71]                    s      Time of 15min. month 3nd high (UTC), dec., uneven year
+12478  short   RD/WR _MONTHLY_YEAR[0]                    -      Year, real energy, bar graph, jan., even year
+12479  short   RD/WR _MONTHLY_YEAR[1]                    -      Year, real energy, bar graph, feb., even year
+12480  short   RD/WR _MONTHLY_YEAR[2]                    -      Year, real energy, bar graph, march, even year
+12481  short   RD/WR _MONTHLY_YEAR[3]                    -      Year, real energy, bar graph, april, even year
+12482  short   RD/WR _MONTHLY_YEAR[4]                    -      Year, real energy, bar graph, may, even year
+12483  short   RD/WR _MONTHLY_YEAR[5]                    -      Year, real energy, bar graph, june, even year
+12484  short   RD/WR _MONTHLY_YEAR[6]                    -      Year, real energy, bar graph, july, even year
+12485  short   RD/WR _MONTHLY_YEAR[7]                    -      Year, real energy, bar graph, aug., even year
+12486  short   RD/WR _MONTHLY_YEAR[8]                    -      Year, real energy, bar graph, sep., even year
+12487  short   RD/WR _MONTHLY_YEAR[9]                    -      Year, real energy, bar graph, oct., even year
+12488  short   RD/WR _MONTHLY_YEAR[10]                   -      Year, real energy, bar graph, nov., even year
+12489  short   RD/WR _MONTHLY_YEAR[11]                   -      Year, real energy, bar graph, dec., even year
+12490  short   RD/WR _MONTHLY_YEAR[12]                   -      Year, real energy, bar graph, jan., uneven year
+12491  short   RD/WR _MONTHLY_YEAR[13]                   -      Year, real energy, bar graph, feb., uneven year
+12492  short   RD/WR _MONTHLY_YEAR[14]                   -      Year, real energy, bar graph, march, uneven year
+12493  short   RD/WR _MONTHLY_YEAR[15]                   -      Year, real energy, bar graph, april, uneven year
+12494  short   RD/WR _MONTHLY_YEAR[16]                   -      Year, real energy, bar graph, may, uneven year
+12495  short   RD/WR _MONTHLY_YEAR[17]                   -      Year, real energy, bar graph, june, uneven year
+12496  short   RD/WR _MONTHLY_YEAR[18]                   -      Year, real energy, bar graph, july, uneven year
+12497  short   RD/WR _MONTHLY_YEAR[19]                   -      Year, real energy, bar graph, aug., uneven year
+12498  short   RD/WR _MONTHLY_YEAR[20]                   -      Year, real energy, bar graph, sep., uneven year
+12499  short   RD/WR _MONTHLY_YEAR[21]                   -      Year, real energy, bar graph, oct., uneven year
+12500  short   RD/WR _MONTHLY_YEAR[22]                   -      Year, real energy, bar graph, nov., uneven year
+12501  short   RD/WR _MONTHLY_YEAR[23]                   -      Year, real energy, bar graph, dec., uneven year
+12582  int     RD/WR _SET_BACNAME_INSTACE                -      Only for internal use
+12920  short   RD/WR _PULS_WIDTH                         -      Only for internal use
+13097  float   RD/WR _TRNS_ENVELOPE[0]                   %      Only for internal use
+13099  float   RD/WR _TRNS_ENVELOPE[1]                   %      Only for internal use
+13101  float   RD/WR _IRATED_TDD[0]                      A      Maximum demand load current, L1..L3
+13103  float   RD/WR _IRATED_TDD[1]                      A      Maximum demand load current, L4
+13105  float   RD    _TDD_IL[0]                          %      TDD, total demand distortion, IL1
+13107  float   RD    _TDD_IL[1]                          %      TDD, total demand distortion, IL2
+13109  float   RD    _TDD_IL[2]                          %      TDD, total demand distortion, IL3
+13111  float   RD    _TDD_IL[3]                          %      TDD, total demand distortion, IL4
+13113  float   RD    _U_SYM_U0                           %      Unsymmetrical, voltage U0
+13396  uint    RD/WR _MB_STATUS                          -      Only for internal use
+13398  int     RD/WR _SET_SYSTIME                        sec    Only for internal use
+13417  float   RD    _IND_CAP_SUM3                       -      Sign, Q1 + Q2 + Q3
+13419  float   RD    _IND_CAP_SUM                        -      Sign, Q1 + Q2 + Q3 + Q4
+13465  float   RD/WR _U_EVT_OFF_HYST[0]                  %      Only for internal use
+13467  float   RD/WR _U_EVT_OFF_HYST[1]                  %      Only for internal use
+13537  int     RD/WR _ETERNET_TIMEOUT                    -      Only for internal use
+13539  int     RD/WR _FIREWALL                           -      Only for internal use
+13541  short   RD/WR _MAC_01                             -      Only for internal use
+13542  short   RD/WR _MAC_23                             -      Only for internal use
+13543  short   RD/WR _MAC_45                             -      Only for internal use
+13544  short   RD/WR _FLUSH_DEV                          -      Only for internal use
+13545  uint    RD/WR _RECORD_TIME                        -      Only for internal use
+13547  int     RD/WR _CONFIG_P15_VAL                     -      Only for internal use
+13549  int     RD/WR _CONFIG_P15_TIME                    -      Only for internal use
+13551  uint    RD/WR _BACNET_BBMD_IP                     -      Configure bacnet foreign device registration: BBMD IP
+13752  float   RD/WR _ULL_EVT_OFF                        %      Only for internal use
+13758  float   RD/WR _ULL_EVT_OFF_HYST                   %      Only for internal use
+13768  float   RD/WR _FREQ_EVT_DT[0]                     %      Only for internal use
+13770  float   RD/WR _FREQ_EVT_DT[1]                     %      Only for internal use
+13780  float   RD/WR _FREQ_EVT_DT_HYST[0]                %      Only for internal use
+13782  float   RD/WR _FREQ_EVT_DT_HYST[1]                %      Only for internal use
+13784  short   RD/WR _TRANS_PROTECTION                   %      Only for internal use
+13785  int     RD/WR _FREQ_PHASE_COUNT                   -      Only for internal use
+13787  float   RD/WR _IDIFF_PRIM[0]                      A      RC transformer, primary 1
+13789  float   RD/WR _IDIFF_PRIM[1]                      A      RC transformer, primary 2
+13791  float   RD/WR _IDIFF_SEC[0]                       A      RC transformer, secondary 1
+13793  float   RD/WR _IDIFF_SEC[1]                       A      RC transformer, secondary 2
+13795  float   RD/WR _TEMPERATUR_OFFSET                  °C     Temperatur offset
+13797  int     RD/WR _IDIFF_MODE[0]                      A      Failure monitoring, diff 1 0 = deactivate, 1 = activate
+13799  int     RD/WR _IDIFF_MODE[1]                      A      Failure monitoring, diff 2 0 = deactivate, 1 = activate
+13801  int     RD/WR _THERMOELEMENT                      -      Thermal element
+13803  float   RD/WR _IDIFF[0]                           A
+13805  float   RD/WR _IDIFF[1]                           A
+13807  float   RD/WR _EXT_TEMP                           °C     external temperatur
+13809  short   RD/WR _IDIFF_BREAK[0]                     -      Connection to RC transformer, diff 1 0 = error free, 1 = error
+13810  short   RD/WR _IDIFF_BREAK[1]                     -      Connection to RC transformer, diff 2 0 = error free, 1 = error
+13811  short   RD/WR _COMP_DIFF_TYPE0                    s      Only for internal use
+13813  float   RD/WR _COMP_DIFF_PER_DEV0                 s      Only for internal use
+13816  float   RD/WR _COMP_DIFF_CUR_PER0                 s      Only for internal use
+13818  float   RD/WR _COMP_DIFF_CUR_OFFSET0              s      Only for internal use
+13820  float   RD/WR _COMP_DIFF_TOLERANCE0               s      Only for internal use
+13822  float   RD/WR _COMP_DIFF_WARNLEVEL0               s      Only for internal use
+13824  float   RD/WR _COMP_DIFF_STEP_THRESHOLD0[0]       -      Only for internal use
+13826  float   RD/WR _COMP_DIFF_STEP_THRESHOLD0[1]       -      Only for internal use
+13828  float   RD/WR _COMP_DIFF_STEP_THRESHOLD0[2]       -      Only for internal use
+13830  float   RD/WR _COMP_DIFF_STEP_THRESHOLD0[3]       -      Only for internal use
+13832  float   RD/WR _COMP_DIFF_STEP_THRESHOLD0[4]       -      Only for internal use
+13834  float   RD/WR _COMP_DIFF_STEP_THRESHOLD0[5]       -      Only for internal use
+13836  float   RD/WR _COMP_DIFF_STEP_THRESHOLD0[6]       -      Only for internal use
+13838  float   RD/WR _COMP_DIFF_STEP_THRESHOLD0[7]       -      Only for internal use
+13840  float   RD/WR _COMP_DIFF_STEP_THRESHOLD0[8]       -      Only for internal use
+13842  float   RD/WR _COMP_DIFF_STEP_THRESHOLD0[9]       -      Only for internal use
+13844  float   RD/WR _COMP_DIFF_STEPS0[0]                s      Only for internal use
+13846  float   RD/WR _COMP_DIFF_STEPS0[1]                s      Only for internal use
+13848  float   RD/WR _COMP_DIFF_STEPS0[2]                s      Only for internal use
+13850  float   RD/WR _COMP_DIFF_STEPS0[3]                s      Only for internal use
+13852  float   RD/WR _COMP_DIFF_STEPS0[4]                s      Only for internal use
+13854  float   RD/WR _COMP_DIFF_STEPS0[5]                s      Only for internal use
+13856  float   RD/WR _COMP_DIFF_STEPS0[6]                s      Only for internal use
+13858  float   RD/WR _COMP_DIFF_STEPS0[7]                s      Only for internal use
+13860  float   RD/WR _COMP_DIFF_STEPS0[8]                s      Only for internal use
+13862  float   RD/WR _COMP_DIFF_STEPS0[9]                s      Only for internal use
+13864  float   RD/WR _COMP_DIFF_CUR_THRESHOLD0           s      Only for internal use
+13868  short   RD/WR _COMP_DIFF_TYPE1                    s      Only for internal use
+13870  float   RD/WR _COMP_DIFF_PER_DEV1                 s      Only for internal use
+13873  float   RD/WR _COMP_DIFF_CUR_PER1                 s      Only for internal use
+13875  float   RD/WR _COMP_DIFF_CUR_OFFSET1              s      Only for internal use
+13877  float   RD/WR _COMP_DIFF_TOLERANCE1               s      Only for internal use
+13879  float   RD/WR _COMP_DIFF_WARNLEVEL1               s      Only for internal use
+13881  float   RD/WR _COMP_DIFF_STEP_THRESHOLD1[0]       -      Only for internal use
+13883  float   RD/WR _COMP_DIFF_STEP_THRESHOLD1[1]       -      Only for internal use
+13885  float   RD/WR _COMP_DIFF_STEP_THRESHOLD1[2]       -      Only for internal use
+13887  float   RD/WR _COMP_DIFF_STEP_THRESHOLD1[3]       -      Only for internal use
+13889  float   RD/WR _COMP_DIFF_STEP_THRESHOLD1[4]       -      Only for internal use
+13891  float   RD/WR _COMP_DIFF_STEP_THRESHOLD1[5]       -      Only for internal use
+13893  float   RD/WR _COMP_DIFF_STEP_THRESHOLD1[6]       -      Only for internal use
+13895  float   RD/WR _COMP_DIFF_STEP_THRESHOLD1[7]       -      Only for internal use
+13897  float   RD/WR _COMP_DIFF_STEP_THRESHOLD1[8]       -      Only for internal use
+13899  float   RD/WR _COMP_DIFF_STEP_THRESHOLD1[9]       -      Only for internal use
+13901  float   RD/WR _COMP_DIFF_STEPS1[0]                s      Only for internal use
+13903  float   RD/WR _COMP_DIFF_STEPS1[1]                s      Only for internal use
+13905  float   RD/WR _COMP_DIFF_STEPS1[2]                s      Only for internal use
+13907  float   RD/WR _COMP_DIFF_STEPS1[3]                s      Only for internal use
+13909  float   RD/WR _COMP_DIFF_STEPS1[4]                s      Only for internal use
+13911  float   RD/WR _COMP_DIFF_STEPS1[5]                s      Only for internal use
+13913  float   RD/WR _COMP_DIFF_STEPS1[6]                s      Only for internal use
+13915  float   RD/WR _COMP_DIFF_STEPS1[7]                s      Only for internal use
+13917  float   RD/WR _COMP_DIFF_STEPS1[8]                s      Only for internal use
+13919  float   RD/WR _COMP_DIFF_STEPS1[9]                s      Only for internal use
+13921  float   RD/WR _COMP_DIFF_CUR_THRESHOLD1           s      Only for internal use
+13925  short   RD/WR _COMP_DIFF_STATUS[0]                s      Alarm status for diff 1 with: Bit 0 	 =	 Warning Bit 1	 =	 Overcurrent Bit 2 	 =	 Alarm Bit 3 	 =	 CT not connected
+13926  short   RD/WR _COMP_DIFF_STATUS[1]                s      Alarm status for diff 2 with: Bit 0 	 =	 Warning Bit 1	 =	 Overcurrent Bit 2 	 =	 Alarm Bit 3 	 =	 CT not connected
+13927  float   RD/WR _COMP_DIFF_RUN_TIME[0]              s      Overcurrent duration, diff 1
+13929  float   RD/WR _COMP_DIFF_RUN_TIME[1]              s      Overcurrent duration, diff 2
+13931  float   RD/WR _COMP_DIFF_LIMIT[0]                 A      Real threshold diff 1
+13933  float   RD/WR _COMP_DIFF_LIMIT[1]                 A      Real threshold diff 2
+13935  short   RD/WR _BLACKOUT_EVT_PHASE                 -      Only for internal use
+13936  short   RD/WR _BLACKOUT_EVT_DELAY                 -      Only for internal use
+13937  float   RD/WR _BLACKOUT_EVT_LEVEL                 -      Only for internal use
+13939  int     RD/WR _EVT_STOP_PRE                       -      Only for internal use
+13941  int     RD/WR _EVT_STOP_POST                      -      Only for internal use
+14087  int     RD/WR _DC_IDFF[0]                         -      Only for internal use
+14089  int     RD/WR _DC_IDFF[1]                         -      Only for internal use
+14091  int     RD/WR _INIT_CUSTOMKEY                     -      Only for internal use
+14093  int     RD/WR _WAVE_STOP_PRE                      -      Only for internal use
+14095  int     RD/WR _WAVE_STOP_POST                     -      Only for internal use
+14097  int     RD/WR _TRNS_PRE                           -      Only for internal use
+14099  int     RD/WR _TRNS_POST                          -      Only for internal use
+14249  byte    RD    _PTP_VERSION                        -      Only for internal use
+14250  byte    RD/WR _PTP_DOMAIN                         -      Only for internal use
+14251  byte    RD    _PTP_CLOCK_CLASS                    -      Only for internal use
+14252  byte    RD    _PTP_CLOCK_ACCURACY                 -      Only for internal use
+14253  byte    RD    _PTP_TIME_SOURCE                    -      Only for internal use
+14254  byte    RD    _PTP_TWO_STEP                       -      Only for internal use
+14255  byte    RD    _PTP_DELAY_MECHANISM                -      Only for internal use
+14256  byte    RD    _PTP_PROFILE_ID[0]                  -      Only for internal use
+14257  byte    RD    _PTP_PROFILE_ID[1]                  -      Only for internal use
+14258  byte    RD    _PTP_PROFILE_ID[2                   -      Only for internal use
+14259  byte    RD    _PTP_PROFILE_ID[3]                  -      Only for internal use
+14260  byte    RD    _PTP_PROFILE_ID[4]                  -      Only for internal use
+14261  byte    RD    _PTP_PROFILE_ID[5]                  -      Only for internal use
+14262  byte    RD/WR _PTP_ANNOUNCE_RECEIPT_TIMEOUT       -
+14263  int     RD    _PTP_STATE                          -      Only for internal use
+14265  short   RD/WR _PTP_MANAGEMENT_INTERFACE           -      Only for internal use
+14266  byte    RD/WR _PTP_PRIORITY1                      -      Only for internal use
+14267  byte    RD/WR _PTP_PRIORITY2                      -      Only for internal use
+15040  float   RD/WR _NOMINAL_U_LL                       V      Nominal Voltage ULL
+19122  float   RD    _IND_CAP_SUM3                       -      Sign, Q1 + Q2 + Q3
+19124  float   RD    _IND_CAP_SUM                        -      Sign, Q1 + Q2 + Q3 + Q4
+19636  float   RD/WR _PF_TOTAL                           -      PF Total, PF_Total=P_Sum3/S_Sum3
+19638  float   RD/WR _I_TDD[0]                           %      IN Total Demand Distortion
+19640  float   RD/WR _I_TDD[1]                           %      IN Total Demand Distortion
+19642  float   RD/WR _I_TDD[2]                           %      IN Total Demand Distortion
+19644  float   RD/WR _I_TDD[3]                           %      IN Total Demand Distortion
+19698  float   RD    _PHASE_ULL[0]                       °      Voltage Phase L-L
+19700  float   RD    _PHASE_ULL[1]                       °      Voltage Phase L-L
+19702  float   RD    _PHASE_ULL[2]                       °      Voltage Phase L-L
+19704  float   RD    _PHASE_ULN[0]                       °      Voltage Phase L-N
+19706  float   RD    _PHASE_ULN[1]                       °      Voltage Phase L-N
+19708  float   RD    _PHASE_ULN[2]                       °      Voltage Phase L-N
+19710  uint    RD    _RUNNING_EVENTS_COUNTER	-           -      Counter for started events
+19716  short   RD    _TRANSFORMER_RATIO_LOCK	 -          -      Lock Transformer Ratios, 0=not locked, 1=locked

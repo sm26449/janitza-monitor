@@ -1,0 +1,209 @@
+# Janitza UMG 512-PRO - Masuratori 200ms
+# Address | Type | Access | Name | Unit | Description
+
+3793   float   RD    _THD_ULL[0]                         %      Harmonic, THD,U L1-L2
+3795   float   RD    _THD_ULL[1]                         %      Harmonic, THD,U L2-L3
+3797   float   RD    _THD_ULL[2]                         %      Harmonic, THD,U L1-L3
+3799   float   RD    _ZHD_ULL[0]                         %      Interharmonics, U L1-L2
+3801   float   RD    _ZHD_ULL[1]                         %      Interharmonics, U L2-L3
+3803   float   RD    _ZHD_ULL[2]                         %      Interharmonics, U L1-L3
+3805   float   RD    _THD_ULN[0]                         %      Harmonic, THD,U L1-N
+3807   float   RD    _THD_ULN[1]                         %      Harmonic, THD,U L2-N
+3809   float   RD    _THD_ULN[2]                         %      Harmonic, THD,U L3-N
+3811   float   RD    _THD_ULN[3]                         %      Harmonic, THD,U L4-N
+3813   float   RD    _THD_IL[0]                          %      Harmonic, THD,I1 L1
+3815   float   RD    _THD_IL[1]                          %      Harmonic, THD,I2 L2
+3817   float   RD    _THD_IL[2]                          %      Harmonic, THD,I3 L3
+3819   float   RD    _THD_IL[3]                          %      Harmonic, THD,I4 L4
+3821   float   RD    _ZHD_ULN[0]                         %      Interharmonics, ZHD, U, L1
+3823   float   RD    _ZHD_ULN[1]                         %      Interharmonics, ZHD, U, L2
+3825   float   RD    _ZHD_ULN[2]                         %      Interharmonics, ZHD, U, L3
+3827   float   RD    _ZHD_ULN[3]                         %      Interharmonics, ZHD, U, L4
+3829   float   RD    _ZHD_ILN[0]                         %      Interharmonics, ZHD, I, L1
+3831   float   RD    _ZHD_ILN[1]                         %      Interharmonics, ZHD, I, L2
+3833   float   RD    _ZHD_ILN[2]                         %      Interharmonics, ZHD, I, L3
+3835   float   RD    _ZHD_ILN[3]                         %      Interharmonics, ZHD, I, L4
+3837   float   RD    _KFACT[0]                           -      K-Factor, L1
+3839   float   RD    _KFACT[1]                           -      K-Factor, L2
+3841   float   RD    _KFACT[2]                           -      K-Factor, L3
+3843   float   RD    _KFACT[3]                           -      K-Factor, L4
+3845   float   RD    _ULN[0]                             V      Voltage L1-N
+3847   float   RD    _ULN[1]                             V      Voltage L2-N
+3849   float   RD    _ULN[2]                             V      Voltage L3-N
+3851   float   RD    _ULN[3]                             V      Voltage L4-N
+3853   float   RD    _ILN[0]                             A      Apparent current, L1
+3855   float   RD    _ILN[1]                             A      Apparent current, L2
+3857   float   RD    _ILN[2]                             A      Apparent current, L3
+3859   float   RD    _ILN[3]                             A      Apparent current, L4
+3861   float   RD    _PLN[0]                             W      Real power L1
+3863   float   RD    _PLN[1]                             W      Real power L2
+3865   float   RD    _PLN[2]                             W      Real power L3
+3867   float   RD    _PLN[3]                             W      Real power L4
+3869   float   RD    _QLN[0]                             var    Reactive power L1 (fundamental comp.)
+3871   float   RD    _QLN[1]                             var    Reactive power L2 (fundamental comp.)
+3873   float   RD    _QLN[2]                             var    Reactive power L3 (fundamental comp.)
+3875   float   RD    _QLN[3]                             var    Reactive power L4 (fundamental comp.)
+3877   float   RD    _SLN[0]                             VA     Apparent power L1
+3879   float   RD    _SLN[1]                             VA     Apparent power L2
+3881   float   RD    _SLN[2]                             VA     Apparent power L3
+3883   float   RD    _SLN[3]                             VA     Apparent power L4
+3885   float   RD    _DLN[0]                             var    Distortion power factor; L1
+3887   float   RD    _DLN[1]                             var    Distortion power factor; L2
+3889   float   RD    _DLN[2]                             var    Distortion power factor; L3
+3891   float   RD    _DLN[3]                             var    Distortion power factor; L4
+3893   float   RD    _PFLN[0]                            -      Power factor; L1
+3895   float   RD    _PFLN[1]                            -      Power factor; L2
+3897   float   RD    _PFLN[2]                            -      Power factor; L3
+3899   float   RD    _PFLN[3]                            -      Power factor; L4
+3901   float   RD    _ULL[0]                             V      Phase conductor voltage; L1-L2
+3903   float   RD    _ULL[1]                             V      Phase conductor voltage; L2-L3
+3905   float   RD    _ULL[2]                             V      Phase conductor voltage; L1-L3
+3907   float   RD    _ULL_RE[0]                          V      Phase conductor voltage real part; L1-L2
+3909   float   RD    _ULL_RE[1]                          V      Phase conductor voltage real part; L2-L3
+3911   float   RD    _ULL_RE[2]                          V      Phase conductor voltage real part; L1-L3
+3913   float   RD    _ULL_IM[0]                          V      Phase conductor voltage imaginary part; L1-L2
+3915   float   RD    _ULL_IM[1]                          V      Phase conductor voltage imaginary part; L2-L3 Measured values (200ms measuring window)
+3917   float   RD    _ULL_IM[2]                          V      Phase conductor voltage imaginary part; L1-L3
+3919   float   RD    _I_SUM3                             A      Vector sum; IN = I1 + I2 + I3
+3921   float   RD    _I_SUM                              A      Vector sum; I1 + I2 + I3 + I4
+3923   float   RD    _S_SUM3                             VA     Sum; S = S1 + S2 + S3
+3925   float   RD    _P_SUM3                             W      Sum; P = P1 + P2 + P3
+3927   float   RD    _Q_SUM3                             var    Mains frequency reactive power Sum; Q = Q1 + Q2 + Q3
+3929   float   RD    _COS_SUM3                           -      CosPhi of mains frequency Calculated from Psum3 and Qsum3
+3931   float   RD    _S_SUM                              VA     Sum; S = S1 + S2 + S3 + S4
+3933   float   RD    _P_SUM                              W      Sum; P = P1 + P2 + P3 + P4
+3935   float   RD    _Q_SUM                              var    Mains frequency reactive power Sum; Q = Q1 + Q2 + Q3 + Q4
+3937   float   RD    _COS_SUM                            -      CosPhi of mains frequency Calculated from Psum and Qsum
+3939   float   RD    _ULN_RE[0]                          V      Voltage, real part, L1-N
+3941   float   RD    _ULN_RE[1]                          V      Voltage, real part, L2-N
+3943   float   RD    _ULN_RE[2]                          V      Voltage, real part, L3-N
+3945   float   RD    _ULN_RE[3]                          V      Voltage, real part, L4-N
+3947   float   RD    _ULN_IM[0]                          V      Voltage, imaginary part, L1-N
+3949   float   RD    _ULN_IM[1]                          V      Voltage, imaginary part, L2-N
+3951   float   RD    _ULN_IM[2]                          V      Voltage, imaginary part, L3-N
+3953   float   RD    _ULN_IM[3]                          V      Voltage, imaginary part, L4-N
+3955   float   RD    _IL_RE[0]                           A      Current, real part, L1
+3957   float   RD    _IL_RE[1]                           A      Current, real part, L2
+3959   float   RD    _IL_RE[2]                           A      Current, real part, L3
+3961   float   RD    _IL_RE[3]                           A      Current, real part, L4
+3963   float   RD    _IL_IM[0]                           A      Current, imaginary part, L1
+3965   float   RD    _IL_IM[1]                           A      Current, imaginary part, L2
+3967   float   RD    _IL_IM[2]                           A      Current, imaginary part, L3
+3969   float   RD    _IL_IM[3]                           A      Current, imaginary part, L4
+3971   float   RD    _PHASE[0]                           °      Phase; UL1 IL1
+3973   float   RD    _PHASE[1]                           °      Phase; UL2 IL2
+3975   float   RD    _PHASE[2]                           °      Phase; UL3 IL3
+3977   float   RD    _PHASE[3]                           °      Phase; UL4 IL4
+3979   float   RD    _COS_PHI[0]                         -      Fund. power factor, CosPhi; UL1 IL1
+3981   float   RD    _COS_PHI[1]                         -      Fund. power factor, CosPhi; UL2 IL2
+3983   float   RD    _COS_PHI[2]                         -      Fund. power factor, CosPhi; UL3 IL3
+3985   float   RD    _COS_PHI[3]                         -      Fund. power factor, CosPhi; UL4 IL4
+3987   float   RD    _IND_CAP[0]                         -      Sign; Q L1, +1 = ind., -1 = cap.
+3989   float   RD    _IND_CAP[1]                         -      Sign; Q L2, +1 = ind., -1 = cap.
+3991   float   RD    _IND_CAP[2]                         -      Sign; Q L3, +1 = ind., -1 = cap.
+3993   float   RD    _IND_CAP[3]                         -      Sign; Q L4, +1 = ind., -1 = cap.
+3995   float   RD    _FREQ                               Hz     Measured frequency
+3997   float   RD    _NORM_FREQ                          Hz     Nominal frequency
+3999   float   RD    _UN                                 V      Zero sequence, voltage
+4001   float   RD    _UM                                 V      Positive sequence, voltage
+4003   float   RD    _UG                                 V      Negative sequence, voltage
+4005   float   RD    _U_SYM                              %      Unsymmetrical, voltage
+4007   float   RD    _I_SYM                              %      Unsymmetrical, current
+4009   float   RD    _PHASE_SEQ                          -      Rotation field; 1=right, 0=none, -1=left
+4011   float   RD    _IN                                 A      Zero sequence, current
+4013   float   RD    _IM                                 A      Positive sequence, current
+4015   float   RD    _IG                                 A      Negative sequence, current
+4021   float   RD    _IL_CF[0]                           -      Crest factor, I L1
+4023   float   RD    _IL_CF[1]                           -      Crest factor, I L2
+4025   float   RD    _IL_CF[2]                           -      Crest factor, I L3
+4027   float   RD    _IL_CF[3]                           -      Crest factor, I L4
+4029   float   RD    _ULN_CF[0]                          -      Crest factor, U L1-N
+4031   float   RD    _ULN_CF[1]                          -      Crest factor, U L2-N
+4033   float   RD    _ULN_CF[2]                          -      Crest factor, U L3-N
+4035   float   RD    _ULN_CF[3]                          -      Crest factor, U L4-N
+4037   float   RD    _ULL_CF[0]                          -      Crest factor, U L1-L2
+4039   float   RD    _ULL_CF[1]                          -      Crest factor, U L2-L3
+4041   float   RD    _ULL_CF[2]                          -      Crest factor, U L1-L3
+4043   float   RD    _IL_NEG_PEAK[0]                     A      Peak value negative, I L1
+4045   float   RD    _IL_NEG_PEAK[1]                     A      Peak value negative, I L2
+4047   float   RD    _IL_NEG_PEAK[2]                     A      Peak value negative, I L3
+4049   float   RD    _IL_NEG_PEAK[3]                     A      Peak value negative, I L4
+4051   float   RD    _ULN_NEG_PEAK[0]                    V      Peak value negative, U L1-N
+4053   float   RD    _ULN_NEG_PEAK[1]                    V      Peak value negative, U L2-N
+4055   float   RD    _ULN_NEG_PEAK[2]                    V      Peak value negative, U L3-N
+4057   float   RD    _ULN_NEG_PEAK[3]                    V      Peak value negative, U L4-N
+4059   float   RD    _IL_POS_PEAK[0]                     A      Peak value positive, I L1
+4061   float   RD    _IL_POS_PEAK[1]                     A      Peak value positive, I L2
+4063   float   RD    _IL_POS_PEAK[2]                     A      Peak value positive, I L3
+4065   float   RD    _IL_POS_PEAK[3]                     A      Peak value positive, I L4
+4067   float   RD    _ULN_POS_PEAK[0]                    V      Peak value positive, U L1-N
+4069   float   RD    _ULN_POS_PEAK[1]                    V      Peak value positive, U L2-N
+4071   float   RD    _ULN_POS_PEAK[2]                    V      Peak value positive, U L3-N
+4073   float   RD    _ULN_POS_PEAK[3]                    V      Peak value positive, U L4-N
+4075   float   RD    _IL_PEAK_PEAK[0]                    A      Peak-peak value, I L1
+4077   float   RD    _IL_PEAK_PEAK[1]                    A      Peak-peak value, I L2
+4079   float   RD    _IL_PEAK_PEAK[2]                    A      Peak-peak value, I L3
+4081   float   RD    _IL_PEAK_PEAK[3]                    A      Peak-peak value, I L4
+4083   float   RD    _ULN_PEAK_PEAK[0]                   V      Peak-peak value, U L1-N
+4085   float   RD    _ULN_PEAK_PEAK[1]                   V      Peak-peak value, U L2-N
+4087   float   RD    _ULN_PEAK_PEAK[2]                   V      Peak-peak value, U L3-N
+4089   float   RD    _ULN_PEAK_PEAK[3]                   V      Peak-peak value, U L4-N
+4091   float   RD    _IL_UNDER[0]                        %      Under difference, I L1
+4093   float   RD    _IL_UNDER[1]                        %      Under difference, I L2
+4095   float   RD    _IL_UNDER[2]                        %      Under difference, I L3
+4097   float   RD    _IL_UNDER[3]                        %      Under difference, I L4
+4099   float   RD    _ULN_UNDER[0]                       %      Under difference, U L1 (61000-4-30)
+4101   float   RD    _ULN_UNDER[1]                       %      Under difference, U L2 (61000-4-30)
+4103   float   RD    _ULN_UNDER[2]                       %      Under difference, U L3 (61000-4-30)
+4105   float   RD    _ULN_UNDER[3]                       %      Under difference, U L4 (61000-4-30)
+4107   float   RD    _IL_OVER[0]                         %      Over difference, I L1
+4109   float   RD    _IL_OVER[1]                         %      Over difference, I L2
+4111   float   RD    _IL_OVER[2]                         %      Over difference, I L3
+4113   float   RD    _IL_OVER[3]                         %      Over difference, I L4
+4115   float   RD    _ULN_OVER[0]                        %      Over difference, U L1 (61000-4-30)
+4117   float   RD    _ULN_OVER[1]                        %      Over difference, U L2 (61000-4-30)
+4119   float   RD    _ULN_OVER[2]                        %      Over difference, U L3 (61000-4-30)
+4121   float   RD    _ULN_OVER[3]                        %      Over difference, U L4 (61000-4-30)
+4123   float   RD    _ULL_NEG_PEAK[0]                    V      Peak value negative, U L1-L2
+4125   float   RD    _ULL_NEG_PEAK[1]                    V      Peak value negative, U L2-L3
+4127   float   RD    _ULL_NEG_PEAK[2]                    V      Peak value negative, U L3-L1
+4129   float   RD    _ULL_POS_PEAK[0]                    V      Peak value positive, U L1-L2
+4131   float   RD    _ULL_POS_PEAK[1]                    V      Peak value positive, U L2-L3
+4133   float   RD    _ULL_POS_PEAK[2]                    V      Peak value positive, U L3-L1
+4135   float   RD    _ULL_PEAK_PEAK[0]                   V      Peak-peak value, U L1-L2
+4137   float   RD    _ULL_PEAK_PEAK[1]                   V      Peak-peak value, U L2-L3
+4139   float   RD    _ULL_PEAK_PEAK[2]                   V      Peak-peak value, U L3-L1
+4141   float   RD    _ULL_UNDER[0]                       %      Under difference, U L1-L2 (61000-4-30)
+4143   float   RD    _ULL_UNDER[1]                       %      Under difference, U L2-L3 (61000-4-30)
+4145   float   RD    _ULL_UNDER[2]                       %      Under difference, U L3-L1 (61000-4-30)
+4147   float   RD    _ULL_OVER[0]                        %      Over difference, U L1-L2 (61000-4-30)
+4149   float   RD    _ULL_OVER[1]                        %      Over difference, U L2-L3 (61000-4-30)
+4151   float   RD    _ULL_OVER[2]                        %      Over difference, U L3-L1 (61000-4-30)
+4153   float   RD    _FLI_PF5[0]                         -      Current flicker Pf5, L1-N
+4155   float   RD    _FLI_PF5[1]                         -      Current flicker Pf5, L2-N
+4157   float   RD    _FLI_PF5[2]                         -      Current flicker Pf5, L3-N
+4159   float   RD    _FLI_PF5[3]                         -      Current flicker Pf5, L4-N
+4161   float   RD    _FLI_SHORT_TERM[0]                  -      Short-term flicker level, Pst (10m), L1-N
+4163   float   RD    _FLI_SHORT_TERM[1]                  -      Short-term flicker level, Pst (10m), L2-N
+4165   float   RD    _FLI_SHORT_TERM[2]                  -      Short-term flicker level, Pst (10m), L3-N
+4167   float   RD    _FLI_SHORT_TERM[3]                  -      Short-term flicker level, Pst (10m), L4-N
+4169   float   RD    _FLI_LONG_TERM[0]                   -      Long-term flicker level, Plt (2h), L1-N
+4171   float   RD    _FLI_LONG_TERM[1]                   -      Long-term flicker level, Plt (2h), L2-N
+4173   float   RD    _FLI_LONG_TERM[2]                   -      Long-term flicker level, Plt (2h), L3-N
+4175   float   RD    _FLI_LONG_TERM[3]                   -      Long-term flicker level, Plt (2h), L4-N
+4177   float   RD    _URC[0]                             V      Ripple control signal, U L1-N (61000-4-30)
+4179   float   RD    _URC[1]                             V      Ripple control signal, U L2-N (61000-4-30)
+4181   float   RD    _URC[2]                             V      Ripple control signal, U L3-N (61000-4-30)
+4183   float   RD    _URC[3]                             V      Ripple control signal, U L4-N (61000-4-30)
+4185   float   RD    _IRC[0]                             A      Ripple control signal, I L1
+4187   float   RD    _IRC[1]                             A      Ripple control signal, I L2
+4189   float   RD    _IRC[2]                             A      Ripple control signal, I L3
+4191   float   RD    _IRC[3]                             A      Ripple control signal, I L4
+4193   float   RD    _ULL_RC[0]                          V      Ripple control signal, U L1-L2, (61000-4-30)
+4195   float   RD    _ULL_RC[1]                          V      Ripple control signal, U L2-L3, (61000-4-30)
+4197   float   RD    _ULL_RC[2]                          V      Ripple control signal, U L3-L1, (61000-4-30)
+4199   float   RD    _FREQ200MS [0]                      Hz     Frequency L1, 200ms Average
+4201   float   RD    _FREQ200MS [1]                      Hz     Frequency L2, 200ms Average
+4203   float   RD    _FREQ200MS [2]                      Hz     Frequency L3, 200ms Average
+4205   float   RD    _FREQ200MS [3]                      Hz     Frequency L4, 200ms Average
+4209   float   RD    _TEMPERATUR                         °C     Internal temperature

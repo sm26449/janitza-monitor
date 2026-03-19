@@ -1,0 +1,362 @@
+<!-- Register Edit Modal -->
+<div class="modal" id="registerModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="bi bi-pencil"></i> Edit Register</h3>
+            <button class="modal-close" onclick="app.closeRegisterModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editAddress">
+            <div class="form-group">
+                <label class="form-label">Label</label>
+                <input type="text" id="editLabel" class="input">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Poll Group</label>
+                    <select id="editPollGroup" class="input">
+                        <option value="realtime">Realtime (1s)</option>
+                        <option value="normal">Normal (5s)</option>
+                        <option value="slow">Slow (60s)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">UI Widget</label>
+                    <select id="editWidget" class="input">
+                        <option value="value">Value</option>
+                        <option value="gauge">Gauge</option>
+                        <option value="chart">Chart</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-section">
+                <h4>MQTT</h4>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="editMqttEnabled">
+                    <span>Enable MQTT publishing</span>
+                </label>
+                <div class="form-group">
+                    <label class="form-label">Custom Topic</label>
+                    <input type="text" id="editMqttTopic" class="input" placeholder="voltage/l1_n">
+                </div>
+            </div>
+            <div class="form-section">
+                <h4>InfluxDB</h4>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="editInfluxEnabled">
+                    <span>Enable InfluxDB publishing</span>
+                </label>
+                <div class="form-group">
+                    <label class="form-label">Measurement</label>
+                    <input type="text" id="editInfluxMeasurement" class="input" placeholder="voltage">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tags (JSON)</label>
+                    <input type="text" id="editInfluxTags" class="input" placeholder='{"phase": "L1"}'>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="app.closeRegisterModal()">Cancel</button>
+            <button class="btn btn-primary" id="modalSave">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Register Modal -->
+<div class="modal" id="addRegisterModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="bi bi-plus-circle"></i> Add Register</h3>
+            <button class="modal-close" onclick="app.closeAddModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="addAddress">
+            <input type="hidden" id="addName">
+            <input type="hidden" id="addUnit">
+            <input type="hidden" id="addDataType">
+            <input type="hidden" id="addCategory">
+
+            <div class="info-box">
+                <div class="info-row">
+                    <span>Address:</span>
+                    <strong id="addAddressDisplay"></strong>
+                </div>
+                <div class="info-row">
+                    <span>Register:</span>
+                    <strong id="addNameDisplay"></strong>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Label</label>
+                <input type="text" id="addLabel" class="input" placeholder="Voltage L1-N">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Poll Group</label>
+                    <select id="addPollGroup" class="input">
+                        <option value="realtime">Realtime (1s)</option>
+                        <option value="normal" selected>Normal (5s)</option>
+                        <option value="slow">Slow (60s)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">UI Widget</label>
+                    <select id="addWidget" class="input">
+                        <option value="value">Value</option>
+                        <option value="gauge">Gauge</option>
+                        <option value="chart">Chart</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-section">
+                <h4>MQTT</h4>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="addMqttEnabled" checked>
+                    <span>Enable MQTT publishing</span>
+                </label>
+                <div class="form-group">
+                    <label class="form-label">Custom Topic</label>
+                    <input type="text" id="addMqttTopic" class="input" placeholder="voltage/l1_n">
+                </div>
+            </div>
+            <div class="form-section">
+                <h4>InfluxDB</h4>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="addInfluxEnabled">
+                    <span>Enable InfluxDB publishing</span>
+                </label>
+                <div class="form-group">
+                    <label class="form-label">Measurement</label>
+                    <input type="text" id="addInfluxMeasurement" class="input" placeholder="voltage">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tags (JSON)</label>
+                    <input type="text" id="addInfluxTags" class="input" placeholder='{"phase": "L1"}'>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="app.closeAddModal()">Cancel</button>
+            <button class="btn btn-primary" id="addModalSave">Add Register</button>
+        </div>
+    </div>
+</div>
+
+<!-- Raw Config Modal -->
+<div class="modal" id="rawConfigModal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h3><i class="bi bi-code-slash"></i> Raw Configuration</h3>
+            <button class="modal-close" onclick="app.closeRawConfigModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="hint-text">Edit the JSON configuration directly. Be careful with syntax.</p>
+            <textarea id="rawConfigEditor" class="code-editor" spellcheck="false"></textarea>
+            <div class="editor-status" id="editorStatus"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="app.closeRawConfigModal()">Cancel</button>
+            <button class="btn btn-ghost" id="rawConfigFormat">Format</button>
+            <button class="btn btn-primary" id="rawConfigSave">Save & Apply</button>
+        </div>
+    </div>
+</div>
+
+<!-- Customize Dashboard Modal -->
+<div class="modal" id="customizeDashModal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h3><i class="bi bi-sliders"></i> Customize Dashboard</h3>
+            <button class="modal-close" onclick="app.closeCustomizeDashModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="hint-text">Drag to reorder widgets. Configure visibility, type, and size.</p>
+            <div class="customize-list" id="customizeList"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="app.closeCustomizeDashModal()">Cancel</button>
+            <button class="btn btn-primary" id="customizeDashSave">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Status Detail Modal -->
+<div class="modal" id="statusDetailModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header">
+            <h3 id="statusDetailTitle"><i class="bi bi-info-circle"></i> Status</h3>
+            <button class="modal-close" onclick="app.closeStatusDetailModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="statusDetailBody">
+            <!-- Populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Color Thresholds Modal -->
+<div class="modal" id="thresholdsModal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h3><i class="bi bi-palette"></i> Color Thresholds</h3>
+            <button class="modal-close" onclick="app.closeThresholdsModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="hint-text">Configure warning and danger thresholds for color coding. Leave empty to disable.</p>
+
+            <!-- Voltage -->
+            <div class="threshold-section">
+                <h4><i class="bi bi-lightning"></i> Voltage (V)</h4>
+                <div class="threshold-grid">
+                    <div class="form-group">
+                        <label class="form-label">Danger Low</label>
+                        <input type="number" id="threshVoltDangerLow" class="input" step="0.1" placeholder="200">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Warning Low</label>
+                        <input type="number" id="threshVoltWarningLow" class="input" step="0.1" placeholder="210">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Warning High</label>
+                        <input type="number" id="threshVoltWarningHigh" class="input" step="0.1" placeholder="245">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Danger High</label>
+                        <input type="number" id="threshVoltDangerHigh" class="input" step="0.1" placeholder="253">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Frequency -->
+            <div class="threshold-section">
+                <h4><i class="bi bi-activity"></i> Frequency (Hz)</h4>
+                <div class="threshold-grid">
+                    <div class="form-group">
+                        <label class="form-label">Danger Low</label>
+                        <input type="number" id="threshFreqDangerLow" class="input" step="0.1" placeholder="49.0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Warning Low</label>
+                        <input type="number" id="threshFreqWarningLow" class="input" step="0.1" placeholder="49.5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Warning High</label>
+                        <input type="number" id="threshFreqWarningHigh" class="input" step="0.1" placeholder="50.5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Danger High</label>
+                        <input type="number" id="threshFreqDangerHigh" class="input" step="0.1" placeholder="51.0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Power Factor -->
+            <div class="threshold-section">
+                <h4><i class="bi bi-speedometer2"></i> Power Factor</h4>
+                <div class="threshold-grid threshold-grid-half">
+                    <div class="form-group">
+                        <label class="form-label">Danger Low</label>
+                        <input type="number" id="threshPfDangerLow" class="input" step="0.01" placeholder="0.75">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Warning Low</label>
+                        <input type="number" id="threshPfWarningLow" class="input" step="0.01" placeholder="0.85">
+                    </div>
+                </div>
+                <p class="hint-text-small">Higher power factor is better (no high thresholds needed)</p>
+            </div>
+
+            <!-- THD -->
+            <div class="threshold-section">
+                <h4><i class="bi bi-soundwave"></i> THD (%)</h4>
+                <div class="threshold-grid threshold-grid-half">
+                    <div class="form-group">
+                        <label class="form-label">Warning High</label>
+                        <input type="number" id="threshThdWarningHigh" class="input" step="0.1" placeholder="5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Danger High</label>
+                        <input type="number" id="threshThdDangerHigh" class="input" step="0.1" placeholder="8">
+                    </div>
+                </div>
+                <p class="hint-text-small">Lower THD is better (no low thresholds needed)</p>
+            </div>
+
+            <!-- Current -->
+            <div class="threshold-section">
+                <h4><i class="bi bi-outlet"></i> Current (% nominal)</h4>
+                <div class="threshold-grid threshold-grid-half">
+                    <div class="form-group">
+                        <label class="form-label">Warning High</label>
+                        <input type="number" id="threshCurrWarningHigh" class="input" step="1" placeholder="90">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Danger High</label>
+                        <input type="number" id="threshCurrDangerHigh" class="input" step="1" placeholder="100">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Power -->
+            <div class="threshold-section">
+                <h4><i class="bi bi-plug"></i> Power (% nominal)</h4>
+                <div class="threshold-grid threshold-grid-half">
+                    <div class="form-group">
+                        <label class="form-label">Warning High</label>
+                        <input type="number" id="threshPowerWarningHigh" class="input" step="1" placeholder="90">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Danger High</label>
+                        <input type="number" id="threshPowerDangerHigh" class="input" step="1" placeholder="100">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="app.resetThresholds()">Reset Defaults</button>
+            <button class="btn btn-ghost" onclick="app.closeThresholdsModal()">Cancel</button>
+            <button class="btn btn-primary" id="thresholdsSave">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Query Register Modal -->
+<div class="modal" id="queryModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="bi bi-search"></i> Query Register</h3>
+            <button class="modal-close" onclick="app.closeQueryModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <div class="form-group flex-1">
+                    <label class="form-label">Address</label>
+                    <input type="number" id="queryAddress" class="input" placeholder="19000">
+                </div>
+                <div class="form-group flex-1">
+                    <label class="form-label">Data Type</label>
+                    <select id="queryDataType" class="input">
+                        <option value="float">Float (32-bit)</option>
+                        <option value="int32">Int32</option>
+                        <option value="uint32">UInt32</option>
+                        <option value="int16">Int16</option>
+                        <option value="uint16">UInt16</option>
+                        <option value="double">Double (64-bit)</option>
+                        <option value="int64">Int64</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">&nbsp;</label>
+                    <button class="btn btn-primary" id="queryBtn">
+                        <i class="bi bi-play-fill"></i> Query
+                    </button>
+                </div>
+            </div>
+            <div id="queryResultContainer" style="display: none;">
+                <hr class="modal-divider">
+                <div id="queryResult"></div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,208 @@
+{
+  "_comment": "Registre selectate pentru monitorizare. Editeaza din UI sau manual.",
+  "version": "1.0",
+  "registers": [
+    {
+      "address": 19000,
+      "name": "_G_ULN[0]",
+      "label": "Tensiune L1-N",
+      "unit": "V",
+      "data_type": "float",
+      "poll_group": "realtime",
+      "mqtt": {
+        "enabled": true,
+        "topic": "voltage/l1_n"
+      },
+      "influxdb": {
+        "enabled": true,
+        "measurement": "voltage",
+        "tags": {
+          "phase": "L1",
+          "type": "line_neutral"
+        }
+      },
+      "ui": {
+        "show_on_dashboard": true,
+        "widget": "gauge",
+        "min": 0,
+        "max": 300,
+        "color": "#3b82f6"
+      }
+    },
+    {
+      "address": 19002,
+      "name": "_G_ULN[1]",
+      "label": "Tensiune L2-N",
+      "unit": "V",
+      "data_type": "float",
+      "poll_group": "realtime",
+      "mqtt": {
+        "enabled": true,
+        "topic": "voltage/l2_n"
+      },
+      "influxdb": {
+        "enabled": true,
+        "measurement": "voltage",
+        "tags": {
+          "phase": "L2",
+          "type": "line_neutral"
+        }
+      },
+      "ui": {
+        "show_on_dashboard": true,
+        "widget": "gauge",
+        "min": 0,
+        "max": 300,
+        "color": "#22c55e"
+      }
+    },
+    {
+      "address": 19004,
+      "name": "_G_ULN[2]",
+      "label": "Tensiune L3-N",
+      "unit": "V",
+      "data_type": "float",
+      "poll_group": "realtime",
+      "mqtt": {
+        "enabled": true,
+        "topic": "voltage/l3_n"
+      },
+      "influxdb": {
+        "enabled": true,
+        "measurement": "voltage",
+        "tags": {
+          "phase": "L3",
+          "type": "line_neutral"
+        }
+      },
+      "ui": {
+        "show_on_dashboard": true,
+        "widget": "gauge",
+        "min": 0,
+        "max": 300,
+        "color": "#eab308"
+      }
+    },
+    {
+      "address": 19012,
+      "name": "_G_ILN[0]",
+      "label": "Curent L1",
+      "unit": "A",
+      "data_type": "float",
+      "poll_group": "realtime",
+      "mqtt": {
+        "enabled": true,
+        "topic": "current/l1"
+      },
+      "influxdb": {
+        "enabled": true,
+        "measurement": "current",
+        "tags": {
+          "phase": "L1"
+        }
+      },
+      "ui": {
+        "show_on_dashboard": true,
+        "widget": "value",
+        "decimals": 2
+      }
+    },
+    {
+      "address": 19026,
+      "name": "_G_P_SUM3",
+      "label": "Putere Activa Totala",
+      "unit": "W",
+      "data_type": "float",
+      "poll_group": "realtime",
+      "mqtt": {
+        "enabled": true,
+        "topic": "power/active/total"
+      },
+      "influxdb": {
+        "enabled": true,
+        "measurement": "power",
+        "tags": {
+          "type": "active",
+          "aggregate": "sum"
+        }
+      },
+      "ui": {
+        "show_on_dashboard": true,
+        "widget": "chart",
+        "chart_type": "line"
+      }
+    },
+    {
+      "address": 19050,
+      "name": "_G_FREQ",
+      "label": "Frecventa",
+      "unit": "Hz",
+      "data_type": "float",
+      "poll_group": "normal",
+      "mqtt": {
+        "enabled": true,
+        "topic": "frequency"
+      },
+      "influxdb": {
+        "enabled": true,
+        "measurement": "frequency",
+        "tags": {}
+      },
+      "ui": {
+        "show_on_dashboard": true,
+        "widget": "value",
+        "decimals": 2
+      }
+    },
+    {
+      "address": 19060,
+      "name": "_G_WH_SUML13",
+      "label": "Energie Activa Totala",
+      "unit": "Wh",
+      "data_type": "float",
+      "poll_group": "slow",
+      "mqtt": {
+        "enabled": true,
+        "topic": "energy/active/total"
+      },
+      "influxdb": {
+        "enabled": true,
+        "measurement": "energy",
+        "tags": {
+          "type": "active",
+          "aggregate": "sum"
+        }
+      },
+      "ui": {
+        "show_on_dashboard": true,
+        "widget": "value",
+        "decimals": 0,
+        "format": "kWh"
+      }
+    }
+  ],
+  "poll_groups": {
+    "realtime": {
+      "interval": 1,
+      "description": "Valori real-time (tensiune, curent, putere)"
+    },
+    "normal": {
+      "interval": 5,
+      "description": "Masuratori standard"
+    },
+    "slow": {
+      "interval": 60,
+      "description": "Contoare energie, statistici"
+    }
+  },
+  "mqtt_topic_structure": {
+    "_comment": "Topic final: {prefix}/{topic} ex: janitza/umg512/voltage/l1_n",
+    "examples": [
+      "janitza/umg512/voltage/l1_n",
+      "janitza/umg512/voltage/l2_n",
+      "janitza/umg512/current/l1",
+      "janitza/umg512/power/active/total",
+      "janitza/umg512/energy/active/total"
+    ]
+  }
+}

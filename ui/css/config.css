@@ -1,0 +1,539 @@
+/* ============================================
+   Janitza Monitor - Config Page Styles
+   Settings, forms, status details
+   ============================================ */
+
+/* ==================== CONFIG LAYOUT ==================== */
+.config-page {
+    max-width: 900px;
+}
+
+/* Config sections already use common card styles from base.css */
+
+/* ==================== CONFIG FORM SPECIFIC ==================== */
+.config-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.config-form-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+}
+
+.config-form-header {
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.config-form-header h4 {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.config-form-header i {
+    color: var(--accent);
+}
+
+.config-form-body {
+    padding: 16px;
+}
+
+/* ==================== CONNECTION SETTINGS ==================== */
+.connection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.connection-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.connection-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+}
+
+.connection-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+/* ==================== STATUS CARDS ==================== */
+.status-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.status-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    padding: 16px;
+}
+
+.status-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.status-card-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-card-title i {
+    font-size: 16px;
+}
+
+.status-card-status {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.status-card-status.connected {
+    background: rgba(50, 215, 75, 0.15);
+    color: var(--success);
+}
+
+.status-card-status.disconnected {
+    background: rgba(255, 69, 58, 0.15);
+    color: var(--danger);
+}
+
+.status-card-status.disabled {
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+}
+
+.status-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.status-row-label {
+    color: var(--text-tertiary);
+}
+
+.status-row-value {
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+/* ==================== POLL GROUP CONFIG ==================== */
+.poll-groups-config {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.poll-group-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+}
+
+.poll-group-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    min-width: 100px;
+}
+
+.poll-group-interval {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.poll-group-interval input {
+    width: 80px;
+    padding: 6px 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 13px;
+    text-align: center;
+}
+
+.poll-group-interval input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.poll-group-unit {
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+.poll-group-description {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* ==================== JSON EXPORT/IMPORT ==================== */
+.json-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.json-preview {
+    margin-top: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+}
+
+.json-preview pre {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* ==================== DANGER ZONE ==================== */
+.danger-zone {
+    background: rgba(255, 69, 58, 0.05);
+    border: 1px solid rgba(255, 69, 58, 0.2);
+    border-radius: var(--radius);
+    padding: 16px;
+}
+
+.danger-zone-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.danger-zone-header i {
+    color: var(--danger);
+}
+
+.danger-zone-header h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--danger);
+}
+
+.danger-zone-content {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.danger-zone-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* ==================== APPLY CONFIG BANNER ==================== */
+.apply-config-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(255, 159, 10, 0.15), rgba(255, 214, 10, 0.1));
+    border: 1px solid rgba(255, 159, 10, 0.3);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+}
+
+.apply-config-banner .banner-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--warning);
+    font-weight: 500;
+}
+
+.apply-config-banner .banner-content i {
+    font-size: 18px;
+}
+
+/* ==================== CONFIG MAIN TABS ==================== */
+.config-main-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+}
+
+.config-main-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.config-main-tab:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.config-main-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
+.config-main-tab i {
+    font-size: 16px;
+}
+
+/* ==================== SETTINGS GRID ==================== */
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 20px;
+}
+
+/* ==================== SETTINGS CARD ==================== */
+.settings-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.settings-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-card-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.settings-card-header h3 i {
+    color: var(--accent);
+    font-size: 18px;
+}
+
+.settings-card-body {
+    padding: 16px;
+}
+
+.settings-card-body.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* ==================== SETTINGS SUBSECTION ==================== */
+.settings-subsection {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-light);
+}
+
+.settings-subsection h4 {
+    margin: 0 0 12px 0;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+}
+
+/* ==================== FORM ROW VARIANTS ==================== */
+.form-group.flex-2 {
+    flex: 2;
+}
+
+.form-group.flex-3 {
+    flex: 3;
+}
+
+/* ==================== TOGGLE SWITCH ==================== */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background-color: var(--text-tertiary);
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--success);
+    border-color: var(--success);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+    background-color: white;
+}
+
+/* ==================== STATUS DOT ==================== */
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+}
+
+.status-dot.connected {
+    background: var(--success);
+    box-shadow: 0 0 8px rgba(50, 215, 75, 0.5);
+}
+
+.status-dot.disconnected {
+    background: var(--danger);
+}
+
+.status-dot.disabled {
+    background: var(--text-tertiary);
+    opacity: 0.5;
+}
+
+/* ==================== ENV OVERRIDE WARNING ==================== */
+.env-override {
+    display: none;
+    font-size: 11px;
+    color: var(--warning);
+    margin-top: 4px;
+}
+
+.env-override.visible {
+    display: block;
+}
+
+.env-override::before {
+    content: "⚠️ ";
+}
+
+/* ==================== CONFIG TAB CONTENT ==================== */
+.config-tab-content {
+    animation: fadeIn 0.2s ease;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 900px) {
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .connection-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .status-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .poll-group-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 600px) {
+    .config-main-tabs {
+        flex-wrap: wrap;
+    }
+
+    .config-main-tab {
+        flex: 1;
+        justify-content: center;
+        min-width: 120px;
+    }
+
+    .apply-config-banner {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+}

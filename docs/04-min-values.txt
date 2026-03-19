@@ -1,0 +1,199 @@
+# Janitza UMG 512-PRO - Valori minime
+# Address | Type | Access | Name | Unit | Description
+
+4549   float   RD/WR _ULN_MIN[0]                         V      Min. value, voltage L1-N
+4551   float   RD/WR _ULN_MIN[1]                         V      Min. value, voltage L2-N
+4553   float   RD/WR _ULN_MIN[2]                         V      Min. value, voltage L3-N
+4555   float   RD/WR _ULN_MIN[3]                         V      Min. value, voltage L4-N
+4557   float   RD/WR _ULL_MIN[0]                         V      Min. value, phase conductor voltage; L1-L2
+4559   float   RD/WR _ULL_MIN[1]                         V      Min. value, phase conductor voltage; L2-L3
+4561   float   RD/WR _ULL_MIN[2]                         V      Min. value phase conductor voltage; L3-L1
+4563   float   RD/WR _ULN_CF_MIN[0]                      -      Min. value, crest factor of the Voltage U L1-N
+4565   float   RD/WR _ULN_CF_MIN[1]                      -      Min. value, crest factor of the Voltage U L2-N
+4567   float   RD/WR _ULN_CF_MIN[2]                      -      Min. value, crest factor of the Voltage U L3-N
+4569   float   RD/WR _ULN_CF_MIN[3]                      -      Min. value, crest factor of the Voltage U L4-N
+4571   float   RD/WR _ULL_CF_MIN[0]                      -      Min. value, crest factor of the Voltage U L1-L2
+4573   float   RD/WR _ULL_CF_MIN[1]                      -      Min. value, crest factor of the Voltage U L2-L3
+4575   float   RD/WR _ULL_CF_MIN[2]                      -      Min. value, crest factor of the Voltage U L3-L1
+4577   float   RD/WR _UN_MIN                             V      Min. value, zero sequence
+4579   float   RD/WR _UM_MIN                             V      Min. value, positive sequence
+4581   float   RD/WR _UG_MIN                             V      Min. value, negative sequence
+4583   float   RD/WR _URC_MIN[0]                         V      Min. value, ripple control signal, U L1-N (61000-4-30)
+4585   float   RD/WR _URC_MIN[1]                         V      Min. value, ripple control signal, U L2-N (61000-4-30)
+4587   float   RD/WR _URC_MIN[2]                         V      Min. value, ripple control signal, U L3-N (61000-4-30)
+4589   float   RD/WR _URC_MIN[3]                         V      Min. value, ripple control signal, U L4-N (61000-4-30)
+4591   float   RD/WR _THD_ULN_MIN[0]                     %      Min. value, harmonic, THD,U L1-N
+4593   float   RD/WR _THD_ULN_MIN[1]                     %      Min. value, harmonic, THD,U L2-N
+4595   float   RD/WR _THD_ULN_MIN[2]                     %      Min. value, harmonic, THD,U L3-N
+4597   float   RD/WR _THD_ULN_MIN[3]                     %      Min. value, harmonic, THD,U L4-N
+4599   float   RD/WR _THD_ZLN_MIN[0]                     %      Min. value, interharmonics, ZHD, U, L1
+4601   float   RD/WR _THD_ZLN_MIN[1]                     %      Min. value, interharmonics, ZHD, U, L2
+4603   float   RD/WR _THD_ZLN_MIN[2]                     %      Min. value, interharmonics, ZHD, U, L3
+4605   float   RD/WR _THD_ZLN_MIN[3]                     %      Min. value, interharmonics, ZHD, U, L4
+4607   float   RD/WR _ULN_OVER_MIN[0]                    %      Min. value, over difference, U L1 (61000-4-30)
+4609   float   RD/WR _ULN_OVER_MIN[1]                    %      Min. value, over difference, U L2 (61000-4-30)
+4611   float   RD/WR _ULN_OVER_MIN[2]                    %      Min. value, over difference, U L3 (61000-4-30)
+4613   float   RD/WR _ULN_OVER_MIN[3]                    %      Min. value, over difference, U L4 (61000-4-30)
+4615   float   RD/WR _ULN_UNDER_MIN[0]                   %      Min. value, under difference, U L1 (61000-4-30)
+4617   float   RD/WR _ULN_UNDER_MIN[1]                   %      Min. value, under difference, U L2 (61000-4-30)
+4619   float   RD/WR _ULN_UNDER_MIN[2]                   %      Min. value, under difference, U L3 (61000-4-30)
+4621   float   RD/WR _ULN_UNDER_MIN[3]                   %      Min. value, under difference, U L4 (61000-4-30)
+4623   float   RD/WR _ULN_NEG_PEAK_MIN[0]                V      Min. value, peak value negative, U L1-N
+4625   float   RD/WR _ULN_NEG_PEAK_MIN[1]                V      Min. value, peak value negative, U L2-N
+4627   float   RD/WR _ULN_NEG_PEAK_MIN[2]                V      Min. value, peak value negative, U L3-N
+4629   float   RD/WR _ULN_NEG_PEAK_MIN[3]                V      Min. value, peak value negative, U L4-N
+4631   float   RD/WR _ULN_POS_PEAK_MIN[0]                V      Min. value, peak value positive, U L1-N
+4633   float   RD/WR _ULN_POS_PEAK_MIN[1]                V      Min. value, peak value positive, U L2-N
+4635   float   RD/WR _ULN_POS_PEAK_MIN[2]                V      Min. value, peak value positive, U L3-N
+4637   float   RD/WR _ULN_POS_PEAK_MIN[3]                V      Min. value, peak value positive, U L4-N
+4639   float   RD/WR _ULN_PEAK_PEAK_MIN[0]               V      Min. value, peak-peak value, U L1-N
+4641   float   RD/WR _ULN_PEAK_PEAK_MIN[1]               V      Min. value, peak-peak value, U L2-N
+4643   float   RD/WR _ULN_PEAK_PEAK_MIN[2]               V      Min. value, peak-peak value, U L3-N
+4645   float   RD/WR _ULN_PEAK_PEAK_MIN[3]               V      Min. value, peak-peak value, U L4-N
+4647   float   RD/WR _THD_ULL_MIN[0]                     %      Min. value, harmonic, THD,U L1-L2
+4649   float   RD/WR _THD_ULL_MIN[1]                     %      Min. value, harmonic, THD,U L2-L3
+4651   float   RD/WR _THD_ULL_MIN[2]                     %      Min. value, harmonic, THD,U L3-L1
+4653   float   RD/WR _THD_ZLL_MIN[0]                     %      Min. value, interharmonics, U L1-L2
+4655   float   RD/WR _THD_ZLL_MIN[1]                     %      Min. value, interharmonics, U L2-L3
+4657   float   RD/WR _THD_ZLL_MIN[2]                     %      Min. value, interharmonics, U L3-L1
+4659   float   RD/WR _ULL_OVER_MIN[0]                    %      Min. value, over difference, U L1-L2 (61000-4-30)
+4661   float   RD/WR _ULL_OVER_MIN[1]                    %      Min. value, over difference, U L2-L3 (61000-4-30)
+4663   float   RD/WR _ULL_OVER_MIN[2]                    %      Min. value, over difference, U L3-L1 (61000-4-30)
+4665   float   RD/WR _ULL_UNDER_MIN[0]                   %      Min. value, under difference, U L1-L2 (61000-4-30)
+4667   float   RD/WR _ULL_UNDER_MIN[1]                   %      Min. value, under difference, U L2-L3 (61000-4-30)
+4669   float   RD/WR _ULL_UNDER_MIN[2]                   %      Min. value, under difference, U L3-L1 (61000-4-30)
+4671   float   RD/WR _ULL_NEG_PEAK_MIN[0]                V      Min. value, peak value negative, U L1-L2
+4673   float   RD/WR _ULL_NEG_PEAK_MIN[1]                V      Min. value, peak value negative, U L2-L3
+4675   float   RD/WR _ULL_NEG_PEAK_MIN[2]                V      Min. value, peak value negative, U L3-L1
+4677   float   RD/WR _ULL_POS_PEAK_MIN[0]                V      Min. value, peak value positive, U L1-L2
+4679   float   RD/WR _ULL_POS_PEAK_MIN[1]                V      Min. value, peak value positive, U L2-L3
+4681   float   RD/WR _ULL_POS_PEAK_MIN[2]                V      Min. value, peak value positive, U L3-L1
+4683   float   RD/WR _ULL_PEAK_PEAK_MIN[0]               V      Min. value, peak-peak value, U L1-L2
+4685   float   RD/WR _ULL_PEAK_PEAK_MIN[1]               V      Min. value, peak-peak value, U L2-L3
+4687   float   RD/WR _ULL_PEAK_PEAK_MIN[2]               V      Min. value, peak-peak value, U L3-L1
+4689   float   RD/WR _U_STERN_MIN                        V
+4691   float   RD/WR _U_SYM_MIN                          %      Min. value, unsymmetrical; voltage
+4693   float   RD/WR _FREQ_MIN                           Hz     Min. value, measured frequency
+4695   float   RD/WR _NORM_FREQ_MIN                      Hz     Min. value, nominal frequency
+4697   float   RD/WR _PLN_MIN[0]                         W      Min. value, real power L1
+4699   float   RD/WR _PLN_MIN[1]                         W      Min. value, real power L2
+4701   float   RD/WR _PLN_MIN[2]                         W      Min. value, real power L3
+4703   float   RD/WR _PLN_MIN[3]                         W      Min. value, real power L4
+4705   float   RD/WR _P_SUM_MIN                          W      Min. value, sum; P = P1 + P2 + P3 + P4
+4707   float   RD/WR _Q_SUM_MIN                          var    Min. value, mains frequency reactive power Sum; Q = Q1 + Q2 + Q3 + Q4
+4709   float   RD/WR _QLN_MIN[0]                         var    Min. value, reactive power L1 (fundamental comp.)
+4711   float   RD/WR _QLN_MIN[1]                         var    Min. value, reactive power L2 (fundamental comp.)
+4713   float   RD/WR _QLN_MIN[2]                         var    Min. value, reactive power L3 (fundamental comp.)
+4715   float   RD/WR _QLN_MIN[3]                         var    Min. value, reactive power L4 (fundamental comp.)
+4717   float   RD/WR _P_SUM3_MIN                         W      Min. value, Sum; P = P1 + P2 + P3
+4719   float   RD/WR _Q_SUM3_MIN                         var    Min. value, mains frequency reactive power Sum; Q = Q1 + Q2 + Q3
+4721   float   RD/WR _TEMPERATUR_MIN                     °C     Min. value, internal temperature
+5242   uint    RD/WR _ULN_MIN_T[0]                       s      Time of min. val. (UTC), U L1-N
+5244   uint    RD/WR _ULN_MIN_T[1]                       s      Time of min. val. (UTC), U L2-N
+5246   uint    RD/WR _ULN_MIN_T[2]                       s      Time of min. val. (UTC), U L3-N
+5248   uint    RD/WR _ULN_MIN_T[3]                       s      Time of min. val. (UTC), U L4-N
+5250   uint    RD/WR _ULL_MIN_T[0]                       s      Time of min. val. (UTC), U L1-L2
+5252   uint    RD/WR _ULL_MIN_T[1]                       s      Time of min. val. (UTC), U L2-L3
+5254   uint    RD/WR _ULL_MIN_T[2]                       s      Time of min. val. (UTC), U L3-L1
+5256   uint    RD/WR _ULN_CF_MIN_T[0]                    s      Time of min. val. (UTC), crest factor, U L1-N
+5258   uint    RD/WR _ULN_CF_MIN_T[1]                    s      Time of min. val. (UTC), crest factor, U L2-N
+5260   uint    RD/WR _ULN_CF_MIN_T[2]                    s      Time of min. val. (UTC), crest factor, U L3-N
+5262   uint    RD/WR _ULN_CF_MIN_T[3]                    s      Time of min. val. (UTC), crest factor, U L4-N
+5264   uint    RD/WR _ULL_CF_MIN_T[0]                    s      Time of min. val. (UTC), crest factor, U L1-L2
+5266   uint    RD/WR _ULL_CF_MIN_T[1]                    s      Time of min. val. (UTC), crest factor, U L2-L3
+5268   uint    RD/WR _ULL_CF_MIN_T[2]                    s      Time of min. val. (UTC), crest factor, U L3-L1
+5270   uint    RD/WR _UN_MIN_T                           s      Time of min. val. (UTC), zero sequence
+5272   uint    RD/WR _UM_MIN_T                           s      Time of min. val. (UTC), positive sequence
+5274   uint    RD/WR _UG_MIN_T                           s      Time of min. val. (UTC), negative sequence
+5276   uint    RD/WR _URC_MIN_T[0]                       s      Time of min. val. (UTC), ripple control signal, U L1-N
+5278   uint    RD/WR _URC_MIN_T[1]                       s      Time of min. val. (UTC), ripple control signal, U L2-N
+5280   uint    RD/WR _URC_MIN_T[2]                       s      Time of min. val. (UTC), ripple control signal, U L3-N
+5282   uint    RD/WR _URC_MIN_T[3]                       s      Time of min. val. (UTC), ripple control signal, U L4-N
+5284   uint    RD/WR _THD_ULN_MIN_T[0]                   s      Time of min. val. (UTC), harmonics, THD, U L1-N
+5286   uint    RD/WR _THD_ULN_MIN_T[1]                   s      Time of min. val. (UTC), harmonics, THD, U L2-N
+5288   uint    RD/WR _THD_ULN_MIN_T[2]                   s      Time of min. val. (UTC), harmonics, THD, U L3-N
+5290   uint    RD/WR _THD_ULN_MIN_T[3]                   s      Time of min. val. (UTC), harmonics, THD, U L4-N
+5292   uint    RD/WR _THD_ZLN_MIN_T[0]                   s      Time of min. val. (UTC), interharmonics, ZHD, U, L1
+5294   uint    RD/WR _THD_ZLN_MIN_T[1]                   s      Time of min. val. (UTC), interharmonics, ZHD, U, L2
+5296   uint    RD/WR _THD_ZLN_MIN_T[2]                   s      Time of min. val. (UTC), interharmonics, ZHD, U, L3
+5298   uint    RD/WR _THD_ZLN_MIN_T[3]                   s      Time of min. val. (UTC), interharmonics, ZHD, U, L4
+5300   uint    RD/WR _ULN_OVER_MIN_T[0]                  s      Time of min. val. (UTC), over difference, U L1
+5302   uint    RD/WR _ULN_OVER_MIN_T[1]                  s      Time of min. val. (UTC), over difference, U L2
+5304   uint    RD/WR _ULN_OVER_MIN_T[2]                  s      Time of min. val. (UTC), over difference, U L3
+5306   uint    RD/WR _ULN_OVER_MIN_T[3]                  s      Time of min. val. (UTC), over difference, U L4
+5308   uint    RD/WR _ULN_UNDER_MIN_T[0]                 s      Time of min. val. (UTC), under difference, U L1
+5310   uint    RD/WR _ULN_UNDER_MIN_T[1]                 s      Time of min. val. (UTC), under difference, U L2
+5312   uint    RD/WR _ULN_UNDER_MIN_T[2]                 s      Time of min. val. (UTC), under difference, U L3
+5314   uint    RD/WR _ULN_UNDER_MIN_T[3]                 s      Time of min. val. (UTC), under difference, U L4
+5316   uint    RD/WR _ULN_NEG_PEAK_MIN_T[0]              s      Time of min. val. (UTC), peak value negative, U L1-N
+5318   uint    RD/WR _ULN_NEG_PEAK_MIN_T[1]              s      Time of min. val. (UTC), peak value negative, U L2-N
+5320   uint    RD/WR _ULN_NEG_PEAK_MIN_T[2]              s      Time of min. val. (UTC), peak value negative, U L3-N
+5322   uint    RD/WR _ULN_NEG_PEAK_MIN_T[3]              s      Time of min. val. (UTC), peak value negative, U L4-N
+5324   uint    RD/WR _ULN_POS_PEAK_MIN_T[0]              s      Time of min. val. (UTC), peak value positive, U L1-N
+5326   uint    RD/WR _ULN_POS_PEAK_MIN_T[1]              s      Time of min. val. (UTC), peak value positive, U L2-N
+5328   uint    RD/WR _ULN_POS_PEAK_MIN_T[2]              s      Time of min. val. (UTC), peak value positive, U L3-N
+5330   uint    RD/WR _ULN_POS_PEAK_MIN_T[3]              s      Time of min. val. (UTC), peak value positive, U L4-N
+5332   uint    RD/WR _ULN_PEAK_PEAK_MIN_T[0]             s      Time of min. val. (UTC), peak-peak value, U L1-N
+5334   uint    RD/WR _ULN_PEAK_PEAK_MIN_T[1]             s      Time of min. val. (UTC), peak-peak value, U L2-N
+5336   uint    RD/WR _ULN_PEAK_PEAK_MIN_T[2]             s      Time of min. val. (UTC), peak-peak value, U L3-N
+5338   uint    RD/WR _ULN_PEAK_PEAK_MIN_T[3]             s      Time of min. val. (UTC), peak-peak value, U L4-N
+5340   uint    RD/WR _THD_ULL_MIN_T[0]                   s      Time of min. val. (UTC), harmonic, THD,U L1-L2
+5342   uint    RD/WR _THD_ULL_MIN_T[1]                   s      Time of min. val. (UTC), harmonic, THD,U L2-L3
+5344   uint    RD/WR _THD_ULL_MIN_T[2]                   s      Time of min. val. (UTC), harmonic, THD,U L3-L1
+5346   uint    RD/WR _THD_ZLL_MIN_T[0]                   s      Time of min. val. (UTC), interharmonics, U L1-L2
+5348   uint    RD/WR _THD_ZLL_MIN_T[1]                   s      Time of min. val. (UTC), interharmonics, U L2-L3
+5350   uint    RD/WR _THD_ZLL_MIN_T[2]                   s      Time of min. val. (UTC), interharmonics, U L3-L1
+5352   uint    RD/WR _ULL_OVER_MIN_T[0]                  s      Time of min. val. (UTC), over difference, U L1-L2
+5354   uint    RD/WR _ULL_OVER_MIN_T[1]                  s      Time of min. val. (UTC), over difference, U L2-L3
+5356   uint    RD/WR _ULL_OVER_MIN_T[2]                  s      Time of min. val. (UTC), over difference, U L3-L1
+5358   uint    RD/WR _ULL_UNDER_MIN_T[0]                 s      Time of min. val. (UTC), under difference, U L1-L2
+5360   uint    RD/WR _ULL_UNDER_MIN_T[1]                 s      Time of min. val. (UTC), under difference, U L2-L3
+5362   uint    RD/WR _ULL_UNDER_MIN_T[2]                 s      Time of min. val. (UTC), under difference, U L3-L4
+5364   uint    RD/WR _ULL_NEG_PEAK_MIN_T[0]              s      Time of min. val. (UTC), peak value negative, U L1-L2
+5366   uint    RD/WR _ULL_NEG_PEAK_MIN_T[1]              s      Time of min. val. (UTC), peak value negative, U L2-L3 Minimum values time stamp (uint type)
+5368   uint    RD/WR _ULL_NEG_PEAK_MIN_T[2]              s      Time of min. val. (UTC), peak value negative, U L3-L1
+5370   uint    RD/WR _ULL_POS_PEAK_MIN_T[0]              s      Time of min. val. (UTC), peak value positive, U L1-L2
+5372   uint    RD/WR _ULL_POS_PEAK_MIN_T[1]              s      Time of min. val. (UTC), peak value positive, U L2-L3
+5374   uint    RD/WR _ULL_POS_PEAK_MIN_T[2]              s      Time of min. val. (UTC), peak value positive, U L3-L1
+5376   uint    RD/WR _ULL_PEAK_PEAK_MIN_T[0]             s      Time of min. val. (UTC), peak-peak value, U L1-L2
+5378   uint    RD/WR _ULL_PEAK_PEAK_MIN_T[1]             s      Time of min. val. (UTC), peak-peak value, U L2-L3
+5380   uint    RD/WR _ULL_PEAK_PEAK_MIN_T[2]             s      Time of min. val. (UTC), peak-peak value, U L3-L1
+5382   uint    RD/WR _U_STERN_MIN_T                      s
+5384   uint    RD/WR _U_SYM_MIN_T                        s      Time of min. val. (UTC), unsymmetrical voltage
+5386   uint    RD/WR _FREQ_MIN_T                         s      Time of min. val. (UTC), measured frequency
+5388   uint    RD/WR _NORM_FREQ_MIN_T                    s      Time of min. val. (UTC), nominal frequency
+5390   uint    RD/WR _PLN_MIN_T[0]                       s      Time of min. val. (UTC), real power L1
+5392   uint    RD/WR _PLN_MIN_T[1]                       s      Time of min. val. (UTC), real power L2
+5394   uint    RD/WR _PLN_MIN_T[2]                       s      Time of min. val. (UTC), real power L3
+5396   uint    RD/WR _PLN_MIN_T[3]                       s      Time of min. val. (UTC), real power L4
+5398   uint    RD/WR _P_SUM_MIN_T                        s      Time of min. val. (UTC), sum; P = P1 + P2 + P3 + P4
+5400   uint    RD/WR _Q_SUM_MIN_T                        s      Time of min. val. (UTC), sum; Q = Q1 + Q2 + Q3 + Q4
+5402   uint    RD/WR _QLN_MIN_T[0]                       s      Time of min. val. (UTC), reactive power L1
+5404   uint    RD/WR _QLN_MIN_T[1]                       s      Time of min. val. (UTC), reactive power L2
+5406   uint    RD/WR _QLN_MIN_T[2]                       s      Time of min. val. (UTC), reactive power L3
+5408   uint    RD/WR _QLN_MIN_T[3]                       s      Time of min. val. (UTC), reactive power L4
+5410   uint    RD/WR _P_SUM3_MIN_T                       s      Time of min. val. (UTC), sum; P = P1 + P2 + P3
+5412   uint    RD/WR _Q_SUM3_MIN_T                       s      Time of min. val. (UTC), sum; Q = Q1 + Q2 + Q3
+5414   uint    RD/WR _TEMPERATUR_MIN_T                   s      Time of min. val. (UTC), internal temperature
+6737   float   RD/WR _U_EVT_MIN[0]                       %      Only for internal use
+6739   float   RD/WR _U_EVT_MIN[1]                       %      Only for internal use
+11960  float   RD    _AKT_EVT_MINVAL[0]                  -      Only for internal use
+11962  float   RD    _AKT_EVT_MINVAL[1]                  -      Only for internal use
+11964  float   RD    _AKT_EVT_MINVAL[2]                  -      Only for internal use
+11966  float   RD    _AKT_EVT_MINVAL[3]                  -      Only for internal use
+11968  float   RD    _AKT_EVT_MINVAL[4]                  -      Only for internal use
+11970  float   RD    _AKT_EVT_MINVAL[5]                  -      Only for internal use
+11972  float   RD    _AKT_EVT_MINVAL[6]                  -      Only for internal use
+11974  float   RD    _AKT_EVT_MINVAL[7]                  -      Only for internal use
+13117  float   RD    _U_SYM_MIN_U0                       %      Only for internal use
+13122  short   RD/WR _U_SYM_MIN_T_U0                     -      Only for internal use
+13461  float   RD/WR _U_EVT_MIN_HYST[0]                  %      Only for internal use
+13463  float   RD/WR _U_EVT_MIN_HYST[1]                  %      Only for internal use
+13750  float   RD/WR _ULL_EVT_MIN                        %      Only for internal use
+13756  float   RD/WR _ULL_EVT_MIN_HYST                   %      Only for internal use
+13764  float   RD/WR _FREQ_EVT_MIN[0]                    %      Only for internal use
+13766  float   RD/WR _FREQ_EVT_MIN[1]                    %      Only for internal use
+13776  float   RD/WR _FREQ_EVT_MIN_HYST[0]               %      Only for internal use
+13778  float   RD/WR _FREQ_EVT_MIN_HYST[1]               %      Only for internal use
+13866  float   RD/WR _COMP_DIFF_MIN_TIME0                s      Only for internal use
+13923  float   RD/WR _COMP_DIFF_MIN_TIME1                s      Only for internal use

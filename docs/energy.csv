@@ -1,0 +1,96 @@
+Address,Type,Access,Name,Unit,Description
+6464,float,RD/WR,_WH_S[0],VAh,Apparent energy L1
+6466,float,RD/WR,_WH_S[1],VAh,Apparent energy L2
+6468,float,RD/WR,_WH_S[2],VAh,Apparent energy L3
+6470,float,RD/WR,_WH_S[3],VAh,Apparent energy L4
+6472,float,RD/WR,_WH_S[4],VAh,Apparent energy L1..L3
+6474,float,RD/WR,_WH_S[5],VAh,Apparent energy L1..L4
+6476,float,RD/WR,_WH[0],Wh,Real energy L1
+6478,float,RD/WR,_WH[1],Wh,Real energy L2
+6480,float,RD/WR,_WH[2],Wh,Real energy L3
+6482,float,RD/WR,_WH[3],Wh,Real energy L4
+6484,float,RD/WR,_WH[4],Wh,Real energy L1..L3
+6486,float,RD/WR,_WH[5],Wh,Real energy L1..L4
+6488,float,RD/WR,_QH[0],varh,Reaktive energy L1
+6490,float,RD/WR,_QH[1],varh,Reaktive energy L2
+6492,float,RD/WR,_QH[2],varh,Reaktive energy L3
+6494,float,RD/WR,_QH[3],varh,Reaktive energy L4
+6496,float,RD/WR,_QH[4],varh,Reaktive energy L1..L3
+6498,float,RD/WR,_QH[5],varh,Reaktive energy L1..L4
+6500,float,RD/WR,_WH_V[0],Wh,"Real energy L1, consumed"
+6502,float,RD/WR,_WH_V[1],Wh,"Real energy L2, consumed"
+6504,float,RD/WR,_WH_V[2],Wh,"Real energy L3, consumed"
+6506,float,RD/WR,_WH_V[3],Wh,"Real energy L4, consumed"
+6508,float,RD/WR,_WH_V[4],Wh,"Real energy L1..L3, consumed"
+6510,float,RD/WR,_WH_V[5],Wh,"Real energy L1..L4, consumed"
+6512,float,RD/WR,_WH_Z[0],Wh,"Real energy L1, delivered"
+6514,float,RD/WR,_WH_Z[1],Wh,"Real energy L2, delivered"
+6516,float,RD/WR,_WH_Z[2],Wh,"Real energy L3, delivered"
+6518,float,RD/WR,_WH_Z[3],Wh,"Real energy L4, delivered"
+6520,float,RD/WR,_WH_Z[4],Wh,"Real energy L1..L3, delivered"
+6522,float,RD/WR,_WH_Z[5],Wh,"Real energy L1..L4, delivered"
+6524,float,RD/WR,_WH_V_HT[0],Wh,"Real energy L1, consumed, rate 1"
+6526,float,RD/WR,_WH_V_HT[1],Wh,"Real energy L2, consumed, rate 1"
+6528,float,RD/WR,_WH_V_HT[2],Wh,"Real energy L3, consumed, rate 1"
+6530,float,RD/WR,_WH_V_HT[3],Wh,"Real energy L4, consumed, rate 1"
+6532,float,RD/WR,_WH_V_HT[4],Wh,"Real energy L1..L3, consumed, rate 1"
+6534,float,RD/WR,_WH_V_HT[5],Wh,"Real energy L1..L4, consumed, rate 1"
+6536,float,RD/WR,_WH_V_NT[0],Wh,"Real energy L1, consumed, rate 2"
+6538,float,RD/WR,_WH_V_NT[1],Wh,"Real energy L3, consumed, rate 2"
+6540,float,RD/WR,_WH_V_NT[2],Wh,"Real energy L3, consumed, rate 2"
+6542,float,RD/WR,_WH_V_NT[3],Wh,"Real energy L4, consumed, rate 2"
+6544,float,RD/WR,_WH_V_NT[4],Wh,"Real energy L1..L3, consumed, rate 2"
+6546,float,RD/WR,_WH_V_NT[5],Wh,"Real energy L1..L4, consumed, rate 2"
+6548,float,RD/WR,_WH_Z_HT[0],Wh,"Real energy L1, delivered, rate 1"
+6550,float,RD/WR,_WH_Z_HT[1],Wh,"Real energy L2, delivered, rate 1"
+6552,float,RD/WR,_WH_Z_HT[2],Wh,"Real energy L3, delivered, rate 1"
+6554,float,RD/WR,_WH_Z_HT[3],Wh,"Real energy L4, delivered, rate 1"
+6556,float,RD/WR,_WH_Z_HT[4],Wh,"Real energy L1..L3, delivered, rate 1"
+6558,float,RD/WR,_WH_Z_HT[5],Wh,"Real energy L1..L4, delivered, rate 1"
+6560,float,RD/WR,_WH_Z_NT[0],Wh,"Real energy L1, delivered, rate 2"
+6562,float,RD/WR,_WH_Z_NT[1],Wh,"Real energy L2, delivered, rate 2"
+6564,float,RD/WR,_WH_Z_NT[2],Wh,"Real energy L3, delivered, rate 2"
+6566,float,RD/WR,_WH_Z_NT[3],Wh,"Real energy L4, delivered, rate 2"
+6568,float,RD/WR,_WH_Z_NT[4],Wh,"Real energy L1..L3, delivered, rate 2"
+6570,float,RD/WR,_WH_Z_NT[5],Wh,"Real energy L1..L4, delivered, rate 2"
+6620,float,RD/WR,_S0_CNT[0],-,"Energy meter (counter, not scaled), impulse input 1"
+6622,float,RD/WR,_S0_CNT[1],-,"Energy meter (counter, not scaled), impulse input 2"
+6624,float,RD/WR,_TIME_WH,s,Runtime of real and apparent energy meas.
+6626,float,RD/WR,_TIME_QH,s,Runtime of real and reactive energy meas.
+6654,short,RD/WR,_DEL_WH,-,1=delete all real energy counters
+6655,short,RD/WR,_DEL_QH,-,1=delete all reactive energy counters
+11555,short,RD,_SYSVAR_CNT,-,Only for internal use
+11760,float,RD/WR,_WH_V_T3[0],Wh,"Real energy L1, consumed, rate 3"
+11762,float,RD/WR,_WH_V_T3[1],Wh,"Real energy L2, consumed, rate 3"
+11764,float,RD/WR,_WH_V_T3[2],Wh,"Real energy L3, consumed, rate 3"
+11766,float,RD/WR,_WH_V_T3[3],Wh,"Real energy L4, consumed, rate 3"
+11768,float,RD/WR,_WH_V_T3[4],Wh,"Real energy L1..L3, consumed, rate 3"
+11770,float,RD/WR,_WH_V_T3[5],Wh,"Real energy L1..L4, consumed, rate 3"
+11772,float,RD/WR,_WH_V_T4[0],Wh,"Real energy L1, consumed, rate 4"
+11774,float,RD/WR,_WH_V_T4[1],Wh,"Real energy L2, consumed, rate 4"
+11776,float,RD/WR,_WH_V_T4[2],Wh,"Real energy L3, consumed, rate 4"
+11778,float,RD/WR,_WH_V_T4[3],Wh,"Real energy L4, consumed, rate 4"
+11780,float,RD/WR,_WH_V_T4[4],Wh,"Real energy L1..L3, consumed, rate 4"
+11782,float,RD/WR,_WH_V_T4[5],Wh,"Real energy L1..L4, consumed, rate 4"
+11784,float,RD/WR,_WH_Z_T3[0],Wh,"Real energy L1, delivered, rate 3"
+11786,float,RD/WR,_WH_Z_T3[1],Wh,"Real energy L2, delivered, rate 3"
+11788,float,RD/WR,_WH_Z_T3[2],Wh,"Real energy L3, delivered, rate 3"
+11790,float,RD/WR,_WH_Z_T3[3],Wh,"Real energy L4, delivered, rate 3"
+11792,float,RD/WR,_WH_Z_T3[4],Wh,"Real energy L1..L3, delivered, rate 3"
+11794,float,RD/WR,_WH_Z_T3[5],Wh,"Real energy L1..L4, delivered, rate 3"
+11796,float,RD/WR,_WH_Z_T4[0],Wh,"Real energy L1, delivered, rate 4"
+11798,float,RD/WR,_WH_Z_T4[1],Wh,"Real energy L2, delivered, rate 4"
+11800,float,RD/WR,_WH_Z_T4[2],Wh,"Real energy L3, delivered, rate 4"
+11802,float,RD/WR,_WH_Z_T4[3],Wh,"Real energy L4, delivered, rate 4"
+11804,float,RD/WR,_WH_Z_T4[4],Wh,"Real energy L1..L3, delivered, rate 4"
+11806,float,RD/WR,_WH_Z_T4[5],Wh,"Real energy L1..L4, delivered, rate 4"
+12024,int,RD,_AKT_EVT_CNT[0],-,Only for internal use
+12026,int,RD,_AKT_EVT_CNT[1],-,Only for internal use
+12028,int,RD,_AKT_EVT_CNT[2],-,Only for internal use
+12030,int,RD,_AKT_EVT_CNT[3],-,Only for internal use
+12032,int,RD,_AKT_EVT_CNT[4],-,Only for internal use
+12034,int,RD,_AKT_EVT_CNT[5],-,Only for internal use
+12036,int,RD,_AKT_EVT_CNT[6],-,Only for internal use
+12038,int,RD,_AKT_EVT_CNT[7],-,Only for internal use
+13815,short,RD/WR,_COMP_DIFF_DEV_CNT0,s,Only for internal use
+13872,short,RD/WR,_COMP_DIFF_DEV_CNT1,s,Only for internal use

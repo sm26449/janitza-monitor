@@ -1,0 +1,594 @@
+/* ============================================
+   Janitza Monitor - Dashboard Styles
+   Stats, widgets, gauges, charts
+   ============================================ */
+
+/* ==================== STATS BAR ==================== */
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 1px solid var(--border-light);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+.stat-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.stat-value {
+    font-size: 22px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.stat-value.success { color: var(--success); }
+.stat-value.danger { color: var(--danger); }
+.stat-value.accent { color: var(--accent); }
+
+.stat-sub {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+}
+
+/* ==================== DASHBOARD GRID ==================== */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.widget-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 1px solid var(--border-light);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.widget-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+/* Widget Sizes */
+.widget-card.widget-wide {
+    grid-column: span 2;
+}
+
+.widget-card.widget-tall {
+    grid-row: span 2;
+}
+
+/* Widget Header */
+.widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+
+.widget-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.widget-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.widget-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.widget-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    color: var(--text-tertiary);
+}
+
+/* Widget Edit Button */
+.widget-edit-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s;
+}
+
+.widget-card:hover .widget-edit-btn {
+    opacity: 1;
+}
+
+.widget-edit-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Widget Value */
+.widget-value {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.widget-unit {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-tertiary);
+    margin-left: 4px;
+}
+
+.widget-footer {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 8px;
+}
+
+/* Value Color Coding */
+.value-number.value-normal {
+    color: var(--text-primary);
+}
+
+.value-number.value-warning {
+    color: var(--warning);
+}
+
+.value-number.value-danger {
+    color: var(--danger);
+}
+
+.value-number.value-success {
+    color: var(--success);
+}
+
+/* ==================== GAUGE WIDGET ==================== */
+.widget-gauge {
+    min-height: 140px;
+}
+
+.widget-gauge .widget-gauge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.gauge-svg {
+    width: 100%;
+    max-width: 120px;
+    height: auto;
+}
+
+.gauge-bg {
+    fill: none;
+    stroke: var(--bg-tertiary);
+    stroke-width: 8;
+    stroke-linecap: round;
+}
+
+.gauge-value {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+}
+
+.gauge-reading {
+    text-align: center;
+    margin-top: -10px;
+}
+
+.gauge-number {
+    font-size: 24px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.gauge-unit {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-left: 2px;
+}
+
+.gauge-range {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    width: 100%;
+    max-width: 120px;
+}
+
+/* ==================== CHART WIDGET ==================== */
+.widget-chart {
+    min-height: 120px;
+}
+
+.widget-chart .widget-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.chart-current {
+    font-size: 22px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.chart-current span {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-tertiary);
+}
+
+.chart-svg {
+    width: 100%;
+    height: 50px;
+    overflow: visible;
+}
+
+.chart-line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.chart-area {
+    fill: url(#chartGradient);
+    opacity: 0.3;
+}
+
+.chart-range {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-tertiary);
+}
+
+.chart-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+}
+
+/* ==================== CUSTOMIZE DASHBOARD MODAL ==================== */
+.customize-list {
+    max-height: 450px;
+    overflow-y: auto;
+}
+
+.customize-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    margin-bottom: 8px;
+    cursor: grab;
+    transition: all 0.15s;
+}
+
+.customize-item:hover {
+    border-color: var(--accent);
+}
+
+.customize-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.customize-item.drag-over {
+    border-color: var(--accent);
+    background: rgba(10, 132, 255, 0.1);
+}
+
+.customize-drag-handle {
+    color: var(--text-tertiary);
+    cursor: grab;
+}
+
+.customize-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.customize-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.customize-item-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.customize-item-details {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+}
+
+.customize-item-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.customize-select {
+    padding: 4px 8px;
+    font-size: 11px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.customize-select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.customize-size-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    transition: all 0.2s;
+}
+
+.customize-size-toggle.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
+.customize-size-toggle:hover:not(.active) {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+    .stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .widget-card.widget-wide {
+        grid-column: span 1;
+    }
+}
+
+/* ==================== DASHBOARD TABLE VIEW ==================== */
+.dashboard-table-container {
+    grid-column: 1 / -1;  /* Span all columns */
+    width: 100%;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.dashboard-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.dashboard-table th,
+.dashboard-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.dashboard-table th {
+    background: var(--bg-tertiary);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+}
+
+.dashboard-table tr:last-child td {
+    border-bottom: none;
+}
+
+.dashboard-table tr:hover td {
+    background: var(--bg-tertiary);
+}
+
+.table-label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.table-name {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+}
+
+.table-value {
+    font-size: 16px;
+    font-weight: 600;
+    font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+    transition: color 0.3s ease;
+}
+
+.table-unit {
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+.table-poll-group {
+    font-size: 11px;
+}
+
+/* Value color classes */
+.value-normal {
+    color: var(--text-primary);
+}
+
+.value-success {
+    color: var(--success);
+}
+
+.value-warning {
+    color: var(--warning);
+}
+
+.value-danger {
+    color: var(--danger);
+}
+
+/* Badge for poll group in table */
+.table-poll-group .badge {
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+    .dashboard-table th,
+    .dashboard-table td {
+        padding: 8px 12px;
+    }
+
+    .table-value {
+        font-size: 14px;
+    }
+
+    .dashboard-table .table-name {
+        display: none;
+    }
+}
+
+/* ==================== THRESHOLDS MODAL ==================== */
+.threshold-section {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.threshold-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.threshold-section h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.threshold-section h4 i {
+    color: var(--accent);
+}
+
+.threshold-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.threshold-grid-half {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.threshold-section .form-group {
+    margin-bottom: 0;
+}
+
+.threshold-section .form-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
+.threshold-section .input {
+    font-size: 13px;
+    padding: 6px 10px;
+}
+
+.hint-text-small {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 8px;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .threshold-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

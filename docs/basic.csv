@@ -1,0 +1,93 @@
+Address,Type,Access,Name,Unit,Description
+4,int,RD/WR,_SYSTIME,sec,time (UTC)
+6,short,RD,_DAY,-,Day (1..31)
+7,short,RD,_MONTH,-,"Month (0=Jan, .. 11=Dec)"
+8,short,RD,_YEAR,-,Year
+9,short,RD,_HOUR,h,Hour (1..24)
+10,short,RD,_MIN,min,Minute (1..59)
+11,short,RD,_SEC,s,Second (1..59)
+12,short,RD,_WEEKDAY,-,"Weekday (0=Sun, .. 6=Sat) Date and time"
+19000,float,RD,_G_ULN[0],V,Voltage L1-N
+19002,float,RD,_G_ULN[1],V,Voltage L2-N
+19004,float,RD,_G_ULN[2],V,Voltage L3-N
+19006,float,RD,_G_ULL[0],V,Voltage L1-L2
+19008,float,RD,_G_ULL[1],V,Voltage L2-L3
+19010,float,RD,_G_ULL[2],V,Voltage L3-L1
+19012,float,RD,_G_ILN[0],A,"Apparent current, L1-N"
+19014,float,RD,_G_ILN[1],A,"Apparent current, L2-N"
+19016,float,RD,_G_ILN[2],A,"Apparent current, L3-N"
+19018,float,RD,_G_I_SUM3,A,Vector sum; IN=I1+I2+I3
+19020,float,RD,_G_PLN[0],W,Real power L1-N
+19022,float,RD,_G_PLN[1],W,Real power L2-N
+19024,float,RD,_G_PLN[2],W,Real power L3-N
+19026,float,RD,_G_P_SUM3,W,Psum3=P1+P2+P3
+19028,float,RD,_G_SLN[0],VA,Apparent power L1-N
+19030,float,RD,_G_SLN[1],VA,Apparent power L2-N
+19032,float,RD,_G_SLN[2],VA,Apparent power L3-N
+19034,float,RD,_G_S_SUM3,VA,Sum; Ssum3=S1+S2+S3
+19036,float,RD,_G_QLN[0],var,Reactive power L1 (fundamental comp.)
+19038,float,RD,_G_QLN[1],var,Reactive power L2 (fundamental comp.)
+19040,float,RD,_G_QLN[2],var,Reactive power L3 (fundamental comp.)
+19042,float,RD,_G_Q_SUM3,var,Qsum3=Q1+Q2+Q3 (fundamental comp.)
+19044,float,RD,_G_COS_PHI[0],-,CosPhi; UL1 IL1 (fundamental comp.)
+19046,float,RD,_G_COS_PHI[1],-,CosPhi; UL2 IL2 (fundamental comp.)
+19048,float,RD,_G_COS_PHI[2],-,CosPhi; UL3 IL3 (fundamental comp.)
+19050,float,RD,_G_FREQ,Hz,Measured frequency
+19052,float,RD,_G_PHASE_SEQ,-,"Rotation field; 1=right, 0=none, -1=left"
+19054,float,RD,_G_WH[0],Wh,Real energy L1
+19056,float,RD,_G_WH[1],Wh,Real energy L2
+19058,float,RD,_G_WH[2],Wh,Real energy L3
+19060,float,RD,_G_WH_SUML13,Wh,Real energy L1..L3
+19062,float,RD,_G_WH_V[0],Wh,"Real energy L1, consumed"
+19064,float,RD,_G_WH_V[1],Wh,"Real energy L2, consumed"
+19066,float,RD,_G_WH_V[2],Wh,"Real energy L3, consumed"
+19068,float,RD,_G_WH_V_HT_SUML13,Wh,"Real energy L1..L3, consumed, rate 1"
+19070,float,RD,_G_WH_Z[0],Wh,"Real energy L1, delivered"
+19072,float,RD,_G_WH_Z[1],Wh,"Real energy L2, delivered"
+19074,float,RD,_G_WH_Z[2],Wh,"Real energy L3, delivered"
+19076,float,RD,_G_WH_Z_SUML13,Wh,"Real energy L1..L3, delivered"
+19078,float,RD,_G_WH_S[0],VAh,Apparent energy L1
+19080,float,RD,_G_WH_S[1],VAh,Apparent energy L2
+19082,float,RD,_G_WH_S[2],VAh,Apparent energy L3
+19084,float,RD,_G_WH_S_SUML13,VAh,Apparent energy L1..L3
+19086,float,RD,_G_QH[0],varh,Reaktive energy L1 (fundamental comp.)
+19088,float,RD,_G_QH[1],varh,Reaktive energy L2 (fundamental comp.)
+19090,float,RD,_G_QH[2],varh,Reaktive energy L3 (fundamental comp.)
+19092,float,RD,_G_QH_SUML13,varh,Reaktive energy L1..L3 (fundamental comp.)
+19094,float,RD,_G_IQH[0],varh,"Reactive energy, inductive, L1 (fundamental comp.)"
+19096,float,RD,_G_IQH[1],varh,"Reactive energy, inductive, L2 (fundamental comp.)"
+19098,float,RD,_G_IQH[2],varh,"Reactive energy, inductive, L3 (fundamental comp.)"
+19100,float,RD,_G_IQH_SUML13,varh,"Reactive energy L1..L3, ind. (fundamental comp.)"
+19102,float,RD,_G_CQH[0],varh,"Reactive energy, capacitive, L1 (fundamental comp.)"
+19104,float,RD,_G_CQH[1],varh,"Reactive energy, capacitive, L2 (fundamental comp.)"
+19106,float,RD,_G_CQH[2],varh,"Reactive energy, capacitive, L3 (fundamental comp.)"
+19108,float,RD,_G_CQH_SUML13,varh,"Reactive energy L1..L3, cap. (fundamental comp.)"
+19110,float,RD,_G_THD_ULN[0],%,"Harmonic, THD,U L1-N"
+19112,float,RD,_G_THD_ULN[1],%,"Harmonic, THD,U L2-N"
+19114,float,RD,_G_THD_ULN[2],%,"Harmonic, THD,U L3-N"
+19116,float,RD,_G_THD_ILN[0],%,"Harmonic, THD,I L1"
+19118,float,RD,_G_THD_ILN[1],%,"Harmonic, THD,I L2"
+19120,float,RD,_G_THD_ILN[2],%,"Harmonic, THD,I L3"
+19646,float,RD/WR,_G_I_SYM,%,Current Unsymmetrical
+19648,float,RD/WR,_G_ULN_CF[0],-,ULN Crest Faktor
+19650,float,RD/WR,_G_ULN_CF[1],-,ULN Crest Faktor
+19652,float,RD/WR,_G_ULN_CF[2],-,ULN Crest Faktor
+19654,float,RD/WR,_G_ULL_CF[0],-,ULL Crest Faktor
+19656,float,RD/WR,_G_ULL_CF[1],-,ULL Crest Faktor
+19658,float,RD/WR,_G_ULL_CF[2],-,ULL Crest Faktor
+19660,float,RD/WR,_G_ILN_CF[0],-,IN Crest Faktor
+19662,float,RD/WR,_G_ILN_CF[1],-,IN Crest Faktor
+19664,float,RD/WR,_G_ILN_CF[2],-,IN Crest Faktor
+19666,float,RD/WR,_G_ILN_CF[3],-,IN Crest Faktor
+19668,float,RD/WR,_G_DLN[0],var,IN Distortion reactive power
+19670,float,RD/WR,_G_DLN[1],var,IN Distortion reactive power
+19672,float,RD/WR,_G_DLN[2],var,IN Distortion reactive power
+19674,float,RD/WR,_G_DLN[3],var,IN Distortion reactive power
+19676,float,RD/WR,_G_ULL_RE[0],V,"Voltage, real part L-L"
+19678,float,RD/WR,_G_ULL_RE[1],V,"Voltage, real part L-L"
+19680,float,RD/WR,_G_ULL_RE[2],V,"Voltage, real part L-L"
+19682,float,RD/WR,_G_ULL_IM[0],V,"Voltage, imaginary part L-L"
+19684,float,RD/WR,_G_ULL_IM[1],V,"Voltage, imaginary part L-L"
+19686,float,RD/WR,_G_ULL_IM[2],V,"Voltage, imaginary part L-L"
+19688,float,RD/WR,_G_IRATED_TDD[0],A,"Maximum demand load current, L1..L3"
+19690,float,RD/WR,_G_IRATED_TDD[1],A,"Maximum demand load current, L4"

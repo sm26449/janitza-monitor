@@ -1,0 +1,22 @@
+# Janitza UMG 512-PRO Monitor - Python Dependencies
+
+# Modbus
+pymodbus==3.6.9
+
+# MQTT
+paho-mqtt>=2.0.0
+
+# InfluxDB (optional)
+influxdb-client>=1.38.0
+
+# Web framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+
+# Configuration
+PyYAML>=6.0.1
+
+# Development (optional)
+pytest>=7.4.0
+pytest-asyncio>=0.23.0

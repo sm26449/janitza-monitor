@@ -1,0 +1,470 @@
+/* ============================================
+   Janitza Monitor - Registers Page Styles
+   Tables, pagination, query modal
+   ============================================ */
+
+/* ==================== TABLE CONTAINER ==================== */
+.table-container {
+    overflow-x: auto;
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+}
+
+/* ==================== DATA TABLE ==================== */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.data-table th {
+    background: var(--bg-tertiary);
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.data-table tr:hover {
+    background: rgba(255,255,255,0.02);
+}
+
+.data-table tr.configured {
+    background: rgba(50, 215, 75, 0.05);
+}
+
+.data-table tr.configured:hover {
+    background: rgba(50, 215, 75, 0.1);
+}
+
+/* Table cell styling */
+.description-cell {
+    max-width: 300px;
+}
+
+.reg-description {
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.name-cell {
+    max-width: 180px;
+}
+
+.reg-name-mono {
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.address {
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-weight: 500;
+    color: var(--accent);
+}
+
+.value {
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+.actions-cell {
+    white-space: nowrap;
+}
+
+/* ==================== PAGINATION ==================== */
+.pagination {
+    display: flex;
+    gap: 4px;
+    margin-top: 16px;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.pagination .page-item {
+    list-style: none;
+}
+
+.pagination button,
+.pagination .page-link {
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pagination button:hover,
+.pagination .page-link:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.pagination button.active,
+.pagination .page-item.active .page-link {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
+.pagination button:disabled,
+.pagination .page-item.disabled .page-link {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ==================== CONFIG TOOLBAR ==================== */
+.config-toolbar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.config-toolbar .input {
+    max-width: 300px;
+}
+
+.config-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.config-tab {
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.config-tab:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.config-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
+.config-tab .count {
+    opacity: 0.7;
+    margin-left: 4px;
+}
+
+/* ==================== SELECTED REGISTERS TABLE ==================== */
+.selected-registers-list {
+    margin-bottom: 20px;
+}
+
+.selected-registers-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.selected-registers-table th {
+    text-align: left;
+    padding: 10px 12px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+}
+
+.selected-registers-table th.center {
+    text-align: center;
+}
+
+.selected-registers-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+}
+
+.selected-registers-table tr:hover {
+    background: var(--bg-hover);
+}
+
+.selected-registers-table .addr-cell {
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.selected-registers-table .label-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.selected-registers-table .reg-label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.selected-registers-table .reg-name {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+}
+
+.selected-registers-table .unit-cell {
+    color: var(--text-secondary);
+}
+
+.selected-registers-table .center {
+    text-align: center;
+}
+
+.selected-registers-table .actions-cell {
+    display: flex;
+    gap: 8px;
+}
+
+/* Status Icon */
+.status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 11px;
+    background: rgba(255, 69, 58, 0.15);
+    color: var(--danger);
+}
+
+.status-icon.active {
+    background: rgba(50, 215, 75, 0.15);
+    color: var(--success);
+}
+
+/* ==================== QUERY MODAL ==================== */
+#queryModal .modal-content {
+    max-width: 480px;
+}
+
+#queryModal .form-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+#queryResultContainer {
+    margin-top: 8px;
+}
+
+.query-result-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.result-value {
+    font-size: 42px;
+    font-weight: 600;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    color: var(--accent);
+    line-height: 1;
+}
+
+.result-unit {
+    font-size: 18px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+.result-details {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.detail-value {
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.detail-value.mono {
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    color: var(--accent);
+}
+
+.result-note {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: rgba(255, 214, 10, 0.1);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--warning);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.result-error {
+    padding: 16px;
+    background: rgba(255, 69, 58, 0.1);
+    border-radius: var(--radius-sm);
+    color: var(--danger);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.result-actions {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.result-actions .badge {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.result-actions .badge i {
+    margin-right: 4px;
+}
+
+/* ==================== CODE EDITOR ==================== */
+.code-editor {
+    width: 100%;
+    min-height: 300px;
+    padding: 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.editor-status {
+    margin-top: 8px;
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+}
+
+.editor-status.valid {
+    background: rgba(50, 215, 75, 0.1);
+    color: var(--success);
+}
+
+.editor-status.invalid {
+    background: rgba(255, 69, 58, 0.1);
+    color: var(--danger);
+}
+
+/* ==================== THRESHOLD FIELDS IN MODALS ==================== */
+.threshold-detected {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin: 8px 0;
+    padding: 6px 10px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    display: none;
+}
+
+.threshold-detected.visible {
+    display: block;
+}
+
+.threshold-detected .detected-type {
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.threshold-fields .form-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.threshold-fields .form-group {
+    margin-bottom: 0;
+}
+
+.threshold-fields .form-label {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+}
+
+.threshold-fields .input-sm {
+    padding: 6px 8px;
+    font-size: 12px;
+}
+
+@media (max-width: 600px) {
+    .threshold-fields .form-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

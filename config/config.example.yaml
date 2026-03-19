@@ -1,0 +1,87 @@
+# Janitza UMG 512-PRO Monitor Configuration
+
+general:
+  # Logging level: DEBUG, INFO, WARNING, ERROR
+  log_level: INFO
+  # Log file path (optional, logs to stdout if not set)
+  log_file: ""
+
+modbus:
+  # Janitza device IP address
+  host: 192.168.1.100
+  # Modbus TCP port (default 502)
+  port: 502
+  # Modbus unit/slave ID
+  unit_id: 1
+  # Connection timeout in seconds
+  timeout: 3
+  # Retry attempts on failure
+  retry_attempts: 3
+  # Delay between retries in seconds
+  retry_delay: 1
+
+polling:
+  # Default poll interval in seconds
+  default_interval: 5
+  # Poll groups with different intervals
+  groups:
+    realtime:
+      interval: 1
+      description: "Real-time values (voltage, current, power)"
+    normal:
+      interval: 5
+      description: "Standard measurements"
+    slow:
+      interval: 60
+      description: "Energy counters, statistics"
+
+mqtt:
+  # Enable MQTT publishing
+  enabled: true
+  # MQTT broker address
+  broker: 192.168.1.100
+  # MQTT broker port
+  port: 1883
+  # Authentication (leave empty if not required)
+  username: ""
+  password: ""
+  # Base topic prefix
+  topic_prefix: "janitza/umg512"
+  # Retain messages
+  retain: true
+  # QoS level (0, 1, or 2)
+  qos: 0
+  # Publish mode: "changed" (only changed values) or "all" (all values every poll)
+  publish_mode: "changed"
+  # Enable Home Assistant MQTT autodiscovery
+  ha_discovery:
+    enabled: true
+    prefix: "homeassistant"
+    device_name: "Janitza UMG 512-PRO"
+
+influxdb:
+  # Enable InfluxDB publishing
+  enabled: false
+  # InfluxDB server URL
+  url: "http://localhost:8086"
+  # API token
+  token: ""
+  # Organization
+  org: ""
+  # Bucket name
+  bucket: "janitza"
+  # Minimum write interval per measurement (seconds)
+  write_interval: 5
+  # Publish mode: "changed" (only changed values) or "all" (all values every poll)
+  publish_mode: "changed"
+
+ui:
+  # Web UI host
+  host: "0.0.0.0"
+  # Web UI port
+  port: 8080
+  # Enable authentication (optional)
+  auth:
+    enabled: false
+    username: "admin"
+    password: "admin"

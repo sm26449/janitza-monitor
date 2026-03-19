@@ -1,0 +1,61 @@
+# Janitza UMG 512-PRO - Informatii Generale
+
+## Dispozitiv
+- Model: UMG 512-PRO
+- Producator: Janitza electronics GmbH
+
+## Formate de Date
+| Tip | Biti | Min | Max |
+|-----|------|-----|-----|
+| char | 8 | 0 | 255 |
+| byte | 8 | -128 | 127 |
+| short | 16 | -32768 | 32767 |
+| int | 32 | -2^31 | 2^31-1 |
+| uint | 32 | 0 | 2^32-1 |
+| long64 | 64 | -2^63 | 2^63-1 |
+| float | 32 | IEEE 754 | IEEE 754 |
+| double | 64 | IEEE 754 | IEEE 754 |
+
+## Parametri Transfer Modbus
+- Baud rate: 9.6, 19.2, 38.4, 57.6, 115.2, 921.6 kbps
+- Data bits: 8
+- Parity: none
+- Stop bits: 2 (UMG512-PRO), 1-2 (external)
+- Byte order: Big-Endian (default)
+- Pentru Little-Endian: adauga 32768 la adresa
+- Update rate: 200ms
+
+## Functii Modbus Slave
+| Cod | Hex | Functie |
+|-----|-----|--------|
+| 03 | 03 | Read Holding Registers |
+| 04 | 04 | Read Input Registers |
+| 06 | 06 | Preset Single Register |
+| 16 | 10 | Preset Multiple Registers |
+| 23 | 17 | Read/Write 4X Registers |
+
+## Functii Modbus Master
+| Cod | Hex | Functie |
+|-----|-----|--------|
+| 01 | 01 | Read Coil Status |
+| 02 | 02 | Read Input Status |
+| 03 | 03 | Read Holding Registers |
+| 04 | 04 | Read Input Registers |
+| 05 | 05 | Force Single Coil |
+| 06 | 06 | Preset Single Register |
+| 15 | 0F | Force Multiple Coils |
+| 16 | 10 | Preset Multiple Registers |
+| 23 | 17 | Read/Write 4X Registers |
+
+## Timpuri de Mediere (Averaging Times)
+| n | Secunde | Minute |
+|---|---------|--------|
+| 0 | 5 | - |
+| 1 | 10 | - |
+| 2 | 15 | - |
+| 3 | 30 | 0.5 |
+| 4 | 60 | 1 |
+| 5 | 300 | 5 |
+| 6 | 480 | 8 |
+| 7 | 600 | 10 |
+| 8 | 900 | 15 |
