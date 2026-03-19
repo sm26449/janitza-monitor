@@ -26,8 +26,8 @@ Professional monitor for Janitza UMG 512-PRO power quality analyzers. Reads data
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/sm26449/janitza-umg512-modbus-mqtt-ui.git
-cd janitza-umg512-modbus-mqtt-ui
+git clone https://github.com/sm26449/janitza-monitor.git
+cd janitza-monitor
 
 # 2. Configure environment
 cp .env.example .env
@@ -259,7 +259,7 @@ In UI, the "Skipped" status shows how many messages were not published (unchange
 ## Project Structure
 
 ```
-janitza-umg512-modbus-mqtt-ui/
+janitza-monitor/
 ├── config/                    # Configuration files
 │   ├── config.example.yaml
 │   └── selected_registers.example.json
@@ -324,7 +324,7 @@ For deployment in pv-stack with shared mosquitto and influxdb:
 
 ```bash
 # Copy files to templates
-cp -r janitza-umg512-modbus-mqtt-ui/* docker-setup/templates/janitza-monitor/
+cp -r janitza-monitor/* docker-setup/templates/janitza-monitor/
 
 # Deploy via docker-compose
 docker compose -f docker-compose.pv-stack.yml build janitza-monitor
@@ -348,8 +348,8 @@ See `service.yaml` for the complete list of variables and dependencies.
 
 ```bash
 # Clone
-git clone https://github.com/sm26449/janitza-umg512-modbus-mqtt-ui.git
-cd janitza-umg512-modbus-mqtt-ui
+git clone https://github.com/sm26449/janitza-monitor.git
+cd janitza-monitor
 
 # Virtual environment
 python3 -m venv venv
@@ -390,7 +390,7 @@ docker-compose logs -f
 
 ## Contributing
 
-Found a bug or have a feature request? Please open an issue on [GitHub Issues](https://github.com/sm26449/janitza-umg512-modbus-mqtt-ui/issues).
+Found a bug or have a feature request? Please open an issue on [GitHub Issues](https://github.com/sm26449/janitza-monitor/issues).
 
 ## Authors
 

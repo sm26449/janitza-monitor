@@ -1,0 +1,179 @@
+name: janitza-monitor
+description: "Janitza UMG 512-PRO Modbus TCP to MQTT/InfluxDB Bridge with Web UI"
+
+# Dependencies with variable mappings
+dependencies:
+  - name: mosquitto
+    variables:
+      JANITZA_MQTT_BROKER: "${HOST}"
+      JANITZA_MQTT_PORT: "${PORT}"
+    credentials:
+      JANITZA_MQTT_USERNAME: "MQTT_USERNAME"
+      JANITZA_MQTT_PASSWORD: "MQTT_PASSWORD"
+  - name: influxdb
+    variables:
+      JANITZA_INFLUXDB_URL: "http://${HOST}:${PORT}"
+      JANITZA_INFLUXDB_ENABLED: "true"
+    credentials:
+      JANITZA_INFLUXDB_TOKEN: "DOCKER_INFLUXDB_INIT_ADMIN_TOKEN"
+      JANITZA_INFLUXDB_ORG: "DOCKER_INFLUXDB_INIT_ORG"
+
+variables:
+  # Modbus settings
+  JANITZA_MODBUS_HOST:
+    default: "192.168.100.17"
+    description: "Janitza UMG 512-PRO IP address"
+    prompt: true
+  JANITZA_MODBUS_PORT:
+    default: "502"
+    description: "Modbus TCP port"
+  JANITZA_MODBUS_UNIT_ID:
+    default: "1"
+    description: "Modbus unit/slave ID"
+
+  # MQTT settings
+  JANITZA_MQTT_ENABLED:
+    default: "true"
+    description: "Enable MQTT publishing"
+  JANITZA_MQTT_BROKER:
+    default: "mosquitto"
+    description: "MQTT broker address (container name or IP)"
+    prompt: true
+  JANITZA_MQTT_PORT:
+    default: "1883"
+    description: "MQTT broker port"
+    prompt: true
+  JANITZA_MQTT_USERNAME:
+    default: ""
+    description: "MQTT username"
+    prompt: true
+  JANITZA_MQTT_PASSWORD:
+    default: ""
+    description: "MQTT password"
+    prompt: true
+  JANITZA_MQTT_PREFIX:
+    default: "janitza/umg512"
+    description: "MQTT topic prefix"
+  JANITZA_MQTT_PUBLISH_MODE:
+    default: "changed"
+    description: "Publish mode: 'changed' or 'all'"
+
+  # InfluxDB settings
+  JANITZA_INFLUXDB_ENABLED:
+    default: "false"
+    description: "Enable InfluxDB integration (true/false)"
+    prompt: true
+  JANITZA_INFLUXDB_URL:
+    default: "http://influxdb:8086"
+    description: "InfluxDB URL (container name or IP)"
+    prompt: true
+  JANITZA_INFLUXDB_TOKEN:
+    default: ""
+    description: "InfluxDB API token (auto-filled from InfluxDB if available)"
+  JANITZA_INFLUXDB_ORG:
+    default: ""
+    description: "InfluxDB organization (auto-filled from InfluxDB if available)"
+  JANITZA_INFLUXDB_BUCKET:
+    default: "janitza"
+    description: "InfluxDB bucket"
+    prompt: true
+  JANITZA_INFLUXDB_PUBLISH_MODE:
+    default: "changed"
+    description: "InfluxDB publish mode: 'changed' or 'all'"
+
+  # UI settings
+  JANITZA_UI_PORT:
+    default: "8080"
+    description: "Web UI port"
+    prompt: true
+
+  # General settings
+  JANITZA_LOG_LEVEL:
+    default: "INFO"
+    description: "Log level: DEBUG, INFO, WARNING, ERROR"
+
+  # Service names for depends_on
+  MOSQUITTO_SERVICE:
+    default: "mosquitto"
+    description: "Mosquitto service name (for depends_on)"
+  INFLUXDB_SERVICE:
+    default: "influxdb"
+    description: "InfluxDB service name (for depends_on)"
+
+# Copy files from template to ${DOCKER_ROOT}/<stack>/<service>/
+copy_files:
+  - src: config/config.example.yaml
+    dest: config/config.yaml
+  - src: config/selected_registers.example.json
+    dest: config/selected_registers.json
+
+# Hooks for pre/post deployment actions
+hooks:
+  pre_deploy:
+    - "echo 'Preparing Janitza Monitor service...'"
+    - "mkdir -p ${SERVICE_DATA}/config"
+  post_deploy:
+    - "echo 'Janitza Monitor deployed successfully'"
+    - "echo 'Web UI: http://${SERVER_IP}:${JANITZA_UI_PORT:-8080}'"
+    - "echo 'Config: ${SERVICE_DATA}/config/config.yaml'"
+    # Create MQTT user in stack mosquitto container (if exists)
+    - "docker exec ${STACK}-mosquitto mosquitto_passwd -b /mosquitto/config/pwfile '${JANITZA_MQTT_USERNAME}' '${JANITZA_MQTT_PASSWORD}' 2>/dev/null && docker exec ${STACK}-mosquitto kill -HUP 1 2>/dev/null && echo '✓ MQTT user ${JANITZA_MQTT_USERNAME} created' || true"
+    # Create InfluxDB bucket in stack influxdb container (if exists)
+    - "docker exec ${STACK}-influxdb influx bucket create -n '${JANITZA_INFLUXDB_BUCKET}' -o '${JANITZA_INFLUXDB_ORG}' 2>/dev/null && echo '✓ InfluxDB bucket ${JANITZA_INFLUXDB_BUCKET} created' || true"
+    - "docker logs ${CONTAINER_NAME} --tail 5 2>/dev/null || true"
+
+compose: |
+  ${SERVICE_NAME}:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: janitza-monitor:latest
+    container_name: ${SERVICE_NAME}
+    restart: unless-stopped
+    depends_on:
+      ${MOSQUITTO_SERVICE}:
+        condition: service_started
+      ${INFLUXDB_SERVICE}:
+        condition: service_healthy
+    labels:
+      - "com.docker.compose.project=${STACK}"
+      - "io.portainer.accesscontrol.teams=${STACK}"
+    ports:
+      - "${JANITZA_UI_PORT:-8080}:${JANITZA_UI_PORT:-8080}"
+    environment:
+      - TZ=${TZ:-Europe/Bucharest}
+      # Modbus
+      - MODBUS_HOST=${JANITZA_MODBUS_HOST:-192.168.100.17}
+      - MODBUS_PORT=${JANITZA_MODBUS_PORT:-502}
+      - MODBUS_UNIT_ID=${JANITZA_MODBUS_UNIT_ID:-1}
+      # MQTT
+      - MQTT_ENABLED=${JANITZA_MQTT_ENABLED:-true}
+      - MQTT_BROKER=${JANITZA_MQTT_BROKER:-mosquitto}
+      - MQTT_PORT=${JANITZA_MQTT_PORT:-1883}
+      - MQTT_USERNAME=${JANITZA_MQTT_USERNAME:-}
+      - MQTT_PASSWORD=${JANITZA_MQTT_PASSWORD:-}
+      - MQTT_PREFIX=${JANITZA_MQTT_PREFIX:-janitza/umg512}
+      - MQTT_PUBLISH_MODE=${JANITZA_MQTT_PUBLISH_MODE:-changed}
+      # InfluxDB
+      - INFLUXDB_ENABLED=${JANITZA_INFLUXDB_ENABLED:-false}
+      - INFLUXDB_URL=${JANITZA_INFLUXDB_URL:-http://influxdb:8086}
+      - INFLUXDB_TOKEN=${JANITZA_INFLUXDB_TOKEN:-}
+      - INFLUXDB_ORG=${JANITZA_INFLUXDB_ORG:-}
+      - INFLUXDB_BUCKET=${JANITZA_INFLUXDB_BUCKET:-janitza}
+      - INFLUXDB_PUBLISH_MODE=${JANITZA_INFLUXDB_PUBLISH_MODE:-changed}
+      # UI
+      - UI_PORT=${JANITZA_UI_PORT:-8080}
+    volumes:
+      - ${DOCKER_ROOT}/pv-stack/${SERVICE_NAME}/config:/app/config
+      - ${DOCKER_ROOT}/pv-stack/${SERVICE_NAME}/docs:/app/docs:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${JANITZA_UI_PORT:-8080}/api/status"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
