@@ -1,5 +1,6 @@
 """InfluxDB Publisher for Janitza UMG 512-PRO with change detection and custom measurements."""
 
+import math
 import time
 import threading
 from typing import Dict, Any, Optional, List
@@ -24,30 +25,23 @@ class InfluxDBPublisher:
     Features:
     - Custom measurement name per register
     - Custom tags per register
-    - Publish-on-change mode
-    - Rate limiting per measurement
-    - Batched writes
+    - Two-phase cache: check before write, confirm after success
+    - NaN/Infinity guard to protect InfluxDB batches
+    - Proactive health checks via ping()
+    - Batched writes with error/retry callbacks
     - Automatic reconnection
     """
 
     def __init__(self, config: InfluxDBConfig, registers: List[SelectedRegister],
                  publish_mode: str = 'changed'):
-        """
-        Initialize InfluxDB publisher.
-
-        Args:
-            config: InfluxDB configuration
-            registers: List of selected registers with InfluxDB configuration
-            publish_mode: 'changed' or 'all'
-        """
         self.config = config
         self.registers = registers
         self.publish_mode = publish_mode
 
         self.client = None
         self.write_api = None
-        self.connected = False
-        self.last_values: Dict[int, Any] = {}
+        self._connected = threading.Event()
+        self.last_values: Dict[int, Dict] = {}
         self.last_write_time: Dict[int, float] = {}
         self.lock = threading.Lock()
 
@@ -60,6 +54,7 @@ class InfluxDBPublisher:
         self.writes_total = 0
         self.writes_failed = 0
         self.writes_skipped = 0
+        self.disconnection_count = 0
 
         # Reconnection thread
         self._stop_reconnect = threading.Event()
@@ -67,54 +62,84 @@ class InfluxDBPublisher:
 
         if config.enabled:
             self._setup_client_with_retry()
-            if not self.connected:
-                self._start_reconnect_thread()
+            # Always start persistent monitor thread for proactive health checks
+            self._start_reconnect_thread()
+
+    @property
+    def connected(self) -> bool:
+        return self._connected.is_set()
+
+    @connected.setter
+    def connected(self, value: bool):
+        if value:
+            self._connected.set()
+        else:
+            if self._connected.is_set():
+                self.disconnection_count += 1
+            self._connected.clear()
+
+    def _on_write_error(self, conf, data, exception):
+        """Callback when InfluxDB batch write fails permanently (all retries exhausted)."""
+        logger.error(f"InfluxDB data lost permanently: {exception}")
+        self.writes_failed += 1
+        self._handle_write_error(exception)
+
+    def _on_write_retry(self, conf, data, exception):
+        """Callback when InfluxDB batch write is being retried."""
+        logger.warning(f"InfluxDB write retry: {exception}")
 
     def _setup_client(self):
-        """Setup InfluxDB client."""
-        try:
-            from influxdb_client import InfluxDBClient, WriteOptions
+        """Setup InfluxDB client with proper batching and error callbacks."""
+        with self.lock:
+            try:
+                from influxdb_client import InfluxDBClient, WriteOptions
 
-            # Clean up old connections first
-            if self.write_api:
-                try:
-                    self.write_api.close()
-                except Exception:
-                    pass
-            if self.client:
-                try:
-                    self.client.close()
-                except Exception:
-                    pass
+                # Clean up old connections first
+                if self.write_api:
+                    try:
+                        self.write_api.close()
+                    except Exception:
+                        pass
+                if self.client:
+                    try:
+                        self.client.close()
+                    except Exception:
+                        pass
 
-            self.client = InfluxDBClient(
-                url=self.config.url,
-                token=self.config.token,
-                org=self.config.org
-            )
+                self.client = InfluxDBClient(
+                    url=self.config.url,
+                    token=self.config.token,
+                    org=self.config.org
+                )
 
-            self.write_api = self.client.write_api(write_options=WriteOptions(
-                batch_size=100,
-                flush_interval=10_000,
-                jitter_interval=2_000,
-                retry_interval=5_000,
-                max_retries=3
-            ))
+                self.write_api = self.client.write_api(
+                    write_options=WriteOptions(
+                        batch_size=100,
+                        flush_interval=10_000,
+                        jitter_interval=2_000,
+                        retry_interval=5_000,
+                        max_retries=10,
+                        max_retry_time=300_000,
+                        exponential_base=2,
+                    ),
+                    error_callback=self._on_write_error,
+                    success_callback=None,
+                    retry_callback=self._on_write_retry,
+                )
 
-            # Test connection
-            health = self.client.health()
-            if health.status == "pass":
-                self.connected = True
-                logger.info(f"InfluxDB connected to {self.config.url}")
-            else:
-                logger.warning(f"InfluxDB health check failed: {health.message}")
+                # Test connection with ping() (replaces deprecated health())
+                if self.client.ping():
+                    self.connected = True
+                    logger.info(f"InfluxDB connected to {self.config.url}")
+                else:
+                    logger.warning("InfluxDB ping failed")
 
-        except ImportError:
-            logger.warning("influxdb-client not installed. Install with: pip install influxdb-client")
-            self.config.enabled = False
-        except Exception as e:
-            logger.warning(f"InfluxDB connection failed: {e}")
-            self.connected = False
+            except ImportError:
+                logger.warning("influxdb-client not installed. Install with: pip install influxdb-client")
+                self.config.enabled = False
+            except Exception as e:
+                logger.warning(f"InfluxDB connection failed: {e}")
+                self.connected = False
 
     def _setup_client_with_retry(self):
         """Setup InfluxDB client with retry logic."""
@@ -131,10 +156,10 @@ class InfluxDBPublisher:
                 time.sleep(delay)
                 delay = min(delay * RETRY_BACKOFF_FACTOR, RETRY_MAX_DELAY)
 
-        logger.warning(f"InfluxDB: all {RETRY_MAX_ATTEMPTS} connection attempts failed. Will retry in background.")
+        logger.warning(f"InfluxDB: all {RETRY_MAX_ATTEMPTS} connection attempts failed. Will continue trying in background.")
 
     def _start_reconnect_thread(self):
-        """Start background reconnection thread."""
+        """Start background thread for reconnection and health monitoring."""
         if self._reconnect_thread is not None and self._reconnect_thread.is_alive():
             return
 
@@ -145,18 +170,38 @@ class InfluxDBPublisher:
             daemon=True
         )
         self._reconnect_thread.start()
-        logger.info("InfluxDB reconnection thread started")
+        logger.info("InfluxDB monitor thread started")
 
     def _reconnect_loop(self):
-        """Background reconnection loop."""
+        """
+        Persistent background loop that monitors and reconnects to InfluxDB.
+
+        When connected: performs periodic ping() health checks to detect
+        disconnections faster than waiting for batch retry exhaustion (up to 5 min).
+        When disconnected: attempts reconnection every RECONNECT_CHECK_INTERVAL.
+        """
         while not self._stop_reconnect.is_set():
-            if not self.connected:
+            if self.connected:
+                # Proactive health check
+                try:
+                    with self.lock:
+                        client = self.client
+                    if not client:
+                        self.connected = False
+                        self._stop_reconnect.wait(RECONNECT_CHECK_INTERVAL)
+                        continue
+                    if not client.ping():
+                        logger.warning("InfluxDB ping failed")
+                        self.connected = False
+                except Exception as e:
+                    logger.warning(f"InfluxDB health check failed: {e}")
+                    self.connected = False
+            else:
                 logger.debug("Attempting InfluxDB reconnection...")
                 self._setup_client()
 
                 if self.connected:
                     logger.info("InfluxDB reconnected successfully")
-                    break
 
             self._stop_reconnect.wait(RECONNECT_CHECK_INTERVAL)
 
@@ -172,41 +217,57 @@ class InfluxDBPublisher:
         is_connection_error = any(err in error_str for err in connection_errors)
 
         if is_connection_error and self.connected:
-            logger.warning("InfluxDB connection lost, starting reconnection...")
+            logger.warning("InfluxDB connection lost, monitor thread will reconnect")
             self.connected = False
-            self._start_reconnect_thread()
 
     def is_enabled(self) -> bool:
         """Check if InfluxDB publishing is enabled and connected."""
         return self.config.enabled and self.connected
 
+    def _safe_float(self, value) -> Optional[float]:
+        """Convert to float, returning None for NaN/Infinity to protect InfluxDB batches."""
+        try:
+            val = float(value)
+            if math.isfinite(val):
+                return val
+            logger.warning(f"Skipping non-finite value: {value}")
+            return None
+        except (ValueError, TypeError):
+            return None
+
     def _should_write(self, address: int, value: Any) -> bool:
-        """Check if value should be written based on mode and interval."""
+        """
+        Check if value should be written based on mode and interval.
+        Does NOT update cache — call _confirm_write() after successful write.
+        """
         current_time = time.time()
 
-        # Rate limiting
-        if address in self.last_write_time:
-            elapsed = current_time - self.last_write_time[address]
-            if elapsed < self.config.write_interval:
-                return False
+        with self.lock:
+            # Rate limiting
+            if address in self.last_write_time:
+                elapsed = current_time - self.last_write_time[address]
+                if elapsed < self.config.write_interval:
+                    return False
 
-        # Change detection
-        if self.publish_mode == 'changed':
-            with self.lock:
+            # Change detection
+            if self.publish_mode == 'changed':
                 if address in self.last_values:
                     if self.last_values[address] == value:
                         return False
-                self.last_values[address] = value
 
-        self.last_write_time[address] = current_time
-        return True
+            return True
+
+    def _confirm_write(self, address: int, value: Any):
+        """Update cache after successful write. Prevents data loss on transient failures."""
+        with self.lock:
+            self.last_values[address] = value
+            self.last_write_time[address] = time.time()
 
     def _get_measurement(self, register: SelectedRegister) -> str:
         """Get InfluxDB measurement name for a register."""
         if register.influxdb_measurement:
             return register.influxdb_measurement
 
-        # Default: derive from unit or name
         unit = register.unit.lower() if register.unit else ''
         if 'v' in unit and 'var' not in unit:
             return 'voltage'
@@ -237,20 +298,13 @@ class InfluxDBPublisher:
             'name': register.name,
         }
 
-        # Add custom tags from configuration
         if register.influxdb_tags:
             tags.update(register.influxdb_tags)
 
         return tags
 
     def write_register_data(self, poll_group: str, data: Dict[int, Dict]):
-        """
-        Write register data from a poll group.
-
-        Args:
-            poll_group: Name of the poll group
-            data: Dict mapping address -> {'value': ..., 'register': SelectedRegister}
-        """
+        """Write register data from a poll group."""
         if not self.is_enabled():
             return
 
@@ -268,30 +322,35 @@ class InfluxDBPublisher:
                     self.writes_skipped += 1
                     continue
 
+                # Validate value
+                if isinstance(value, (int, float)):
+                    safe_val = self._safe_float(value)
+                    if safe_val is None:
+                        continue
+                else:
+                    safe_val = value
+
                 # Create point
                 measurement = self._get_measurement(register)
                 point = Point(measurement)
 
-                # Add tags
                 for tag_key, tag_value in self._get_tags(register).items():
                     point = point.tag(tag_key, tag_value)
 
-                # Add poll group as tag
                 point = point.tag('poll_group', poll_group)
 
-                # Add value as field
                 field_name = register.name.lower().replace('[', '_').replace(']', '').replace('_g_', '')
-                if isinstance(value, (int, float)):
-                    point = point.field(field_name, float(value))
+                if isinstance(safe_val, (int, float)):
+                    point = point.field(field_name, float(safe_val))
+                    point = point.field('value', float(safe_val))
                 else:
-                    point = point.field(field_name, str(value))
-
-                # Also add as 'value' field for simpler queries
-                if isinstance(value, (int, float)):
-                    point = point.field('value', float(value))
+                    point = point.field(field_name, str(safe_val))
 
                 self.write_api.write(bucket=self.config.bucket, record=point)
                 self.writes_total += 1
+
+                # Confirm write — update cache only after successful enqueue
+                self._confirm_write(address, value)
 
         except Exception as e:
             self.writes_failed += 1
@@ -300,14 +359,7 @@ class InfluxDBPublisher:
 
     def write_single(self, register: SelectedRegister, value: Any,
                      extra_tags: Dict[str, str] = None):
-        """
-        Write a single register value.
-
-        Args:
-            register: Register configuration
-            value: Value to write
-            extra_tags: Additional tags to add
-        """
+        """Write a single register value."""
         if not self.is_enabled():
             return
 
@@ -315,13 +367,20 @@ class InfluxDBPublisher:
             self.writes_skipped += 1
             return
 
+        # Validate value
+        if isinstance(value, (int, float)):
+            safe_val = self._safe_float(value)
+            if safe_val is None:
+                return
+        else:
+            safe_val = value
+
         try:
             from influxdb_client import Point
 
             measurement = self._get_measurement(register)
             point = Point(measurement)
 
-            # Add tags
             for tag_key, tag_value in self._get_tags(register).items():
                 point = point.tag(tag_key, tag_value)
 
@@ -329,16 +388,18 @@ class InfluxDBPublisher:
                 for tag_key, tag_value in extra_tags.items():
                     point = point.tag(tag_key, tag_value)
 
-            # Add value
             field_name = register.name.lower().replace('[', '_').replace(']', '').replace('_g_', '')
-            if isinstance(value, (int, float)):
-                point = point.field(field_name, float(value))
-                point = point.field('value', float(value))
+            if isinstance(safe_val, (int, float)):
+                point = point.field(field_name, float(safe_val))
+                point = point.field('value', float(safe_val))
             else:
-                point = point.field(field_name, str(value))
+                point = point.field(field_name, str(safe_val))
 
             self.write_api.write(bucket=self.config.bucket, record=point)
             self.writes_total += 1
+
+            # Confirm write
+            self._confirm_write(register.address, value)
 
         except Exception as e:
             self.writes_failed += 1
@@ -387,28 +448,24 @@ class InfluxDBPublisher:
         logger.info(f"InfluxDB registers updated: {len(self._register_map)} enabled")
 
     def reconnect(self) -> bool:
-        """
-        Reconnect to InfluxDB with current config.
-        """
+        """Reconnect to InfluxDB with current config."""
         logger.info("InfluxDB reconnecting...")
-
-        # Close current connection
         self.close()
 
-        # If disabled, don't reconnect
         if not self.config.enabled:
             logger.info("InfluxDB disabled, not reconnecting")
             return False
 
-        # Reconnect with retry
         self._setup_client_with_retry()
 
         if self.connected:
+            # Restart monitor thread
+            self._start_reconnect_thread()
             logger.info("InfluxDB reconnected successfully")
             return True
         else:
-            logger.warning("InfluxDB reconnection failed, starting background retry")
             self._start_reconnect_thread()
+            logger.warning("InfluxDB reconnection failed, monitor thread will keep trying")
             return False
 
     def get_stats(self) -> Dict:
@@ -423,4 +480,5 @@ class InfluxDBPublisher:
             'writes_skipped': self.writes_skipped,
             'publish_mode': self.publish_mode,
             'registered_addresses': len(self._register_map),
+            'disconnection_count': self.disconnection_count,
         }
