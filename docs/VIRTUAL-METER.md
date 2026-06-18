@@ -264,6 +264,53 @@ The result: a Janitza-fed virtual meter that a real Fronius DataManager accepts
 as a `Smart Meter TS 5kA-3` with complete, live, correct data. Full register
 mapping is documented inline in [`config/templates/fronius_ts_native.yaml`](../config/templates/fronius_ts_native.yaml).
 
+> ⚠️ **Fronius: PRIMARY meter only.** The DataManager reads its **primary** Smart
+> Meter over this native Carlo Gavazzi map — that's the path this template
+> emulates, so add it as the **primary** meter. It does **not** work as a
+> *secondary* meter: the DataManager won't let a secondary meter take Modbus
+> address **240** (it collides with the primary's address), so you'd have to
+> re-address the existing meter first. In practice: use it to **replace** the
+> primary Smart Meter, not to add a second one.
+
+---
+
+## Tested hardware
+
+Verified end-to-end against real equipment:
+
+| Role | Hardware | Template / result |
+|------|----------|-------------------|
+| **Source meter** | Janitza **UMG 512-PRO** (class 0.2S power-quality analyzer) | the one physical meter feeding everything |
+| **Victron ESS** | Victron Venus OS (Ekrano GX) | `em24_av53` — accepted as a Carlo Gavazzi **EM24** grid meter (in production) |
+| **Fronius** | Fronius **Symo** + **DataManager 2.0** (FW `3.34.1-5`, HW `2.6D`) | `fronius_ts_native` — accepted as a **Smart Meter TS 5kA-3** *primary* grid meter, full live data |
+| **Any SunSpec client** | — | `fronius_sunspec_meter` — generic SunSpec 213 example |
+
+Stack: Docker · Python + pymodbus · Mosquitto (MQTT) · InfluxDB. Other Carlo
+Gavazzi / SunSpec consumers should work with the matching template — reports and
+new templates welcome (see Contributing).
+
+## Gotchas & lessons learned
+
+Hard-won notes from getting real consumers to accept these meters — they'll save you hours.
+
+**Fronius DataManager**
+- It identifies its Smart Meter via the **native Carlo Gavazzi map, not SunSpec**. A clean SunSpec-213 meter is read but **rejected** ("Timeout, meter not detected"). Use `fronius_ts_native`, not a SunSpec template.
+- Identity comes from proprietary registers (FRONIUS id code `733` @`0x000b`, measurement mode @`0x0302`, …); the live data is in the **native blocks 258 / 286 / 1024**, NOT SunSpec `40071`.
+- **Primary meter only** — a *secondary* meter can't take Modbus address **240** (collides with the primary), so use the virtual meter to **replace** the primary, not to add a second one.
+- The DM shows **serial / CT ratio / VT ratio as 0/None** for an emulated meter (it caches identity per meter-id and reads them from registers we couldn't pin) — **cosmetic**, every measurement is correct.
+
+**Victron / Carlo Gavazzi EM24**
+- Data is **little-word-first** (`Reg_s32l`: low 16-bit word at the lower address). Wrong word order → garbage / inverted values.
+- Victron detects the model from register **`0x000b`** (`1651` for the EM24 AV53) — get it right or it isn't recognized.
+- The **A-total must be the arithmetic sum of the phase currents**, not the vector/neutral sum (~0) — an A inconsistent with W gets the meter rejected.
+
+**Energy registers** — active and reactive energy are **split**: a kWh/kVArh part (leave 0) + a Wh/VArh part. Put the full value in the **Wh/VArh** slot, or the consumer reads it ×1000.
+
+**General**
+- A virtual meter is **control-critical** — always run it ① *parallel* to the real meter and watch the **Logs** tab before ② cutting over.
+- Watching the consumer's reads live (Logs tab) is how every one of these maps was figured out.
+- After a UI update, hard-refresh once (the JS bundle is cache-busted, but proxies can cache).
+
 ---
 
 ## Quick start

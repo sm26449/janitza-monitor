@@ -282,6 +282,53 @@ real îl acceptă ca un `Smart Meter TS 5kA-3` cu date complete, live și corect
 Maparea completă a registrelor este documentată inline în
 [`config/templates/fronius_ts_native.yaml`](../config/templates/fronius_ts_native.yaml).
 
+> ⚠️ **Fronius: doar ca PRIMARY meter.** DataManager-ul își citește contorul
+> **primary** prin această hartă nativă Carlo Gavazzi — exact calea pe care o
+> emulează acest șablon, deci adaugă-l ca meter **primary**. **NU** funcționează
+> ca meter *secondary*: DataManager-ul nu lasă un secondary să ia adresa Modbus
+> **240** (intră în conflict cu adresa primary-ului), deci ar trebui mai întâi
+> să re-adresezi contorul existent. În practică: folosește-l ca să **înlocuiești**
+> contorul Smart Meter primary, nu ca să adaugi al doilea.
+
+---
+
+## Hardware testat
+
+Verificat cap-coadă pe echipamente reale:
+
+| Rol | Hardware | Șablon / rezultat |
+|-----|----------|-------------------|
+| **Contor sursă** | Janitza **UMG 512-PRO** (analizor calitate energie clasa 0.2S) | singurul contor fizic care alimentează tot |
+| **Victron ESS** | Victron Venus OS (Ekrano GX) | `em24_av53` — acceptat ca grid meter Carlo Gavazzi **EM24** (în producție) |
+| **Fronius** | Fronius **Symo** + **DataManager 2.0** (FW `3.34.1-5`, HW `2.6D`) | `fronius_ts_native` — acceptat ca **Smart Meter TS 5kA-3** *primary*, date live complete |
+| **Orice client SunSpec** | — | `fronius_sunspec_meter` — exemplu generic SunSpec 213 |
+
+Stack: Docker · Python + pymodbus · Mosquitto (MQTT) · InfluxDB. Alți consumatori
+Carlo Gavazzi / SunSpec ar trebui să meargă cu șablonul potrivit — raportările și
+șabloanele noi sunt binevenite (vezi Contribuții).
+
+## Gotchas & lecții învățate
+
+Note câștigate greu, ca să-ți salveze ore.
+
+**Fronius DataManager**
+- Își identifică Smart Meter-ul prin **harta nativă Carlo Gavazzi, nu SunSpec**. Un contor SunSpec-213 curat e citit dar **respins** („Timeout, meter not detected"). Folosește `fronius_ts_native`, nu un șablon SunSpec.
+- Identitatea vine din registre proprietare (cod FRONIUS `733` @`0x000b`, measurement mode @`0x0302`, …); datele live sunt în **blocurile native 258 / 286 / 1024**, NU SunSpec `40071`.
+- **Doar ca primary** — un meter *secondary* nu poate lua adresa Modbus **240** (conflict cu primary-ul), deci folosește contorul virtual ca să **înlocuiești** primary-ul, nu ca să adaugi un al doilea.
+- DM-ul arată **serial / CT ratio / VT ratio ca 0/None** pentru un contor emulat (cache-uiește identitatea per meter-id și le citește din registre pe care nu le-am fixat) — **cosmetic**, toate măsurătorile sunt corecte.
+
+**Victron / Carlo Gavazzi EM24**
+- Datele sunt **low-word-first** (`Reg_s32l`: cuvântul 16-bit jos la adresa mai mică). Ordine greșită → valori garbage / inversate.
+- Victron detectează modelul din registrul **`0x000b`** (`1651` pentru EM24 AV53) — pune-l corect sau nu e recunoscut.
+- **A-total trebuie să fie suma aritmetică a curenților de fază**, nu suma vectorială/de nul (~0) — un A inconsistent cu W duce la respingere.
+
+**Registrele de energie** — activă și reactivă sunt **split**: o parte kWh/kVArh (lasă 0) + o parte Wh/VArh. Pune valoarea întreagă în slotul **Wh/VArh**, altfel consumatorul o citește ×1000.
+
+**General**
+- Un contor virtual e **control-critic** — rulează-l mereu ① *în paralel* cu cel real și urmărește tab-ul **Logs** înainte de ② cutover.
+- Urmărirea live a citirilor consumatorului (tab-ul Logs) e modul în care a fost descoperită fiecare mapă.
+- După un update de UI, dă hard-refresh o dată (bundle-ul JS e cache-busted, dar proxy-urile pot cache-ui).
+
 ---
 
 ## Pornire rapidă
