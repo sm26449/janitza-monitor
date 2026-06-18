@@ -74,6 +74,29 @@ docker-compose up -d
 # http://localhost:8080
 ```
 
+### Rulează imaginea prebuilt (fără build local)
+
+O imagine multi-arch (amd64 + arm64, și pentru Raspberry Pi) este publicată în
+GitHub Container Registry la fiecare release. Folosește-o în loc să faci build —
+în `docker-compose.yml` înlocuiește `build: .` cu:
+
+```yaml
+    image: ghcr.io/sm26449/janitza-monitor:latest
+```
+
+…sau rulează direct (porturi: UI + gama virtual-meter + Modbus standard 502):
+
+```bash
+docker run -d --name janitza-monitor --restart unless-stopped \
+  -p 8080:8080 -p 1502-1512:1502-1512 -p 502:502 \
+  --env-file .env -v "$PWD/config:/app/config" \
+  ghcr.io/sm26449/janitza-monitor:latest
+```
+
+> **Porturi:** `8080` = Web UI · `1502-1512` = metere virtuale (extinde cu
+> `VMETER_PORT_START/END`) · `502` = portul Modbus standard pe care unii
+> consumatori îl interoghează (scoate-l dacă e ocupat pe host). Ghid: [docs/MANUAL.ro.md](docs/MANUAL.ro.md).
+
 ### Cu InfluxDB si Grafana (optional)
 
 ```bash
