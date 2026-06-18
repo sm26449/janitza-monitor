@@ -44,11 +44,12 @@ def make_provider(current_values: dict):
             if value is None:
                 return None
             ts = info.get("timestamp")
+            if not ts:
+                return value, None          # no timestamp → don't fabricate freshness
             try:
-                unix = datetime.fromisoformat(ts).timestamp() if ts else time.time()
+                return value, datetime.fromisoformat(ts).timestamp()
             except Exception:  # noqa: BLE001
-                unix = time.time()
-            return value, unix
+                return value, None           # unparseable → treat as not-fresh (fail-safe)
         return None
     return provider
 
@@ -76,27 +77,33 @@ class VirtualMeterManager:
         pub = self.mqtt_publisher
         if pub is None:
             return
-        for row in self.overview():
-            tid = row.get("template")
-            state = ("disabled" if not row.get("enabled")
-                     else "listening" if row.get("running") else "stale")
-            payload = {
-                "id": tid, "name": row.get("name"), "port": row.get("port"),
-                "unit_id": row.get("unit_id", 1), "enabled": bool(row.get("enabled")),
-                "running": bool(row.get("running")), "state": state,
-                "connections": row.get("conn_count", 0),
-                "requests": row.get("requests", 0), "errors": row.get("errors", 0),
-                "last_fresh": row.get("last_fresh"), "ts": int(time.time()),
-            }
+        # iterate a snapshot of the live meters (no per-tick file I/O, no race
+        # with API mutations of self.meters)
+        for vm in list(self.meters):
             try:
-                pub.publish_state(f"vmeter/{tid}/state", json.dumps(payload))
+                st = vm.status()
+                running = bool(st.get("running"))
+                payload = {
+                    "id": st.get("id"), "name": st.get("name"), "port": st.get("port"),
+                    "unit_id": vm.t.transport.get("unit_id", 1),
+                    "enabled": True, "running": running,
+                    "state": "listening" if running else "stale",
+                    "connections": st.get("conn_count", 0),
+                    "requests": st.get("requests", 0), "errors": st.get("errors", 0),
+                    "last_fresh": st.get("last_fresh"), "ts": int(time.time()),
+                }
+                pub.publish_state(f"vmeter/{st.get('id')}/state", json.dumps(payload))
             except Exception as e:  # noqa: BLE001
-                logger.debug("vmeter state publish failed for %s: %s", tid, e)
+                logger.debug("vmeter state publish failed: %s", e)
 
     def start_state_publisher(self, interval: float = 10.0) -> None:
-        """Background thread that publishes meter states to MQTT every `interval`s."""
+        """Background thread that publishes meter states to MQTT every `interval`s.
+        Idempotent — a second call is a no-op while a publisher is already live."""
         if self.mqtt_publisher is None:
             return
+        if getattr(self, "_state_thread", None) and self._state_thread.is_alive():
+            return                                    # already running
+        self._states_stop.clear()
 
         def _loop():
             while not self._states_stop.wait(interval):
@@ -104,7 +111,8 @@ class VirtualMeterManager:
                     self._publish_states()
                 except Exception as e:  # noqa: BLE001
                     logger.warning("vmeter state publisher error: %s", e)
-        threading.Thread(target=_loop, daemon=True, name="vmeter-state-pub").start()
+        self._state_thread = threading.Thread(target=_loop, daemon=True, name="vmeter-state-pub")
+        self._state_thread.start()
         logger.info("virtual-meter state publisher started (every %ss)", interval)
 
     @staticmethod
@@ -152,7 +160,11 @@ class VirtualMeterManager:
             return {"instances": []}
 
     def _save_cfg(self, cfg: dict) -> None:
-        self.config_path.write_text(yaml.safe_dump(cfg, sort_keys=False))
+        # atomic write — this file decides which meters run (can feed an ESS), so
+        # never leave it half-written or let a concurrent reader see a torn file.
+        tmp = self.config_path.with_suffix(".yaml.tmp")
+        tmp.write_text(yaml.safe_dump(cfg, sort_keys=False))
+        os.replace(tmp, self.config_path)
 
     def overview(self) -> list[dict]:
         """All configured instances merged with live running status + preview."""
@@ -537,6 +549,7 @@ class VirtualMeterManager:
                     template.transport.get("port"))
 
     def stop_all(self) -> None:
+        self._states_stop.set()                       # stop the MQTT state publisher
         for vm in self.meters:
             try:
                 vm.stop()

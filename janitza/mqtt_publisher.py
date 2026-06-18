@@ -358,7 +358,7 @@ class MQTTPublisher:
             "name": self.config.ha_device_name,
             "manufacturer": "Janitza electronics GmbH",
             "model": "UMG 512-PRO",
-            "sw_version": "1.4.0",
+            "sw_version": "2.1.0",
         }
 
     def _build_ha_sensor_config(self, register: SelectedRegister, device_info: Dict) -> Dict:

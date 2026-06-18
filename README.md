@@ -455,6 +455,18 @@ docker-compose logs -f
 - Variabilele ENV au prioritate fata de config.yaml
 - Sterge variabila din .env daca vrei sa folosesti valoarea din UI
 
+## Securitate
+
+Interfata web si API-ul REST sunt **fara autentificare** — inclusiv endpoint-urile
+de control (activare/dezactivare contoare virtuale, editare config). Un contor
+virtual poate alimenta o bucla de control (ESS / limitare export), deci trateaza
+acest dispozitiv ca pe unul de **LAN de incredere**:
+
+- Ruleaza-l pe un **LAN privat/de management**, neexpus la internet.
+- Daca ai nevoie de acces remote, pune-l **in spatele unui reverse proxy cu auth**
+  (sau VPN). Nu face port-forward la 8080 / porturile contoarelor.
+- Contoarele virtuale asculta pe `0.0.0.0` implicit — restrictioneaza la nivel de retea.
+
 ## Contributing
 
 Found a bug or have a feature request? Please open an issue on [GitHub Issues](https://github.com/sm26449/janitza-monitor/issues).

@@ -168,18 +168,21 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
     app = FastAPI(
         title="Janitza UMG 512-PRO Monitor",
         description="Monitor and query Janitza power quality analyzer",
-        version="1.0.0",
+        version="2.1.0",
         lifespan=lifespan
     )
 
     # Expose the live value cache so the virtual-meter engine can read it.
     app.state.current_values = current_values
 
-    # CORS
+    # CORS — the UI is same-origin so it needs no CORS; the wildcard only eases
+    # read-only third-party access. Credentials are OFF (wildcard + credentials is
+    # spec-invalid and a CSRF liability). NOTE: the API is UNAUTHENTICATED, incl.
+    # control endpoints — run on a trusted LAN / behind an auth proxy. See README.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_credentials=True,
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )

@@ -300,10 +300,13 @@ class VirtualMeter:
             except Exception as e:  # noqa: BLE001
                 logger.info("virtual meter %s server loop ended: %s", self.t.id, e)
             finally:
-                # Mark not-running so the supervisor restarts us if the loop died
-                # unexpectedly while data is still fresh — the uptime guard.
-                self._running = False
-                self._server = None
+                # Only relinquish the running flag if WE are still the active
+                # server thread — a newer restart may already own the slot, and
+                # clobbering it would drop a healthy server. The supervisor then
+                # restarts us on the next tick if data is still fresh.
+                if threading.current_thread() is self._server_thread:
+                    self._running = False
+                    self._server = None
                 try:
                     loop.close()
                 except Exception:  # noqa: BLE001
@@ -326,7 +329,7 @@ class VirtualMeter:
         connections). A quick local TCP connect confirms the listener actually
         serves; used to force-restart a hung meter."""
         try:
-            with socket.create_connection(("127.0.0.1", port), timeout=1.5):
+            with socket.create_connection(("127.0.0.1", port), timeout=0.5):
                 return True
         except Exception:  # noqa: BLE001
             return False
@@ -442,6 +445,8 @@ class VirtualMeter:
                     except Exception:  # noqa: BLE001
                         peer = None
                 if peer and len(peer) >= 2:
+                    if peer[0] in ("127.0.0.1", "::1", "localhost"):
+                        continue                       # our own liveness probe — not a real consumer
                     out.append({"ip": peer[0], "port": peer[1]})
                 else:
                     out.append({"ip": str(key), "port": None})

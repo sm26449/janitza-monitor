@@ -12,12 +12,12 @@ COPY janitza/ ./janitza/
 COPY ui/ ./ui/
 COPY docs/modbus_data.json ./docs/
 COPY main.py .
+# Ship the default config + meter templates so the prebuilt image is
+# self-contained (a host ./config volume still overlays user edits).
+COPY config/ ./config/
 
-# Create config directory
-RUN mkdir -p config
-
-# Expose ports
-EXPOSE 8080
+# Expose ports: Web UI, the published virtual-meter range, and standard Modbus.
+EXPOSE 8080 1502-1512 502
 
 # Health check — use python stdlib (no curl in the slim image, was the
 # root cause of 40k+ failing health checks since image build).

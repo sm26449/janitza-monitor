@@ -455,6 +455,17 @@ docker-compose logs -f
 - ENV variables take priority over config.yaml
 - Remove the variable from .env if you want to use the UI value
 
+## Security
+
+The Web UI and REST API are **unauthenticated** — including control endpoints
+(virtual-meter enable/disable, config edits). A virtual meter can feed a control
+loop (ESS / export limiting), so treat this as a trusted-LAN appliance:
+
+- Run it on a **private/management LAN**, not exposed to the internet.
+- If you must reach it remotely, put it **behind a reverse proxy with auth** (or
+  a VPN). Do not port-forward 8080 / the meter ports.
+- Virtual meters bind `0.0.0.0` by default — restrict at the network layer.
+
 ## Contributing
 
 Found a bug or have a feature request? Please open an issue on [GitHub Issues](https://github.com/sm26449/janitza-monitor/issues).

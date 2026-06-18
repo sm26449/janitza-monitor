@@ -2,6 +2,28 @@
 
 Toate modificarile notabile ale proiectului sunt documentate in acest fisier.
 
+## [2.1.0] - 2026-06-18
+
+### Adaugat
+- **Monitorizare prin MQTT** - fiecare contor virtual isi publica starea (retained) pe `<prefix>/vmeter/<id>/state` la 10s, pentru alertare externa (ex. alertd: `state != "listening"` sau `var_age()`).
+- **Sonda de liveness** - detecteaza un server de contor blocat (thread viu dar care nu mai accepta conexiuni) si il reporneste; pe langa recovery-ul la crash de thread.
+- Imagine prebuilt **multi-arch (amd64/arm64)** publicata automat pe GHCR la fiecare release; **manual de utilizare** + **ghid Virtual Meter** bilingve (EN/RO) cu diagrame.
+
+### Reparat
+- XSS in pagina Virtual Meters (nume/id sablon, valori string neescapate); poll-urile se opresc cand tab-ul e ascuns; cache-buster pe CSS; accesibilitate acordeon (tastatura/ARIA).
+- Scriere **atomica** a config-ului de instante; race la restart de server (thread); freshness watchdog nu mai fabrica prospetime cand lipseste timestamp-ul (fail-safe).
+- Dockerfile include `config/` (imaginea prebuilt vine cu sabloanele); curatat IP/org private din `backfill.py`; CORS fara credentiale.
+
+## [2.0.0] - 2026-06-18
+
+### Adaugat
+- **Motor de contoare virtuale** - serveste un singur Janitza ca mai multe contoare Modbus definite prin sabloane YAML: Carlo Gavazzi EM24 -> Victron ESS, Fronius Smart Meter TS -> Fronius DataManager (mapa nativa Carlo Gavazzi), si un exemplu generic SunSpec 213.
+- **Observabilitate** - pagina cu tab-uri (Meters/Templates/Logs/Stats): jurnal live al ultimelor 1024 cereri Modbus (adresa/count/raspuns/latenta), chart cereri/secunda, registrele cele mai citite, conexiuni client; import/export sabloane YAML.
+- **Fiabilitate** - watchdog de prospetime (sursa stale -> opreste = fail-safe consumator), recovery automat la crash de thread, I/O intarit (Modbus client/server, MQTT, InfluxDB).
+
+### Schimbat
+- Relicentiat la **PolyForm Noncommercial 1.0.0** (gratis pentru uz personal/necomercial; uz comercial necesita licenta separata).
+
 ## [1.5.0] - 2026-06-03
 
 ### Adaugat

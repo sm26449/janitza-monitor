@@ -570,7 +570,7 @@ class JanitzaMonitor {
         const pr = data.port_range || {};
         this._vmPortRange = pr;                       // reused by the template editor
         const opts = templates.filter(t => !configured.has(t.id))
-            .map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+            .map(t => `<option value="${this._esc(t.id)}">${this._esc(t.name)}</option>`).join('');
         const noFree = pr.next_free == null;
         const canAdd = opts && !noFree;
         const portHint = (pr.start != null)
@@ -602,7 +602,7 @@ class JanitzaMonitor {
             const prev = Object.entries(m.preview || {})
                 .map(([k, v]) => `<tr><td style="padding:2px 10px 2px 0;color:#8a94a0;">${this._esc(k)}</td>`
                     + `<td style="padding:2px 0;text-align:right;font-variant-numeric:tabular-nums;">`
-                    + `${v === null || v === undefined ? '—' : (typeof v === 'number' ? v.toFixed(2) : v)}</td></tr>`)
+                    + `${v === null || v === undefined ? '—' : (typeof v === 'number' ? v.toFixed(2) : this._esc(v))}</td></tr>`)
                 .join('');
             const conns = m.connections || [];
             const connRows = conns.length
@@ -612,7 +612,7 @@ class JanitzaMonitor {
                 + (m.running ? ' · ' + (m.requests ?? 0) + ' req' : '');
             return `
             <div class="settings-card vm-acc" style="margin-bottom:12px;">
-              <div class="settings-card-header vm-acc-head" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+              <div class="settings-card-header vm-acc-head" role="button" tabindex="0" aria-expanded="false" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
                 <div style="display:flex;align-items:center;gap:10px;min-width:0;">
                   <i class="bi bi-chevron-right vm-acc-chev" style="transition:transform .15s ease;color:#8a94a0;"></i>
                   <h3 style="margin:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="bi bi-hdd-network"></i> ${this._esc(m.name || m.template)}</h3>
@@ -711,15 +711,22 @@ class JanitzaMonitor {
         el.querySelectorAll('button[data-vm-export]').forEach(b =>
             b.addEventListener('click', () => this.exportTemplate(b.dataset.vmExport)));
         // accordion: click a meter header to expand/collapse its body
-        el.querySelectorAll('.vm-acc-head').forEach(h => h.addEventListener('click', () => {
-            const card = h.closest('.vm-acc');
-            const body = card && card.querySelector('.vm-acc-body');
-            const chev = h.querySelector('.vm-acc-chev');
-            if (!body) return;
-            const opening = body.hidden;
-            body.hidden = !opening;
-            if (chev) chev.style.transform = opening ? 'rotate(90deg)' : '';
-        }));
+        el.querySelectorAll('.vm-acc-head').forEach(h => {
+            const toggle = () => {
+                const card = h.closest('.vm-acc');
+                const body = card && card.querySelector('.vm-acc-body');
+                const chev = h.querySelector('.vm-acc-chev');
+                if (!body) return;
+                const opening = body.hidden;
+                body.hidden = !opening;
+                h.setAttribute('aria-expanded', String(opening));
+                if (chev) chev.style.transform = opening ? 'rotate(90deg)' : '';
+            };
+            h.addEventListener('click', toggle);
+            h.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+            });
+        });
         // wire import (file picker → POST yaml)
         const importBtn = document.getElementById('vmImportBtn');
         const importFile = document.getElementById('vmImportFile');
@@ -850,6 +857,7 @@ class JanitzaMonitor {
         const id = sel.value;
         if (!id) { out.innerHTML = '<p style="color:#8a94a0;">No running meter selected.</p>'; return; }
         const load = async () => {
+            if (document.hidden) return;          // don't poll a backgrounded tab
             let d;
             try { d = await (await fetch(`/api/virtual-meters/${encodeURIComponent(id)}/stats?limit=200`)).json(); }
             catch (e) { out.innerHTML = '<p style="color:#c0392b;">Could not load.</p>'; return; }
@@ -890,6 +898,7 @@ class JanitzaMonitor {
         const id = sel.value;
         if (!id) { out.innerHTML = '<p style="color:#8a94a0;">No running meter selected.</p>'; return; }
         const load = async () => {
+            if (document.hidden) return;          // don't poll a backgrounded tab
             let d;
             try { d = await (await fetch(`/api/virtual-meters/${encodeURIComponent(id)}/stats?limit=1`)).json(); }
             catch (e) { out.innerHTML = '<p style="color:#c0392b;">Could not load.</p>'; return; }
@@ -934,7 +943,7 @@ class JanitzaMonitor {
         const step = n > 1 ? w / (n - 1) : w;
         const pts = values.map((v, i) => `${(i * step).toFixed(1)},${(h - (v / max) * (h - 6) - 3).toFixed(1)}`).join(' ');
         const area = `0,${h} ${pts} ${((n - 1) * step).toFixed(1)},${h}`;
-        return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" style="display:block;">
+        return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" role="img" aria-label="requests per second, peak ${max}" style="display:block;">
           <polygon points="${area}" fill="rgba(59,130,246,0.13)"/>
           <polyline points="${pts}" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
           <text x="3" y="13" font-size="11" fill="#8a94a0">peak ${max}/s</text></svg>`;
@@ -1275,7 +1284,6 @@ class JanitzaMonitor {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-            console.log('WebSocket connected');
             this.updateConnectionStatus(true);
 
             // Show reconnected banner if was disconnected
@@ -1287,7 +1295,6 @@ class JanitzaMonitor {
         };
 
         this.ws.onclose = () => {
-            console.log('WebSocket disconnected');
             this.updateConnectionStatus(false);
             this.wasDisconnected = true;
 

@@ -48,9 +48,9 @@ import urllib.request
 from datetime import datetime, timezone
 
 # ── Config (env-overridable; same vars as the collector) ─────────────────────
-METER_URL = os.environ.get("JANITZA_METER_URL") or f"http://{os.environ.get('MODBUS_HOST', '192.168.100.17')}"
+METER_URL = os.environ.get("JANITZA_METER_URL") or f"http://{os.environ.get('MODBUS_HOST', '192.168.1.100')}"
 INFLUX_URL = os.environ.get("INFLUXDB_URL", "http://influxdb:8086")
-INFLUX_ORG = os.environ.get("INFLUXDB_ORG", "pv-stack")
+INFLUX_ORG = os.environ.get("INFLUXDB_ORG", "janitza")
 INFLUX_BUCKET = os.environ.get("INFLUXDB_BUCKET", "janitza")
 INFLUX_TOKEN = os.environ.get("INFLUXDB_TOKEN", "").strip()
 MIN_GAP_SEC = int(os.environ.get("JANITZA_MIN_GAP_SEC", "180"))

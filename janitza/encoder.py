@@ -1,10 +1,14 @@
-"""Register encoder — the inverse of RegisterParser.
+"""Register encoder — engineering value → Modbus registers.
 
 Turns an engineering value into the 16-bit Modbus registers a consumer expects,
-honouring data type, word/byte order and scale. It mirrors RegisterParser
-exactly so encode→parse is a lossless round-trip (verified in tests) — that
-round-trip guarantee is what lets us trust a virtual meter feeding a control
-loop.
+honouring data type, word/byte order and scale. The word order follows the
+**standard Modbus convention used by real consumers** (Victron dbus-modbus-client
+`Reg_s32l`/`Reg_*b`: little = low word at the lower address). This is the
+authority — NOT `RegisterParser`, whose little-endian *integer* read path is a
+known, internally-inconsistent bug (see tests/test_encoder.py). Do not "fix" the
+encoder to match that parser: it would silently invert every little-endian value
+(e.g. grid power) fed into a control loop. Conformance is verified in tests
+against the consumer convention, not against the parser.
 
 Scale convention (matches Victron's dbus-modbus-client `Reg_*` definitions):
     raw_register = round(engineering_value * scale)
