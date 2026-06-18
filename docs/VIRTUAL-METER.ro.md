@@ -340,6 +340,14 @@ Stack: Docker · Python + pymodbus · Mosquitto (MQTT) · InfluxDB. Alți consum
 Carlo Gavazzi / SunSpec ar trebui să meargă cu șablonul potrivit — raportările și
 șabloanele noi sunt binevenite (vezi Contribuții).
 
+> 🙏 **Ai un Fronius GEN24?** Noi n-am putut testa unul. Spre deosebire de Symo +
+> DataManager 2.0 (care cere harta nativă CG), firmware-ul GEN24 *suportă* un
+> contor **SunSpec** pe Modbus-TCP — deci `fronius_sunspec_meter` e probabil
+> șablonul potrivit acolo. Dacă ai un GEN24: adaugă acel șablon pe un port liber,
+> orientează contorul invertorului spre el, urmărește tab-ul **Logs** ca să vezi
+> ce citește, și te rog deschide un issue/PR cu rezultatul. E singurul consumator
+> pe care nu-l putem verifica noi — ajutorul comunității îl închide.
+
 ## Gotchas & lecții învățate
 
 Note câștigate greu, ca să-ți salveze ore.

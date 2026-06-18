@@ -322,6 +322,14 @@ Stack: Docker · Python + pymodbus · Mosquitto (MQTT) · InfluxDB. Other Carlo
 Gavazzi / SunSpec consumers should work with the matching template — reports and
 new templates welcome (see Contributing).
 
+> 🙏 **Got a Fronius GEN24?** We couldn't test one. Unlike the Symo + DataManager 2.0
+> (which needs the native CG map), GEN24 firmware *does* support a Modbus-TCP
+> **SunSpec** meter — so `fronius_sunspec_meter` is likely the right template
+> there. If you have a GEN24: add that template on a spare port, point the
+> inverter's meter at it, watch the **Logs** tab to see what it reads, and please
+> open an issue/PR with the result. That's the one consumer we can't verify
+> ourselves — community help closes it.
+
 ## Gotchas & lessons learned
 
 Hard-won notes from getting real consumers to accept these meters — they'll save you hours.
