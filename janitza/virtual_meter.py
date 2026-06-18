@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import socket
 import threading
 import time
 from collections import deque
@@ -320,6 +321,16 @@ class VirtualMeter:
         return (self._running and self._server_thread is not None
                 and self._server_thread.is_alive())
 
+    def _serving_ok(self, port: int) -> bool:
+        """Liveness probe: a thread can be alive() but wedged (not accepting
+        connections). A quick local TCP connect confirms the listener actually
+        serves; used to force-restart a hung meter."""
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=1.5):
+                return True
+        except Exception:  # noqa: BLE001
+            return False
+
     def _stop_server(self) -> None:
         if self._server and self._server_loop:
             try:
@@ -350,6 +361,9 @@ class VirtualMeter:
         flag), so an unexpected loop death self-heals on the next tick. The whole
         body is wrapped so the supervisor itself can never die."""
         restart_fails = 0
+        probe_fails = 0
+        tick = 0
+        port = int(self.t.transport.get("port", 1502))
         while not self._stop.is_set():
             try:
                 newest = self._rebuild_block()
@@ -369,6 +383,19 @@ class VirtualMeter:
                                          self.t.id, restart_fails, e)
                     else:
                         self._push_to_ctx()
+                        # liveness probe (~every 10s): a thread can be alive but
+                        # wedged. If it stops accepting connections for 3 probes
+                        # (~30s) while data is fresh, force a restart.
+                        tick += 1
+                        if tick % 10 == 0:
+                            if self._serving_ok(port):
+                                probe_fails = 0
+                            else:
+                                probe_fails += 1
+                                if probe_fails >= 3:
+                                    logger.warning("virtual meter %s alive but not serving — force-restarting", self.t.id)
+                                    self._stop_server()    # next tick → _alive False → restart
+                                    probe_fails = 0
                 else:
                     if self._alive():
                         self._stop_server()           # stale → stop responding

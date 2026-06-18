@@ -6,9 +6,11 @@ VirtualMeter per enabled instance. Isolated from the UI/MQTT/InfluxDB paths.
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -54,15 +56,56 @@ def make_provider(current_values: dict):
 class VirtualMeterManager:
     def __init__(self, current_values: dict,
                  config_path: str = "config/virtual_meters.yaml",
-                 templates_dir: str = "config/templates"):
+                 templates_dir: str = "config/templates",
+                 mqtt_publisher=None):
         self.current_values = current_values
         self.config_path = Path(config_path)
         self.templates_dir = Path(templates_dir)
         self.meters: list[VirtualMeter] = []
+        self.mqtt_publisher = mqtt_publisher        # optional: publish state to MQTT
+        self._states_stop = threading.Event()
         # Published host port range (docker-compose publishes this once). Instance
         # ports are constrained to it so an added meter is always LAN-reachable.
         self.port_start = self._env_int("VMETER_PORT_START", 1502)
         self.port_end = self._env_int("VMETER_PORT_END", 1512)
+
+    # ── state → MQTT (so alertd rules can monitor the meters) ─────────────
+    def _publish_states(self) -> None:
+        """Publish each configured meter's health to MQTT (retained) so external
+        monitors (e.g. alertd) can alert on a meter going down / stale / erroring."""
+        pub = self.mqtt_publisher
+        if pub is None:
+            return
+        for row in self.overview():
+            tid = row.get("template")
+            state = ("disabled" if not row.get("enabled")
+                     else "listening" if row.get("running") else "stale")
+            payload = {
+                "id": tid, "name": row.get("name"), "port": row.get("port"),
+                "unit_id": row.get("unit_id", 1), "enabled": bool(row.get("enabled")),
+                "running": bool(row.get("running")), "state": state,
+                "connections": row.get("conn_count", 0),
+                "requests": row.get("requests", 0), "errors": row.get("errors", 0),
+                "last_fresh": row.get("last_fresh"), "ts": int(time.time()),
+            }
+            try:
+                pub.publish_state(f"vmeter/{tid}/state", json.dumps(payload))
+            except Exception as e:  # noqa: BLE001
+                logger.debug("vmeter state publish failed for %s: %s", tid, e)
+
+    def start_state_publisher(self, interval: float = 10.0) -> None:
+        """Background thread that publishes meter states to MQTT every `interval`s."""
+        if self.mqtt_publisher is None:
+            return
+
+        def _loop():
+            while not self._states_stop.wait(interval):
+                try:
+                    self._publish_states()
+                except Exception as e:  # noqa: BLE001
+                    logger.warning("vmeter state publisher error: %s", e)
+        threading.Thread(target=_loop, daemon=True, name="vmeter-state-pub").start()
+        logger.info("virtual-meter state publisher started (every %ss)", interval)
 
     @staticmethod
     def _env_int(name: str, default: int) -> int:

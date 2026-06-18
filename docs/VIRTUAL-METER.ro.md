@@ -187,6 +187,27 @@ O linie reală din jurnalul de interogări arată astfel:
 | `PUT /api/virtual-meters/template/{id}` | creează / editează un șablon |
 | `POST /api/virtual-meters/{id}/toggle?on=true` | activează / dezactivează o instanță |
 
+### Monitorizare prin MQTT (ex. alertd)
+
+La fiecare ~10 s, starea fiecărui contor este publicată **retained** pe
+`<MQTT_PREFIX>/vmeter/<id>/state` (ex. `janitza/umg512/vmeter/fronius_ts_native/state`):
+
+```json
+{ "id": "fronius_ts_native", "name": "Fronius Smart Meter TS 5kA-3 (native CG)",
+  "port": 502, "unit_id": 1, "enabled": true, "running": true,
+  "state": "listening", "connections": 1, "requests": 84213, "errors": 0,
+  "last_fresh": "2026-06-18T22:29:17", "ts": 1781821757 }
+```
+
+`state` e `listening` / `stale` / `disabled`. Orientează orice monitor spre el —
+ex. o variabilă **alertd** pe acel topic cu `json_path: state` și reguli precum:
+
+- `state != "listening"` cât e activat → contorul a încetat să servească (sursă
+  stale sau crash) — alertează operatorul.
+- `var_age() > 60` → publisher-ul însuși e căzut (monitorul a crăpat) — câmpul
+  `ts` / vechimea mesajului retained face asta trivial de detectat.
+- `errors` în creștere → consumatorul lovește citiri illegal-address (mapă greșită).
+
 ---
 
 ## Șabloane

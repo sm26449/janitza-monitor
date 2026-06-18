@@ -88,7 +88,8 @@ class JanitzaMonitor:
         # the live Janitza values). Reads the API's live value cache. Disabled
         # by default in config/virtual_meters.yaml — enable an instance only
         # when ready to validate it (control-critical: it can feed an ESS).
-        self.vmeter_manager = VirtualMeterManager(self.app.state.current_values)
+        self.vmeter_manager = VirtualMeterManager(self.app.state.current_values,
+                                                  mqtt_publisher=self.mqtt_publisher)
         self.app.state.vmeter_manager = self.vmeter_manager   # for the /api/virtual-meters routes
 
     def _connect_mqtt_background(self):
@@ -173,6 +174,7 @@ class JanitzaMonitor:
         # Virtual meters (each runs its own isolated server thread).
         if self.vmeter_manager:
             self.vmeter_manager.start_all()
+            self.vmeter_manager.start_state_publisher()   # publish health to MQTT for alertd
 
         logger.info(f"Starting web server on {self.config.ui.host}:{self.config.ui.port}")
 

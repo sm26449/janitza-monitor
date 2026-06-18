@@ -205,6 +205,17 @@ class MQTTPublisher:
         self.connected = False
         logger.info("MQTT disconnected")
 
+    def publish_state(self, subtopic: str, payload: str, retain: bool = True) -> None:
+        """Publish a raw payload to ``{prefix}/{subtopic}`` (e.g. virtual-meter
+        state for alertd to monitor). No-op if disconnected; never raises."""
+        try:
+            if not self.connected or not self.client:
+                return
+            self.client.publish(f"{self.config.topic_prefix}/{subtopic}", payload,
+                                 qos=0, retain=retain)
+        except Exception as e:  # noqa: BLE001
+            logger.debug("publish_state(%s) failed: %s", subtopic, e)
+
     def _build_topic(self, register: SelectedRegister) -> str:
         """Build MQTT topic for a register."""
         if register.mqtt_topic:

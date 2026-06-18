@@ -172,6 +172,27 @@ A real query-log line looks like:
 | `PUT /api/virtual-meters/template/{id}` | create / edit a template |
 | `POST /api/virtual-meters/{id}/toggle?on=true` | enable / disable an instance |
 
+### Monitoring via MQTT (e.g. alertd)
+
+Every ~10 s each meter's health is published **retained** to
+`<MQTT_PREFIX>/vmeter/<id>/state` (e.g. `janitza/umg512/vmeter/fronius_ts_native/state`):
+
+```json
+{ "id": "fronius_ts_native", "name": "Fronius Smart Meter TS 5kA-3 (native CG)",
+  "port": 502, "unit_id": 1, "enabled": true, "running": true,
+  "state": "listening", "connections": 1, "requests": 84213, "errors": 0,
+  "last_fresh": "2026-06-18T22:29:17", "ts": 1781821757 }
+```
+
+`state` is `listening` / `stale` / `disabled`. Point any monitor at it — e.g. an
+**alertd** variable on that topic with `json_path: state`, and rules like:
+
+- `state != "listening"` while enabled → the meter stopped serving (source stale
+  or crashed) — page the operator.
+- `var_age() > 60` → the publisher itself is down (monitor crashed) — the `ts`
+  field / retained message age makes this trivial to detect.
+- `errors` rising → the consumer is hitting illegal-address reads (map mismatch).
+
 ---
 
 ## Templates
