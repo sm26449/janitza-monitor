@@ -1,0 +1,40 @@
+# Carlo Gavazzi EM24 Ethernet (EM24DINAV53XE1X — 3-phase 4-wire) emulation.
+# Register map authoritative from Victron dbus-modbus-client/carlo_gavazzi.py
+# (consumer detects model via reg 0x000b == 1651). live: sources are the
+# Janitza UMG 512-PRO register names (current_values 'name' field).
+template:
+  id: em24_av53
+  name: "Carlo Gavazzi EM24 (AV53, 3-phase 4-wire) — Victron grid meter"
+  kind: flat
+  byte_order: little          # EM24 uses Reg_s32l (low word first)
+  transport: { type: tcp, port: 1502, unit_id: 1, bind: "0.0.0.0" }
+  registers:
+    # ── identification + init (constants) ──
+    - { addr: 0x000b, type: uint16, source: { const: 1651 } }     # model = EM24DINAV53XE1X
+    - { addr: 0xa000, type: uint16, source: { const: 7 } }        # application "H"
+    - { addr: 0xa100, type: uint16, source: { const: 3 } }        # front switch (unlocked)
+    - { addr: 0x1002, type: uint16, source: { const: 0 } }        # phase config: 3P 4-wire
+    - { addr: 0x0032, type: uint16, source: { const: 0 } }        # phase sequence normal
+    - { addr: 0x0302, type: uint16, source: { const: 1 } }        # hardware version
+    - { addr: 0x0304, type: uint16, source: { const: 1 } }        # firmware version
+    - { addr: 0x5000, type: string, length: 7, source: { const_str: "JANITZA" } }
+    # ── totals (live) ──  W: scale 10 ; freq: 10 ; energy Wh->kWh*10 = *0.01
+    - { addr: 0x0028, type: int32,  scale: 10,   source: { live: "_G_P_SUM3" } }
+    - { addr: 0x0033, type: uint16, scale: 10,   source: { live: "_G_FREQ" } }
+    - { addr: 0x0034, type: int32,  scale: 0.01, source: { live: "_WH_V[4]" } }    # Forward (import) total
+    - { addr: 0x004e, type: int32,  scale: 0.01, source: { live: "_WH_Z[4]" } }    # Reverse (export) total
+    # ── per-phase forward (import) energy — Victron reads 0x0040/42/44 (s32l ×10) ──
+    - { addr: 0x0040, type: int32,  scale: 0.01, source: { live: "_WH_V[0]" } }    # L1 Energy/Forward
+    - { addr: 0x0042, type: int32,  scale: 0.01, source: { live: "_WH_V[1]" } }    # L2 Energy/Forward
+    - { addr: 0x0044, type: int32,  scale: 0.01, source: { live: "_WH_V[2]" } }    # L3 Energy/Forward
+    # (EM24 has NO per-phase reverse energy register — those paths stay 0 on a real EM24 too)
+    # ── per phase L1/L2/L3 (live) ──
+    - { addr: 0x0000, type: int32,  scale: 10,   source: { live: "_G_ULN[0]" } }
+    - { addr: 0x0002, type: int32,  scale: 10,   source: { live: "_G_ULN[1]" } }
+    - { addr: 0x0004, type: int32,  scale: 10,   source: { live: "_G_ULN[2]" } }
+    - { addr: 0x000c, type: int32,  scale: 1000, source: { live: "_ILN[0]" } }
+    - { addr: 0x000e, type: int32,  scale: 1000, source: { live: "_ILN[1]" } }
+    - { addr: 0x0010, type: int32,  scale: 1000, source: { live: "_ILN[2]" } }
+    - { addr: 0x0012, type: int32,  scale: 10,   source: { live: "_PLN[0]" } }
+    - { addr: 0x0014, type: int32,  scale: 10,   source: { live: "_PLN[1]" } }
+    - { addr: 0x0016, type: int32,  scale: 10,   source: { live: "_PLN[2]" } }

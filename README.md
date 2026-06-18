@@ -4,6 +4,8 @@
 
 Monitor profesional pentru analizoarele de calitate a energiei Janitza UMG 512-PRO. Citeste date prin Modbus TCP si le publica in MQTT si/sau InfluxDB.
 
+📖 **[Manual de utilizare](docs/MANUAL.ro.md)** · 🔌 **[Ghid Virtual Meter](docs/VIRTUAL-METER.ro.md)**
+
 ## Caracteristici
 
 - **Citire Modbus TCP** - Conectare directa la dispozitivul Janitza
@@ -18,7 +20,35 @@ Monitor profesional pentru analizoarele de calitate a energiei Janitza UMG 512-P
 - **Thresholds** - Color coding pentru valori (warning/danger)
 - **Unit Scaling** - Conversie automata Wh→kWh, W→kW, VA→kVA pentru vizualizare clara
 - **Gauge Widgets** - Min/max/culoare configurabile cu colorare bazata pe thresholds
+- **🔌 Virtual Meters** - Servește un singur Janitza ca **mai multe metere virtuale** (Carlo Gavazzi EM24 pentru Victron, Fronius Smart Meter pentru DataManager, SunSpec…), definite prin template-uri, cu **observabilitate completă** a fiecărui request Modbus. Vezi **[docs/VIRTUAL-METER.ro.md](docs/VIRTUAL-METER.ro.md)**.
 - **pv-stack Integration** - Template serviciu pentru Docker Services Manager
+
+## 🔌 Virtual Meters
+
+Un singur UMG 512-PRO la punctul de racord măsoară tot. Dar Victron vrea un
+*Carlo Gavazzi EM24*, Fronius vrea un *Fronius Smart Meter*, altul vrea SunSpec.
+În loc să cumperi trei metere, le **definești ca template-uri** și le servești pe
+toate din meter-ul pe care îl ai deja — fiecare ca server Modbus-TCP izolat,
+alimentat din valorile live, cu un **watchdog de prospețime** (sursă stale → nu
+mai răspunde, ca fail-safe-ul consumatorului să se activeze).
+
+```mermaid
+flowchart LR
+    UMG["Janitza UMG 512-PRO"] --> ENG["Virtual Meter Engine"]
+    ENG -->|"hartă EM24 :1502"| V["Victron ESS"]
+    ENG -->|"Fronius SM :502"| F["Fronius DataManager"]
+    ENG -->|"SunSpec 213"| X["orice client SunSpec"]
+```
+
+**Două moduri:** ① rulezi *în paralel* cu meter-ul real ca să validezi fără risc,
+apoi ② *consolidezi* — meter-ul virtual îl înlocuiește pe cel fizic. Cu
+observabilitate completă (query log) tot drumul.
+
+Plus **observabilitate built-in**: ultimele 1024 query-uri (timp/FC/addr/count/
+răspuns/latență), countere, tx/rx, chart req/s — exact instrumentul cu care am
+făcut reverse-engineering la protocolul Fronius Smart Meter (vezi case study în doc).
+
+→ **Ghid complet cu diagrame, exemple și cum contribui: [docs/VIRTUAL-METER.ro.md](docs/VIRTUAL-METER.ro.md)**
 
 ## Instalare Rapida
 
@@ -400,27 +430,16 @@ Found a bug or have a feature request? Please open an issue on [GitHub Issues](h
 
 ## License
 
-MIT License - Free and open source software.
+**PolyForm Noncommercial License 1.0.0** — free for personal and other
+**noncommercial** use; commercial use requires a separate license.
 
 Copyright (c) 2024-2026 Stefan M <sm26449@diysolar.ro>
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+You may use, copy, modify, and share this software **for any noncommercial
+purpose** — personal, hobby, research, education, or non-profit. **Commercial
+use is not permitted** under this license; contact the author for a commercial
+license. Full terms in [LICENSE](LICENSE) ·
+<https://polyformproject.org/licenses/noncommercial/1.0.0/>
 
 ---
 

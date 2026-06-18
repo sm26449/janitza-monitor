@@ -1,0 +1,21 @@
+# Virtual meters served from the live Janitza values.
+#
+# SAFETY: a meter here can feed a control-critical consumer (Victron ESS grid
+# meter, Fronius export limiting). Shipped DISABLED — enable only to validate IN
+# PARALLEL with the real meter, confirm the consumer's grid-loss fail-safe, and
+# only then cut over. Ports must be inside the published range (compose).
+# See docs/VIRTUAL-METER.md.
+instances:
+  # Carlo Gavazzi EM24 -> Victron Venus grid meter.
+  - template: em24_av53
+    enabled: false
+    port: 1502
+    unit_id: 1
+    stale_after_s: 15
+  # Fronius Smart Meter TS 5kA-3 (native CG map) -> Fronius Symo DataManager.
+  # The DataManager polls the meter on the standard Modbus port 502.
+  - template: fronius_ts_native
+    enabled: false
+    port: 502
+    unit_id: 1
+    stale_after_s: 15

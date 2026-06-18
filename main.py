@@ -16,6 +16,7 @@ from janitza.modbus_client import ModbusClient
 from janitza.mqtt_publisher import MQTTPublisher
 from janitza.influxdb_publisher import InfluxDBPublisher
 from janitza.api import create_api
+from janitza.virtual_meter_manager import VirtualMeterManager
 
 # Setup logging
 logging.basicConfig(
@@ -36,6 +37,7 @@ class JanitzaMonitor:
         self.influxdb_publisher = None
         self.app = None
         self.ws_manager = None
+        self.vmeter_manager = None
         self.running = False
 
     def setup(self):
@@ -81,6 +83,13 @@ class JanitzaMonitor:
         )
 
         logger.info("API server initialized")
+
+        # Virtual meters (config-driven Modbus servers — emulate EM24/etc. from
+        # the live Janitza values). Reads the API's live value cache. Disabled
+        # by default in config/virtual_meters.yaml — enable an instance only
+        # when ready to validate it (control-critical: it can feed an ESS).
+        self.vmeter_manager = VirtualMeterManager(self.app.state.current_values)
+        self.app.state.vmeter_manager = self.vmeter_manager   # for the /api/virtual-meters routes
 
     def _connect_mqtt_background(self):
         """Connect to MQTT in background thread."""
@@ -161,12 +170,19 @@ class JanitzaMonitor:
         )
         modbus_thread.start()
 
+        # Virtual meters (each runs its own isolated server thread).
+        if self.vmeter_manager:
+            self.vmeter_manager.start_all()
+
         logger.info(f"Starting web server on {self.config.ui.host}:{self.config.ui.port}")
 
     def stop(self):
         """Stop all components."""
         self.running = False
         logger.info("Shutting down...")
+
+        if self.vmeter_manager:
+            self.vmeter_manager.stop_all()
 
         if self.modbus_client:
             self.modbus_client.disconnect()

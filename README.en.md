@@ -4,6 +4,8 @@
 
 Professional monitor for Janitza UMG 512-PRO power quality analyzers. Reads data via Modbus TCP and publishes to MQTT and/or InfluxDB.
 
+📖 **[User Manual](docs/MANUAL.md)** · 🔌 **[Virtual Meter guide](docs/VIRTUAL-METER.md)**
+
 ## Features
 
 - **Modbus TCP Reader** - Direct connection to Janitza device
@@ -18,7 +20,35 @@ Professional monitor for Janitza UMG 512-PRO power quality analyzers. Reads data
 - **Thresholds** - Color coding for values (warning/danger)
 - **Unit Scaling** - Automatic Wh→kWh, W→kW, VA→kVA conversion for readability
 - **Gauge Widgets** - Configurable min/max/color with threshold-based coloring
+- **🔌 Virtual Meters** - Serve one Janitza as **many virtual meters** (Carlo Gavazzi EM24 for Victron, Fronius Smart Meter for the DataManager, SunSpec…), defined as templates, with **full observability** of every Modbus request. See **[docs/VIRTUAL-METER.md](docs/VIRTUAL-METER.md)**.
 - **pv-stack Integration** - Service template for Docker Services Manager
+
+## 🔌 Virtual Meters
+
+One UMG 512-PRO at the grid connection point measures everything. But Victron
+wants a *Carlo Gavazzi EM24*, Fronius wants a *Fronius Smart Meter*, another
+system wants SunSpec. Instead of buying three meters, you **define them as
+templates** and serve them all from the meter you already have — each an isolated
+Modbus-TCP server fed from the live values, with a **freshness watchdog** (stale
+source → stop responding, so the consumer's own fail-safe engages).
+
+```mermaid
+flowchart LR
+    UMG["Janitza UMG 512-PRO"] --> ENG["Virtual Meter Engine"]
+    ENG -->|"EM24 map :1502"| V["Victron ESS"]
+    ENG -->|"Fronius SM :502"| F["Fronius DataManager"]
+    ENG -->|"SunSpec 213"| X["any SunSpec client"]
+```
+
+**Two modes:** ① run *parallel* to the real meter to validate risk-free, then
+② *consolidate* — the virtual meter replaces the physical one. Full query-log
+observability the whole way.
+
+Plus **built-in observability**: the last 1024 queries (time/FC/addr/count/
+response/latency), counters, tx/rx, a requests-per-second chart — the very tool
+we used to reverse-engineer the Fronius Smart Meter protocol (case study in the doc).
+
+→ **Full guide with diagrams, examples and how to contribute: [docs/VIRTUAL-METER.md](docs/VIRTUAL-METER.md)**
 
 ## Quick Start
 
@@ -400,27 +430,16 @@ Found a bug or have a feature request? Please open an issue on [GitHub Issues](h
 
 ## License
 
-MIT License - Free and open source software.
+**PolyForm Noncommercial License 1.0.0** — free for personal and other
+**noncommercial** use; commercial use requires a separate license.
 
 Copyright (c) 2024-2026 Stefan M <sm26449@diysolar.ro>
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+You may use, copy, modify, and share this software **for any noncommercial
+purpose** — personal, hobby, research, education, or non-profit. **Commercial
+use is not permitted** under this license; contact the author for a commercial
+license. Full terms in [LICENSE](LICENSE) ·
+<https://polyformproject.org/licenses/noncommercial/1.0.0/>
 
 ---
 

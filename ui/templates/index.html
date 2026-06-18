@@ -48,6 +48,10 @@
                     <i class="bi bi-gear"></i>
                     <span>Config</span>
                 </button>
+                <button class="nav-tab" data-page="vmeters">
+                    <i class="bi bi-hdd-network"></i>
+                    <span>Virtual Meters</span>
+                </button>
             </nav>
 
             <!-- Status Indicators -->
@@ -449,6 +453,21 @@
                     <div class="selected-registers-list" id="selectedRegistersList"></div>
                 </div>
             </div>
+
+            <!-- Virtual Meters page -->
+            <div class="page" id="vmetersPage">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:16px 20px;gap:16px;">
+                    <div>
+                        <h2 style="margin:0;"><i class="bi bi-hdd-network"></i> Virtual Meters</h2>
+                        <p style="margin:6px 0 0;color:#8a94a0;font-size:13px;max-width:680px;">
+                            Serve the live Janitza values as a standard Modbus meter so other systems read them natively
+                            (EM24 → Victron grid meter, Fronius Smart Meter → DataManager). <b>Enable only to validate in
+                            parallel with the real meter</b> — this feeds a control-critical reference.</p>
+                    </div>
+                    <button class="btn" id="vmRefreshBtn"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                </div>
+                <div id="vmetersContent" style="padding:0 20px 24px;"></div>
+            </div>
         </div>
 
         <!-- Status Bar -->
@@ -577,6 +596,21 @@
             <div class="modal-footer">
                 <button class="btn btn-ghost" onclick="app.closeRegisterModal()">Cancel</button>
                 <button class="btn btn-primary" id="modalSave">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Virtual Meter Template Editor Modal -->
+    <div class="modal" id="vmTemplateModal">
+        <div class="modal-content" style="max-width:960px;width:96%;">
+            <div class="modal-header">
+                <h3><i class="bi bi-diagram-3"></i> <span id="vmTplTitle">Template editor</span></h3>
+                <button class="modal-close" onclick="app.closeModal('vmTemplateModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="vmTplBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="app.closeModal('vmTemplateModal')">Cancel</button>
+                <button class="btn btn-primary" id="vmTplSaveBtn"><i class="bi bi-save"></i> Save template</button>
             </div>
         </div>
     </div>
@@ -799,6 +833,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app.js?v=vm8"></script>
 </body>
 </html>

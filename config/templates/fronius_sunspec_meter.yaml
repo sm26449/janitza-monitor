@@ -1,0 +1,59 @@
+# Generic SunSpec model 213 (3-phase, FLOAT) meter example — serves the live
+# Janitza values to ANY SunSpec-TCP client. Layout from the SunSpec models repo
+# (model_1 common + model_213). SunSpec = big word order, floats high-word-first.
+# Memory map: SunS@40000 · common(1)@40002 · meter(213)@40070 · end@40196.
+#
+# NOTE: a real Fronius Symo DataManager does NOT accept this — it reads its Smart
+# Meter over the native Carlo Gavazzi map, not SunSpec. For Fronius use the
+# `fronius_ts_native` template instead (see docs/VIRTUAL-METER.md). This template
+# is kept as a clean SunSpec reference + encoder conformance fixture.
+template:
+  id: fronius_sunspec_meter
+  name: "Fronius Smart Meter (SunSpec 213 float) — Fronius DataManager"
+  kind: flat
+  byte_order: big            # SunSpec = big word order (high word first)
+  transport: { type: tcp, port: 1503, unit_id: 1, bind: "0.0.0.0" }
+  registers:
+    # ── SunS marker ──
+    - { addr: 40000, type: uint16, source: { const: 0x5375 } }   # "Su"
+    - { addr: 40001, type: uint16, source: { const: 0x6e53 } }   # "nS"
+    # ── Common model (id 1, len 66) — Mn MUST be "Fronius" for detection ──
+    - { addr: 40002, type: uint16, source: { const: 1 } }
+    - { addr: 40003, type: uint16, source: { const: 66 } }
+    - { addr: 40004, type: string, length: 16, source: { const_str: "Fronius" } }            # Mn
+    - { addr: 40020, type: string, length: 16, source: { const_str: "Smart Meter TS 65A-3" } } # Md
+    - { addr: 40044, type: string, length: 8,  source: { const_str: "1.0" } }                # Vr
+    - { addr: 40052, type: string, length: 16, source: { const_str: "JNZ-VIRT-01" } }        # SN
+    - { addr: 40068, type: uint16, source: { const: 200 } }      # DA (Fronius Smart Meter modbus addr)
+    # ── Meter model 213 (id 213, len 124) @40070 — FLOAT, no scale factors ──
+    - { addr: 40070, type: uint16, source: { const: 213 } }
+    - { addr: 40071, type: uint16, source: { const: 124 } }
+    # current (A) — float, engineering units
+    - { addr: 40072, type: float, source: { live: "_I_SUM3" } }  # A total
+    - { addr: 40074, type: float, source: { live: "_ILN[0]" } }  # AphA
+    - { addr: 40076, type: float, source: { live: "_ILN[1]" } }  # AphB
+    - { addr: 40078, type: float, source: { live: "_ILN[2]" } }  # AphC
+    # voltage L-N (V)
+    - { addr: 40080, type: float, source: { live: "_G_ULN[0]" } } # PhV (avg ~L1)
+    - { addr: 40082, type: float, source: { live: "_G_ULN[0]" } } # PhVphA
+    - { addr: 40084, type: float, source: { live: "_G_ULN[1]" } } # PhVphB
+    - { addr: 40086, type: float, source: { live: "_G_ULN[2]" } } # PhVphC
+    # frequency (Hz)
+    - { addr: 40096, type: float, source: { live: "_G_FREQ" } }   # Hz
+    # power (W) — sign: + = import from grid (matches Janitza _G_P_SUM3)
+    - { addr: 40098, type: float, source: { live: "_G_P_SUM3" } } # W total
+    - { addr: 40100, type: float, source: { live: "_PLN[0]" } }   # WphA
+    - { addr: 40102, type: float, source: { live: "_PLN[1]" } }   # WphB
+    - { addr: 40104, type: float, source: { live: "_PLN[2]" } }   # WphC
+    # energy (Wh) — float; Janitza values already in Wh
+    - { addr: 40130, type: float, source: { live: "_WH_Z[4]" } }  # TotWhExp (export) total
+    - { addr: 40132, type: float, source: { live: "_WH_Z[0]" } }  # TotWhExpPhA
+    - { addr: 40134, type: float, source: { live: "_WH_Z[1]" } }  # TotWhExpPhB
+    - { addr: 40136, type: float, source: { live: "_WH_Z[2]" } }  # TotWhExpPhC
+    - { addr: 40138, type: float, source: { live: "_WH_V[4]" } }  # TotWhImp (import) total
+    - { addr: 40140, type: float, source: { live: "_WH_V[0]" } }  # TotWhImpPhA
+    - { addr: 40142, type: float, source: { live: "_WH_V[1]" } }  # TotWhImpPhB
+    - { addr: 40144, type: float, source: { live: "_WH_V[2]" } }  # TotWhImpPhC
+    # end marker (after model body 40070..40195)
+    - { addr: 40196, type: uint16, source: { const: 0xFFFF } }
+    - { addr: 40197, type: uint16, source: { const: 0 } }

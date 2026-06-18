@@ -8,7 +8,7 @@ from typing import Dict, Any, List, Optional, Set
 from datetime import datetime
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -171,6 +171,9 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
         version="1.0.0",
         lifespan=lifespan
     )
+
+    # Expose the live value cache so the virtual-meter engine can read it.
+    app.state.current_values = current_values
 
     # CORS
     app.add_middleware(
@@ -352,6 +355,134 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
         if address in current_values:
             return current_values[address]
         raise HTTPException(status_code=404, detail=f"Register {address} not found")
+
+    @app.get("/api/virtual-meters")
+    async def list_virtual_meters():
+        """Configured virtual meters + live running status + served values."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            return {"instances": []}
+        return {"instances": mgr.overview(), "port_range": mgr.port_info()}
+
+    @app.get("/api/virtual-meters/templates")
+    async def list_vm_templates():
+        """Available meter templates (for the 'add instance' dropdown)."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        return {"templates": mgr.list_templates() if mgr else []}
+
+    @app.post("/api/virtual-meters")
+    async def add_virtual_meter(payload: dict = Body(...)):
+        """Add a new virtual-meter instance from a template."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            raise HTTPException(status_code=503, detail="virtual meters not initialized")
+        try:
+            res = mgr.add_instance(
+                template_id=payload["template"], port=int(payload["port"]),
+                unit_id=int(payload.get("unit_id", 1)),
+                stale_after_s=float(payload.get("stale_after_s", 15)),
+                enabled=bool(payload.get("enabled", False)))
+        except (KeyError, ValueError) as e:
+            raise HTTPException(status_code=400, detail=f"bad payload: {e}")
+        if "error" in res:
+            raise HTTPException(status_code=400, detail=res["error"])
+        return res
+
+    @app.delete("/api/virtual-meters/{template}")
+    async def delete_virtual_meter(template: str):
+        """Remove a virtual-meter instance."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            raise HTTPException(status_code=503, detail="virtual meters not initialized")
+        res = mgr.remove_instance(template)
+        if "error" in res:
+            raise HTTPException(status_code=404, detail=res["error"])
+        return res
+
+    @app.get("/api/virtual-meters/sources")
+    async def vm_sources():
+        """Live Janitza registers (for the editor source picker) + valid types."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        return {"sources": mgr.list_sources() if mgr else [],
+                "types": mgr.valid_types() if mgr else [],
+                "port_range": mgr.port_info() if mgr else None}
+
+    @app.get("/api/virtual-meters/template/{template_id}")
+    async def vm_get_template(template_id: str):
+        """Full editor view of a template (per-register fields)."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            raise HTTPException(status_code=503, detail="virtual meters not initialized")
+        res = mgr.get_template(template_id)
+        if "error" in res:
+            raise HTTPException(status_code=404 if "unknown" in res["error"] else 400,
+                                detail=res["error"])
+        return res
+
+    @app.put("/api/virtual-meters/template/{template_id}")
+    async def vm_save_template(template_id: str, payload: dict = Body(...)):
+        """Create or overwrite a template from the editor."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            raise HTTPException(status_code=503, detail="virtual meters not initialized")
+        res = mgr.save_template(template_id, payload)
+        if "error" in res:
+            raise HTTPException(status_code=400, detail=res["error"])
+        return res
+
+    @app.delete("/api/virtual-meters/template/{template_id}")
+    async def vm_delete_template(template_id: str):
+        """Delete a template file (refused while an instance uses it)."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            raise HTTPException(status_code=503, detail="virtual meters not initialized")
+        res = mgr.delete_template(template_id)
+        if "error" in res:
+            code = (404 if "unknown" in res["error"]
+                    else 409 if "in use" in res["error"] else 400)
+            raise HTTPException(status_code=code, detail=res["error"])
+        return res
+
+    @app.post("/api/virtual-meters/templates/import")
+    async def vm_import_template(payload: dict = Body(...)):
+        """Import a template from uploaded YAML (validated before save)."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            raise HTTPException(status_code=503, detail="virtual meters not initialized")
+        res = mgr.import_template(str(payload.get("yaml", "")), bool(payload.get("overwrite", False)))
+        if "error" in res:
+            raise HTTPException(status_code=409 if res.get("exists") else 400, detail=res["error"])
+        return res
+
+    @app.get("/api/virtual-meters/template/{template_id}/export")
+    async def vm_export_template(template_id: str):
+        """Export a template's raw YAML (for download / sharing)."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            raise HTTPException(status_code=503, detail="virtual meters not initialized")
+        res = mgr.export_template(template_id)
+        if "error" in res:
+            raise HTTPException(status_code=404, detail=res["error"])
+        return res
+
+    @app.get("/api/virtual-meters/{template}/stats")
+    async def vm_stats(template: str, limit: int = Query(200, ge=1, le=1024)):
+        """Live observability: query log (last 1024), counters, rate, per-register."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            raise HTTPException(status_code=503, detail="virtual meters not initialized")
+        return mgr.get_stats(template, limit)
+
+    @app.post("/api/virtual-meters/{template}/toggle")
+    async def toggle_virtual_meter(template: str, on: bool = Query(True)):
+        """Enable/disable a virtual meter (persists + starts/stops live)."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            raise HTTPException(status_code=503, detail="virtual meters not initialized")
+        res = mgr.set_enabled(template, on)
+        if "error" in res:
+            raise HTTPException(status_code=404, detail=res["error"])
+        return res
 
     @app.post("/api/query/register")
     async def query_register(query: RegisterQuery):

@@ -131,6 +131,8 @@ class InfluxDBPublisher:
                 if self.client.ping():
                     self.connected = True
                     logger.info(f"InfluxDB connected to {self.config.url}")
+                    # Auto-create bucket if it doesn't exist
+                    self._ensure_bucket()
                 else:
                     logger.warning("InfluxDB ping failed")
 
@@ -140,6 +142,27 @@ class InfluxDBPublisher:
             except Exception as e:
                 logger.warning(f"InfluxDB connection failed: {e}")
                 self.connected = False
+
+    def _ensure_bucket(self):
+        """Auto-create bucket if it doesn't exist."""
+        try:
+            buckets_api = self.client.buckets_api()
+            bucket = buckets_api.find_bucket_by_name(self.config.bucket)
+            if bucket:
+                logger.info(f"InfluxDB bucket '{self.config.bucket}' exists")
+                return
+            # Create bucket with 90 day retention
+            from influxdb_client import BucketRetentionRules
+            retention = BucketRetentionRules(type="expire", every_seconds=90 * 86400)
+            org = self.client.organizations_api().find_organizations(org=self.config.org)[0]
+            buckets_api.create_bucket(
+                bucket_name=self.config.bucket,
+                retention_rules=retention,
+                org_id=org.id
+            )
+            logger.info(f"InfluxDB bucket '{self.config.bucket}' created (90d retention)")
+        except Exception as e:
+            logger.warning(f"Bucket auto-create failed (non-fatal): {e}")
 
     def _setup_client_with_retry(self):
         """Setup InfluxDB client with retry logic."""

@@ -528,6 +528,9 @@ class JanitzaMonitor {
 
         this.currentPage = page;
 
+        // stop any virtual-meter observability polling when leaving the page
+        if (page !== 'vmeters' && this._stopVmPolls) this._stopVmPolls();
+
         // Page-specific init
         if (page === 'registers') {
             this.renderRegistersTable();
@@ -539,7 +542,578 @@ class JanitzaMonitor {
             this.renderStatusDetails();
         } else if (page === 'monitor') {
             this.initMonitorPage();
+        } else if (page === 'vmeters') {
+            this.renderVirtualMeters();
         }
+    }
+
+    async renderVirtualMeters() {
+        const el = document.getElementById('vmetersContent');
+        if (!el) return;
+        this._stopVmPolls();                          // re-render → drop stale timers
+        const refreshBtn = document.getElementById('vmRefreshBtn');
+        if (refreshBtn && !refreshBtn._wired) {
+            refreshBtn._wired = true;
+            refreshBtn.addEventListener('click', () => this.renderVirtualMeters());
+        }
+        let data;
+        try {
+            data = await (await fetch('/api/virtual-meters')).json();
+        } catch (e) {
+            el.innerHTML = '<p style="color:#c0392b;">Could not load virtual meters.</p>';
+            return;
+        }
+        const insts = data.instances || [];
+        let templates = [];
+        try { templates = (await (await fetch('/api/virtual-meters/templates')).json()).templates || []; } catch (e) {}
+        const configured = new Set(insts.map(i => i.template));
+        const pr = data.port_range || {};
+        this._vmPortRange = pr;                       // reused by the template editor
+        const opts = templates.filter(t => !configured.has(t.id))
+            .map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+        const noFree = pr.next_free == null;
+        const canAdd = opts && !noFree;
+        const portHint = (pr.start != null)
+            ? `published range ${pr.start}–${pr.end}${pr.used && pr.used.length ? ' · used: ' + pr.used.join(', ') : ''}`
+            : '';
+        const addBar = `
+            <div class="settings-card" style="margin-bottom:14px;">
+              <div class="settings-card-body" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                <div><label class="form-label">Template</label><br>
+                  <select id="vmAddTemplate" class="input" style="min-width:280px;" ${opts ? '' : 'disabled'}>
+                    ${opts || '<option>— all templates already added —</option>'}</select></div>
+                <div><label class="form-label">Port</label><br>
+                  <input id="vmAddPort" class="input" type="number" value="${pr.next_free ?? ''}"
+                    min="${pr.start ?? ''}" max="${pr.end ?? ''}" style="width:90px;"></div>
+                <div><label class="form-label">Unit</label><br>
+                  <input id="vmAddUnit" class="input" type="number" value="1" style="width:64px;"></div>
+                <button class="btn" id="vmAddBtn" ${canAdd ? '' : 'disabled'}><i class="bi bi-plus-lg"></i> Add instance</button>
+              </div>
+              ${portHint ? `<div class="settings-card-body" style="padding-top:0;color:#8a94a0;font-size:12px;">${noFree ? '<span style="color:#e08e0b;">No free port in range — widen VMETER_PORT_END.</span> ' : ''}${portHint}</div>` : ''}
+            </div>`;
+        const cards = !insts.length
+            ? '<p style="color:#8a94a0;">No virtual meters configured.</p>'
+            : insts.map(m => {
+            const on = m.running;
+            const badge = on
+                ? '<span style="color:#1a8f4c;font-weight:600;">● LISTENING</span>'
+                : (m.enabled ? '<span style="color:#e08e0b;font-weight:600;">● stale / starting</span>'
+                             : '<span style="color:#8a94a0;">○ disabled</span>');
+            const prev = Object.entries(m.preview || {})
+                .map(([k, v]) => `<tr><td style="padding:2px 10px 2px 0;color:#8a94a0;">${this._esc(k)}</td>`
+                    + `<td style="padding:2px 0;text-align:right;font-variant-numeric:tabular-nums;">`
+                    + `${v === null || v === undefined ? '—' : (typeof v === 'number' ? v.toFixed(2) : v)}</td></tr>`)
+                .join('');
+            const conns = m.connections || [];
+            const connRows = conns.length
+                ? conns.map(c => `<tr><td style="padding:2px 0;color:#5a6470;font-family:monospace;">${this._esc(c.ip)}${c.port ? ':' + c.port : ''}</td></tr>`).join('')
+                : '<tr><td style="color:#8a94a0;">no active connections</td></tr>';
+            const summary = `:${m.port ?? '—'} · ${conns.length} conn${conns.length === 1 ? '' : 's'}`
+                + (m.running ? ' · ' + (m.requests ?? 0) + ' req' : '');
+            return `
+            <div class="settings-card vm-acc" style="margin-bottom:12px;">
+              <div class="settings-card-header vm-acc-head" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                  <i class="bi bi-chevron-right vm-acc-chev" style="transition:transform .15s ease;color:#8a94a0;"></i>
+                  <h3 style="margin:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="bi bi-hdd-network"></i> ${this._esc(m.name || m.template)}</h3>
+                  ${badge}
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;" onclick="event.stopPropagation()">
+                  <span style="font-size:12px;color:#8a94a0;font-variant-numeric:tabular-nums;white-space:nowrap;">${summary}</span>
+                  <label class="toggle-switch" title="Enable / disable">
+                    <input type="checkbox" data-vm="${this._esc(m.template)}" ${m.enabled ? 'checked' : ''}>
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <button class="btn btn-ghost btn-sm" data-vm-del="${this._esc(m.template)}" title="Remove instance"><i class="bi bi-trash"></i></button>
+                </div>
+              </div>
+              <div class="settings-card-body vm-acc-body" hidden>
+                <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px;font-size:13px;">
+                  <div>template <b>${this._esc(m.template)}</b></div>
+                  <div>port <b>${m.port ?? '—'}</b> · unit <b>${m.unit_id ?? 1}</b></div>
+                  ${m.errors ? `<div style="color:#c0392b;">${m.errors} errors</div>` : ''}
+                </div>
+                <div style="display:flex;gap:36px;flex-wrap:wrap;">
+                  <div style="font-size:12.5px;">
+                    <div style="color:#8a94a0;margin-bottom:4px;"><i class="bi bi-plug"></i> Connections (${conns.length})</div>
+                    <table>${connRows}</table></div>
+                  ${prev ? `<div style="font-size:12.5px;"><div style="color:#8a94a0;margin-bottom:4px;">Live values served</div>
+                    <table>${prev}</table></div>` : ''}
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+        // ── Templates section (define / edit / delete) ──
+        const tmplCards = templates.map(t => `
+            <div class="settings-card" style="margin-bottom:10px;">
+              <div class="settings-card-body" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                <div><b>${this._esc(t.name)}</b><br>
+                  <span style="color:#8a94a0;font-size:12px;">id <code>${this._esc(t.id)}</code> · ${t.kind} · ${t.registers} registers</span></div>
+                <div style="display:flex;gap:8px;">
+                  <button class="btn btn-sm" data-vm-edit="${this._esc(t.id)}"><i class="bi bi-pencil"></i> Edit</button>
+                  <button class="btn btn-ghost btn-sm" data-vm-export="${this._esc(t.id)}" title="Export YAML"><i class="bi bi-download"></i></button>
+                  <button class="btn btn-ghost btn-sm" data-vm-tpldel="${this._esc(t.id)}" title="Delete template"><i class="bi bi-trash"></i></button>
+                </div>
+              </div>
+            </div>`).join('');
+        const tmplSection = `
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h3 style="margin:0;"><i class="bi bi-diagram-3"></i> Templates</h3>
+                <div style="display:flex;gap:8px;">
+                  <button class="btn btn-ghost btn-sm" id="vmImportBtn"><i class="bi bi-upload"></i> Import</button>
+                  <button class="btn btn-sm" id="vmNewTplBtn"><i class="bi bi-plus-lg"></i> New template</button>
+                </div>
+              </div>
+              <p style="color:#8a94a0;font-size:12.5px;margin:0 0 10px;">Map live Janitza registers into the register layout a consumer expects. Editing a template that an instance uses reloads it live. Export shares a template as YAML; Import validates before saving.</p>
+              <input type="file" id="vmImportFile" accept=".yaml,.yml" style="display:none;">
+              ${tmplCards || '<p style="color:#8a94a0;">No templates yet.</p>'}`;
+        // ── meters who are running (for the Logs/Stats meter picker) ──
+        const runningInsts = insts.filter(m => m.running);
+        const meterOpts = runningInsts.map(m =>
+            `<option value="${this._esc(m.template)}">${this._esc(m.name || m.template)} · :${m.port}</option>`).join('')
+            || '<option value="">— no running meters —</option>';
+        el.innerHTML = `
+            <div class="config-main-tabs" id="vmSubtabs">
+              <button class="config-main-tab active" data-vmtab="meters"><i class="bi bi-hdd-network"></i> Meters</button>
+              <button class="config-main-tab" data-vmtab="templates"><i class="bi bi-diagram-3"></i> Templates</button>
+              <button class="config-main-tab" data-vmtab="logs"><i class="bi bi-list-columns-reverse"></i> Logs</button>
+              <button class="config-main-tab" data-vmtab="stats"><i class="bi bi-graph-up"></i> Stats &amp; Debug</button>
+            </div>
+            <div data-vmpanel="meters">${addBar}${cards}</div>
+            <div data-vmpanel="templates" hidden>${tmplSection}</div>
+            <div data-vmpanel="logs" hidden>
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+                <label class="form-label">Meter</label>
+                <select id="vmLogMeter" class="input" style="min-width:240px;">${meterOpts}</select>
+                <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#8a94a0;">
+                  <input type="checkbox" id="vmLogLive" checked> live</label>
+                <span id="vmLogMeta" style="color:#8a94a0;font-size:12.5px;margin-left:auto;"></span>
+              </div>
+              <div id="vmLogContent"><p style="color:#8a94a0;">Select a running meter.</p></div>
+            </div>
+            <div data-vmpanel="stats" hidden>
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+                <label class="form-label">Meter</label>
+                <select id="vmStatMeter" class="input" style="min-width:240px;">${meterOpts}</select>
+                <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#8a94a0;">
+                  <input type="checkbox" id="vmStatLive" checked> live</label>
+              </div>
+              <div id="vmStatContent"><p style="color:#8a94a0;">Select a running meter.</p></div>
+            </div>`;
+        this._wireVmSubtabs(el);
+        // wire template editor buttons
+        const newTplBtn = document.getElementById('vmNewTplBtn');
+        if (newTplBtn) newTplBtn.addEventListener('click', () => this.openTemplateEditor(null));
+        el.querySelectorAll('button[data-vm-edit]').forEach(b =>
+            b.addEventListener('click', () => this.openTemplateEditor(b.dataset.vmEdit)));
+        el.querySelectorAll('button[data-vm-tpldel]').forEach(b =>
+            b.addEventListener('click', () => this.deleteTemplate(b.dataset.vmTpldel)));
+        el.querySelectorAll('button[data-vm-export]').forEach(b =>
+            b.addEventListener('click', () => this.exportTemplate(b.dataset.vmExport)));
+        // accordion: click a meter header to expand/collapse its body
+        el.querySelectorAll('.vm-acc-head').forEach(h => h.addEventListener('click', () => {
+            const card = h.closest('.vm-acc');
+            const body = card && card.querySelector('.vm-acc-body');
+            const chev = h.querySelector('.vm-acc-chev');
+            if (!body) return;
+            const opening = body.hidden;
+            body.hidden = !opening;
+            if (chev) chev.style.transform = opening ? 'rotate(90deg)' : '';
+        }));
+        // wire import (file picker → POST yaml)
+        const importBtn = document.getElementById('vmImportBtn');
+        const importFile = document.getElementById('vmImportFile');
+        if (importBtn && importFile) {
+            importBtn.addEventListener('click', () => importFile.click());
+            importFile.addEventListener('change', () => this.importTemplate(importFile));
+        }
+        // wire add-instance
+        const addBtn = document.getElementById('vmAddBtn');
+        if (addBtn) addBtn.addEventListener('click', async () => {
+            const template = document.getElementById('vmAddTemplate').value;
+            const port = parseInt(document.getElementById('vmAddPort').value, 10);
+            const unit_id = parseInt(document.getElementById('vmAddUnit').value, 10) || 1;
+            if (pr.start != null && (port < pr.start || port > pr.end)) {
+                this.showToast('error', 'Port out of range', `Use a port in ${pr.start}–${pr.end} (published on the host).`);
+                return;
+            }
+            addBtn.disabled = true;
+            try {
+                const r = await fetch('/api/virtual-meters', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ template, port, unit_id, enabled: false })
+                });
+                if (r.ok) this.showToast('success', 'Virtual meter', `${template} added`);
+                else this.showToast('error', 'Add failed', (await r.json()).detail || '');
+            } catch (e) { this.showToast('error', 'Add failed', template); }
+            setTimeout(() => this.renderVirtualMeters(), 600);
+        });
+        // wire delete
+        el.querySelectorAll('button[data-vm-del]').forEach(b => {
+            b.addEventListener('click', async () => {
+                const tmpl = b.dataset.vmDel;
+                if (!confirm(`Remove virtual meter "${tmpl}"?`)) return;
+                try {
+                    await fetch(`/api/virtual-meters/${encodeURIComponent(tmpl)}`, { method: 'DELETE' });
+                    this.showToast('success', 'Virtual meter', `${tmpl} removed`);
+                } catch (e) { this.showToast('error', 'Remove failed', tmpl); }
+                setTimeout(() => this.renderVirtualMeters(), 600);
+            });
+        });
+        // wire toggles
+        el.querySelectorAll('input[data-vm]').forEach(cb => {
+            cb.addEventListener('change', async () => {
+                const tmpl = cb.dataset.vm, on = cb.checked;
+                cb.disabled = true;
+                try {
+                    await fetch(`/api/virtual-meters/${encodeURIComponent(tmpl)}/toggle?on=${on}`, { method: 'POST' });
+                    this.showToast('success', 'Virtual meter', `${tmpl} ${on ? 'enabled' : 'disabled'}`);
+                } catch (e) {
+                    this.showToast('error', 'Toggle failed', tmpl);
+                }
+                setTimeout(() => this.renderVirtualMeters(), 1200);
+            });
+        });
+    }
+
+    _esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // ── Virtual-meter sub-tabs (Meters / Templates / Logs / Stats) ──────────
+    _wireVmSubtabs(el) {
+        const tabs = el.querySelectorAll('#vmSubtabs .config-main-tab');
+        const show = (name) => {
+            tabs.forEach(t => t.classList.toggle('active', t.dataset.vmtab === name));
+            el.querySelectorAll('[data-vmpanel]').forEach(p => { p.hidden = p.dataset.vmpanel !== name; });
+            this._stopVmPolls();
+            if (name === 'logs') this.renderVmLogs();
+            else if (name === 'stats') this.renderVmStats();
+        };
+        tabs.forEach(t => t.addEventListener('click', () => show(t.dataset.vmtab)));
+        const lm = el.querySelector('#vmLogMeter'), sm = el.querySelector('#vmStatMeter');
+        if (lm) lm.addEventListener('change', () => this.renderVmLogs());
+        if (sm) sm.addEventListener('change', () => this.renderVmStats());
+        const ll = el.querySelector('#vmLogLive'), sl = el.querySelector('#vmStatLive');
+        if (ll) ll.addEventListener('change', () => this.renderVmLogs());
+        if (sl) sl.addEventListener('change', () => this.renderVmStats());
+    }
+
+    _stopVmPolls() {
+        if (this._vmLogTimer) { clearInterval(this._vmLogTimer); this._vmLogTimer = null; }
+        if (this._vmStatTimer) { clearInterval(this._vmStatTimer); this._vmStatTimer = null; }
+    }
+
+    async exportTemplate(id) {
+        try {
+            const r = await fetch(`/api/virtual-meters/template/${encodeURIComponent(id)}/export`);
+            if (!r.ok) { this.showToast('error', 'Export failed', id); return; }
+            const d = await r.json();
+            const blob = new Blob([d.yaml], { type: 'text/yaml' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = d.filename || `${id}.yaml`;
+            document.body.appendChild(a); a.click(); a.remove();
+            URL.revokeObjectURL(a.href);
+            this.showToast('success', 'Exported', d.filename || id);
+        } catch (e) { this.showToast('error', 'Export failed', id); }
+    }
+
+    async importTemplate(fileInput) {
+        const f = fileInput.files && fileInput.files[0];
+        if (!f) return;
+        fileInput.value = '';
+        let text;
+        try { text = await f.text(); } catch (e) { this.showToast('error', 'Read failed', f.name); return; }
+        const post = (overwrite) => fetch('/api/virtual-meters/templates/import', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ yaml: text, overwrite })
+        });
+        try {
+            let r = await post(false);
+            if (r.status === 409) {
+                if (!confirm('A template with this id already exists. Overwrite it?')) return;
+                r = await post(true);
+            }
+            const d = await r.json().catch(() => ({}));
+            if (r.ok) { this.showToast('success', 'Imported', `${d.id} · ${d.registers} registers`); this.renderVirtualMeters(); }
+            else this.showToast('error', 'Import failed', d.detail || `HTTP ${r.status}`);
+        } catch (e) { this.showToast('error', 'Import failed', f.name); }
+    }
+
+    async renderVmLogs() {
+        const sel = document.getElementById('vmLogMeter');
+        const out = document.getElementById('vmLogContent');
+        const meta = document.getElementById('vmLogMeta');
+        const live = document.getElementById('vmLogLive');
+        if (!sel || !out) return;
+        const id = sel.value;
+        if (!id) { out.innerHTML = '<p style="color:#8a94a0;">No running meter selected.</p>'; return; }
+        const load = async () => {
+            let d;
+            try { d = await (await fetch(`/api/virtual-meters/${encodeURIComponent(id)}/stats?limit=200`)).json(); }
+            catch (e) { out.innerHTML = '<p style="color:#c0392b;">Could not load.</p>'; return; }
+            if (d.error) { out.innerHTML = `<p style="color:#8a94a0;">${this._esc(d.error)}</p>`; return; }
+            if (meta) meta.textContent = `${d.total} reqs · ${d.errors} errors · :${d.port} unit ${d.unit_id}`;
+            const qs = (d.queries || []).slice().reverse();
+            const rows = qs.map(q => {
+                const ms = String(Math.floor((q.ts % 1) * 1000)).padStart(3, '0');
+                const t = new Date(q.ts * 1000).toLocaleTimeString('en-GB', { hour12: false }) + '.' + ms;
+                const resp = q.resp ? q.resp.slice(0, 6).join(' ') + (q.count > 6 ? ' …' : '') : '—';
+                const res = q.err ? '<span style="color:#c0392b;font-weight:600;">EXC</span>'
+                                  : '<span style="color:#1a8f4c;">OK</span>';
+                return `<tr style="border-bottom:1px solid var(--border-light);">
+                  <td style="padding:3px 10px 3px 0;color:#8a94a0;font-variant-numeric:tabular-nums;">${t}</td>
+                  <td style="padding:3px 10px 3px 0;">FC${q.fc}</td>
+                  <td style="padding:3px 10px 3px 0;font-variant-numeric:tabular-nums;">${q.addr}</td>
+                  <td style="padding:3px 10px 3px 0;font-variant-numeric:tabular-nums;">${q.count}</td>
+                  <td style="padding:3px 10px 3px 0;">${res}</td>
+                  <td style="padding:3px 10px 3px 0;color:#8a94a0;font-variant-numeric:tabular-nums;">${q.lat_us}µs</td>
+                  <td style="padding:3px 0;font-family:monospace;font-size:12px;color:#5a6470;">${this._esc(resp)}</td></tr>`;
+            }).join('');
+            out.innerHTML = `<div style="max-height:60vh;overflow:auto;">
+              <table style="width:100%;font-size:12.5px;border-collapse:collapse;">
+                <thead><tr style="text-align:left;color:#8a94a0;border-bottom:2px solid var(--border);position:sticky;top:0;background:var(--bg-secondary);">
+                  <th style="padding:4px 10px 4px 0;">time</th><th>fc</th><th>addr</th><th>count</th><th>result</th><th>latency</th><th>response</th>
+                </tr></thead><tbody>${rows || '<tr><td colspan="7" style="color:#8a94a0;padding:8px 0;">No queries yet.</td></tr>'}</tbody></table></div>`;
+        };
+        await load();
+        this._stopVmPolls();
+        if (live && live.checked) this._vmLogTimer = setInterval(load, 2000);
+    }
+
+    async renderVmStats() {
+        const sel = document.getElementById('vmStatMeter');
+        const out = document.getElementById('vmStatContent');
+        const live = document.getElementById('vmStatLive');
+        if (!sel || !out) return;
+        const id = sel.value;
+        if (!id) { out.innerHTML = '<p style="color:#8a94a0;">No running meter selected.</p>'; return; }
+        const load = async () => {
+            let d;
+            try { d = await (await fetch(`/api/virtual-meters/${encodeURIComponent(id)}/stats?limit=1`)).json(); }
+            catch (e) { out.innerHTML = '<p style="color:#c0392b;">Could not load.</p>'; return; }
+            if (d.error) { out.innerHTML = `<p style="color:#8a94a0;">${this._esc(d.error)}</p>`; return; }
+            const upt = d.first_ts ? Math.max(1, Math.round(Date.now() / 1000 - d.first_ts)) : 0;
+            const rps = upt ? d.total / upt : 0;
+            const kb = (n) => n > 1024 ? (n / 1024).toFixed(1) + ' KB' : n + ' B';
+            const cards = [
+                ['Total requests', d.total, ''],
+                ['Errors', d.errors, d.errors ? '#c0392b' : '#1a8f4c'],
+                ['Avg rate', rps.toFixed(2) + '/s', ''],
+                ['RX', kb(d.bytes_rx), ''],
+                ['TX', kb(d.bytes_tx), ''],
+                ['Uptime', upt + ' s', ''],
+            ].map(([k, v, c]) => `<div class="settings-card" style="flex:1;min-width:120px;padding:12px;">
+                <div style="color:#8a94a0;font-size:12px;">${k}</div>
+                <div style="font-size:22px;font-weight:600;color:${c || 'inherit'};font-variant-numeric:tabular-nums;">${v}</div></div>`).join('');
+            const rate = d.rate || [];
+            const spark = this._sparkline(rate.map(r => r[1]), 560, 72);
+            const top = d.top_addrs || [];
+            const maxc = Math.max(1, ...top.map(t => t[1]));
+            const bars = top.map(([addr, c]) => `<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:12.5px;">
+                <code style="width:70px;text-align:right;color:#5a6470;">${addr}</code>
+                <div style="flex:1;background:var(--border-light);border-radius:3px;overflow:hidden;"><div style="width:${(c / maxc * 100).toFixed(1)}%;background:#3b82f6;height:14px;"></div></div>
+                <span style="width:52px;text-align:right;font-variant-numeric:tabular-nums;color:#8a94a0;">${c}</span></div>`).join('');
+            out.innerHTML = `
+              <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;">${cards}</div>
+              <div class="settings-card" style="padding:14px;margin-bottom:16px;">
+                <div style="color:#8a94a0;font-size:12.5px;margin-bottom:8px;">Requests / second (last ${rate.length}s)</div>${spark}</div>
+              <div class="settings-card" style="padding:14px;">
+                <div style="color:#8a94a0;font-size:12.5px;margin-bottom:8px;">Most-read registers (where the consumer looks)</div>
+                ${bars || '<span style="color:#8a94a0;">No reads yet.</span>'}</div>`;
+        };
+        await load();
+        this._stopVmPolls();
+        if (live && live.checked) this._vmStatTimer = setInterval(load, 2000);
+    }
+
+    _sparkline(values, w, h) {
+        if (!values || !values.length) return '<span style="color:#8a94a0;">No data yet.</span>';
+        const max = Math.max(1, ...values), n = values.length;
+        const step = n > 1 ? w / (n - 1) : w;
+        const pts = values.map((v, i) => `${(i * step).toFixed(1)},${(h - (v / max) * (h - 6) - 3).toFixed(1)}`).join(' ');
+        const area = `0,${h} ${pts} ${((n - 1) * step).toFixed(1)},${h}`;
+        return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" style="display:block;">
+          <polygon points="${area}" fill="rgba(59,130,246,0.13)"/>
+          <polyline points="${pts}" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
+          <text x="3" y="13" font-size="11" fill="#8a94a0">peak ${max}/s</text></svg>`;
+    }
+
+    async openTemplateEditor(templateId) {
+        if (!this._vmSources) {
+            try {
+                const s = await (await fetch('/api/virtual-meters/sources')).json();
+                this._vmSources = s.sources || [];
+                this._vmTypes = (s.types && s.types.length) ? s.types
+                    : ['int16', 'uint16', 'int32', 'uint32', 'int64', 'uint64', 'float', 'double', 'string'];
+                if (s.port_range) this._vmPortRange = s.port_range;
+            } catch (e) {
+                this._vmSources = [];
+                this._vmTypes = ['int16', 'uint16', 'int32', 'uint32', 'float', 'string'];
+            }
+        }
+        const isNew = !templateId;
+        let tpl = {
+            id: '', name: '', byte_order: 'big',
+            transport: { port: 1502, unit_id: 1, bind: '0.0.0.0' }, registers: [], in_use: false
+        };
+        if (!isNew) {
+            try {
+                tpl = await (await fetch(`/api/virtual-meters/template/${encodeURIComponent(templateId)}`)).json();
+                if (tpl.error) { this.showToast('error', 'Load failed', tpl.error); return; }
+            } catch (e) { this.showToast('error', 'Load failed', templateId); return; }
+        }
+        document.getElementById('vmTplTitle').textContent = isNew ? 'New template' : `Edit: ${tpl.name}`;
+        this._renderTemplateForm(tpl, isNew);
+        this.openModal('vmTemplateModal');
+    }
+
+    _renderTemplateForm(tpl, isNew) {
+        const body = document.getElementById('vmTplBody');
+        const t = tpl.transport || {};
+        const pr = this._vmPortRange || {};
+        const defPort = isNew ? (pr.next_free ?? t.port ?? 1502) : (t.port ?? 1502);
+        const portHint = (pr.start != null) ? `published range ${pr.start}–${pr.end}` : '';
+        body.innerHTML = `
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Template id</label>
+              <input id="vmfId" class="input" value="${this._esc(tpl.id || '')}" ${isNew ? '' : 'readonly'} placeholder="my_meter (a-z 0-9 _)"></div>
+            <div class="form-group"><label class="form-label">Name</label>
+              <input id="vmfName" class="input" value="${this._esc(tpl.name || '')}" placeholder="My Custom Meter"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Byte order</label>
+              <select id="vmfByteOrder" class="input">
+                <option value="big" ${tpl.byte_order === 'big' ? 'selected' : ''}>big (high word first)</option>
+                <option value="little" ${tpl.byte_order === 'little' ? 'selected' : ''}>little (low word first)</option>
+              </select></div>
+            <div class="form-group"><label class="form-label">Port</label>
+              <input id="vmfPort" class="input" type="number" value="${defPort}" min="${pr.start ?? ''}" max="${pr.end ?? ''}">
+              ${portHint ? `<span class="hint-text" style="font-size:11px;">${portHint}</span>` : ''}</div>
+            <div class="form-group"><label class="form-label">Unit id</label>
+              <input id="vmfUnit" class="input" type="number" value="${t.unit_id ?? 1}"></div>
+            <div class="form-group"><label class="form-label">Bind</label>
+              <input id="vmfBind" class="input" value="${this._esc(t.bind || '0.0.0.0')}"></div>
+          </div>
+          ${tpl.in_use ? '<p class="hint-text" style="color:#e08e0b;"><i class="bi bi-exclamation-triangle"></i> Used by an instance — saving reloads it live.</p>' : ''}
+          <div class="form-section">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <h4 style="margin:0;">Registers</h4>
+              <button class="btn btn-sm" id="vmAddRowBtn"><i class="bi bi-plus-lg"></i> Add register</button>
+            </div>
+            <div style="overflow-x:auto;margin-top:8px;">
+              <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+                <thead><tr style="text-align:left;color:#8a94a0;">
+                  <th style="padding:4px 6px;">Address</th><th>Type</th><th>Source</th>
+                  <th>Value / Register</th><th>Scale</th><th>Len</th><th>Note</th><th></th>
+                </tr></thead>
+                <tbody id="vmRegRows"></tbody>
+              </table>
+            </div>
+            <p class="hint-text">Address in hex (e.g. <code>0x0028</code>) or decimal. Scale: raw = value × scale (consumer reads raw ÷ scale). Length applies to <code>string</code> only.</p>
+          </div>`;
+        (tpl.registers || []).forEach(r => this._addTemplateRow(r));
+        if (!(tpl.registers || []).length) this._addTemplateRow();
+        document.getElementById('vmAddRowBtn').addEventListener('click', () => this._addTemplateRow());
+        document.getElementById('vmTplSaveBtn').onclick = () => this.saveTemplate();
+    }
+
+    _addTemplateRow(reg) {
+        reg = reg || { addr: 0, type: 'int32', scale: 1, source_kind: 'const', source: 0, length: 1, note: '' };
+        const tbody = document.getElementById('vmRegRows');
+        const tr = document.createElement('tr');
+        tr.style.borderTop = '1px solid var(--border, #e5e7eb)';
+        const typeOpts = this._vmTypes.map(ty => `<option ${ty === reg.type ? 'selected' : ''}>${ty}</option>`).join('');
+        const srcOpts = this._vmSources.map(s => {
+            const v = (s.value === null || s.value === undefined) ? '—'
+                : (typeof s.value === 'number' ? s.value.toFixed(1) : s.value);
+            return `<option value="${this._esc(s.name)}" ${s.name === reg.source ? 'selected' : ''}>`
+                + `${this._esc(s.name)} — ${this._esc(s.label || '')} (${v}${s.unit ? ' ' + this._esc(s.unit) : ''})</option>`;
+        }).join('');
+        const addrHex = '0x' + Number(reg.addr || 0).toString(16).padStart(4, '0');
+        const isLive = reg.source_kind === 'live';
+        tr.innerHTML = `
+          <td style="padding:3px 6px;"><input class="input input-sm vm-addr" style="width:82px;" value="${addrHex}"></td>
+          <td><select class="input input-sm vm-type" style="width:92px;">${typeOpts}</select></td>
+          <td><select class="input input-sm vm-kind" style="width:110px;">
+            <option value="const" ${reg.source_kind === 'const' ? 'selected' : ''}>Const num</option>
+            <option value="const_str" ${reg.source_kind === 'const_str' ? 'selected' : ''}>Const text</option>
+            <option value="live" ${isLive ? 'selected' : ''}>Live register</option>
+          </select></td>
+          <td>
+            <select class="input input-sm vm-src-live" style="min-width:240px;${isLive ? '' : 'display:none;'}">${srcOpts || '<option value="">(no live registers)</option>'}</select>
+            <input class="input input-sm vm-src-val" style="width:160px;${isLive ? 'display:none;' : ''}" value="${isLive ? '' : this._esc(String(reg.source ?? ''))}">
+          </td>
+          <td><input class="input input-sm vm-scale" style="width:64px;" value="${reg.scale ?? 1}"></td>
+          <td><input class="input input-sm vm-len" type="number" style="width:52px;" value="${reg.length ?? 1}"></td>
+          <td><input class="input input-sm vm-note" style="width:130px;" value="${this._esc(reg.note || '')}"></td>
+          <td><button class="btn btn-ghost btn-sm vm-row-del" title="Remove"><i class="bi bi-x-lg"></i></button></td>`;
+        tbody.appendChild(tr);
+        const kindSel = tr.querySelector('.vm-kind');
+        const liveSel = tr.querySelector('.vm-src-live');
+        const valInp = tr.querySelector('.vm-src-val');
+        kindSel.addEventListener('change', () => {
+            const live = kindSel.value === 'live';
+            liveSel.style.display = live ? '' : 'none';
+            valInp.style.display = live ? 'none' : '';
+        });
+        tr.querySelector('.vm-row-del').addEventListener('click', () => tr.remove());
+    }
+
+    async saveTemplate() {
+        const id = document.getElementById('vmfId').value.trim();
+        const name = document.getElementById('vmfName').value.trim();
+        const byte_order = document.getElementById('vmfByteOrder').value;
+        const port = parseInt(document.getElementById('vmfPort').value, 10);
+        const unit_id = parseInt(document.getElementById('vmfUnit').value, 10);
+        const bind = document.getElementById('vmfBind').value.trim() || '0.0.0.0';
+        if (!/^[a-z0-9_]+$/.test(id)) { this.showToast('error', 'Invalid id', 'Use a-z 0-9 _ only'); return; }
+        if (!name) { this.showToast('error', 'Name required', ''); return; }
+        const registers = [];
+        document.querySelectorAll('#vmRegRows tr').forEach(tr => {
+            const kind = tr.querySelector('.vm-kind').value;
+            registers.push({
+                addr: tr.querySelector('.vm-addr').value.trim(),
+                type: tr.querySelector('.vm-type').value,
+                scale: parseFloat(tr.querySelector('.vm-scale').value) || 1,
+                length: parseInt(tr.querySelector('.vm-len').value, 10) || 1,
+                note: tr.querySelector('.vm-note').value.trim(),
+                source_kind: kind,
+                source: kind === 'live' ? tr.querySelector('.vm-src-live').value
+                    : tr.querySelector('.vm-src-val').value,
+            });
+        });
+        if (!registers.length) { this.showToast('error', 'No registers', 'Add at least one register'); return; }
+        const btn = document.getElementById('vmTplSaveBtn');
+        btn.disabled = true;
+        try {
+            const r = await fetch(`/api/virtual-meters/template/${encodeURIComponent(id)}`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, name, byte_order, port, unit_id, bind, registers })
+            });
+            const j = await r.json();
+            if (r.ok) {
+                this.showToast('success', 'Template saved',
+                    `${id} (${j.registers} registers)${j.reloaded ? ' — reloaded live' : ''}`);
+                this.closeModal('vmTemplateModal');
+                this.renderVirtualMeters();
+            } else {
+                this.showToast('error', 'Save failed', j.detail || 'validation error');
+            }
+        } catch (e) { this.showToast('error', 'Save failed', String(e)); }
+        finally { btn.disabled = false; }
+    }
+
+    async deleteTemplate(id) {
+        if (!confirm(`Delete template "${id}"? (only if no instance uses it)`)) return;
+        try {
+            const r = await fetch(`/api/virtual-meters/template/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            const j = await r.json();
+            if (r.ok) this.showToast('success', 'Template deleted', id);
+            else this.showToast('error', 'Delete failed', j.detail || '');
+        } catch (e) { this.showToast('error', 'Delete failed', id); }
+        this.renderVirtualMeters();
     }
 
     updateConfigTabs() {

@@ -2,6 +2,15 @@
 
 Toate modificarile notabile ale proiectului sunt documentate in acest fisier.
 
+## [1.5.0] - 2026-06-03
+
+### Adaugat
+- **Auto-backfill din memoria contorului** (`janitza/backfill.py`) - recupereaza automat golurile din InfluxDB citind inregistrarea on-board de 1 minut a contorului prin API-ul HTTP `HIST_DATA`. Cand colectorul pierde conexiunea de retea (ex. un dip de tensiune reseteaza switch-ul), stream-ul live - si InfluxDB - ramane cu un gol, dar contorul (alimentat din retea) continua sa logheze in flash-ul propriu. Job-ul scrie punctele lipsa inapoi, cu aceeasi schema masura/field/tag ca publisher-ul live, asa ca graficele se completeaza fara discontinuitate.
+  - Moduri: auto (detecteaza golul de la coada si il umple), `--window <ISO_UTC> <ISO_UTC>` (gol istoric), `--dry-run`, `--verbose`
+  - Acopera tensiunile L-N si L-L la 1 minut (singurii parametri inregistrati istoric de UMG512; curent/putere/frecventa sunt doar live)
+  - Idempotent (puncte pe granite de minut); marcaj `backfilled=1` pentru trasabilitate
+  - Rulare: `docker exec pv-stack-janitza-monitor python -m janitza.backfill`; cron `*/10 * * * *`
+
 ## [1.4.0] - 2026-03-19
 
 ### Adaugat

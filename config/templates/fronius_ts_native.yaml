@@ -1,0 +1,100 @@
+# Fronius Smart Meter TS 5kA-3 — NATIVE Carlo Gavazzi register map.
+# The Fronius Smart Meter TS is a rebadged Carlo Gavazzi meter: a Fronius Symo
+# DataManager identifies it via CG/Fronius PROPRIETARY registers (NOT SunSpec)
+# and reads the live data from the native 258/286/1024 blocks. Reverse-engineered
+# against a real DataManager (FW 3.34.1) by probing each register and reading the
+# DM's internal /components attributes back. See README "Fronius Smart Meter".
+#
+# Confirmed register -> DataManager attribute (verified live):
+#   0x000b/0x0300/0x06aa  FRONIUS identification code (733 -> "Smart Meter TS 5kA-3")
+#   0x1103 (4355)         Measurement mode selection (1)
+#   0x1002 (4098)         Measurement system (0)
+#   0x0304 (772)          Version Code (1)
+#   0x5010 (20496)        Production Year (2021)
+#   0x5000 (20480)        Manufacturer Serial Number (string)
+#   258 / 286 / 1024      live data (summary / per-phase / energy) — polled ~1/s
+# Device serial / CT ratio / VT ratio are read by the DM at first detection from
+# registers we could not pin down and are cached per meter-id (show as 0/None).
+# Cosmetic only — every measurement is correct. Built from em24_av53 (the proven
+# CG map accepted by Victron) so the same data also serves a Victron grid meter.
+template:
+  id: fronius_ts_native
+  name: "Fronius Smart Meter TS 5kA-3 (native CG) — DataManager"
+  kind: flat
+  byte_order: little          # CG uses Reg_s32l (low word at the lower address)
+  transport: { type: tcp, port: 502, unit_id: 1, bind: "0.0.0.0" }
+  registers:
+    # ── identification: proprietary CG/Fronius registers. These MUST return a
+    #    value (not 0, not an exception) — the DM reads them to recognise a
+    #    genuine Fronius meter, then maps id-code 733 to the model name. ──
+    - { addr: 0x000b, type: uint16, source: { const: 733 } }   # FRONIUS identification code
+    - { addr: 0x0300, type: uint16, source: { const: 733 } }   # id-code probe
+    - { addr: 0x0302, type: uint16, source: { const: 1 } }     # read at detection
+    - { addr: 0x0304, type: uint16, source: { const: 1 } }     # Version Code
+    - { addr: 0x06aa, type: uint16, source: { const: 733 } }   # id-code probe
+    - { addr: 0x1002, type: uint16, source: { const: 0 } }     # Measurement system
+    - { addr: 0x1103, type: uint16, source: { const: 1 } }     # Measurement mode
+    - { addr: 0x1104, type: uint16, source: { const: 1 } }     # read at detection
+    - { addr: 0x5000, type: string, length: 9, source: { const_str: "000000" } }  # Manufacturer Serial Number (placeholder — cosmetic)
+    - { addr: 0x5010, type: uint16, source: { const: 2021 } }  # Production Year
+    - { addr: 0x8960, type: uint32, source: { const: 1 } }      # device serial (placeholder — DM caches/ignores it)
+    - { addr: 0xa000, type: uint16, source: { const: 7 } }     # application
+    - { addr: 0xa100, type: uint16, source: { const: 3 } }     # front switch unlocked
+    - { addr: 0x0032, type: uint16, source: { const: 0 } }     # phase sequence normal
+    # ── totals (live) ──
+    - { addr: 0x0028, type: int32,  scale: 10,   source: { live: "_G_P_SUM3" } }   # PowerReal W
+    - { addr: 0x0033, type: uint16, scale: 10,   source: { live: "_G_FREQ" } }     # Frequency
+    - { addr: 0x0034, type: int32,  scale: 0.01, source: { live: "_WH_V[4]" } }    # Forward (import) total
+    - { addr: 0x004e, type: int32,  scale: 0.01, source: { live: "_WH_Z[4]" } }    # Reverse (export) total
+    # ── per-phase forward energy (0x0040/42/44) ──
+    - { addr: 0x0040, type: int32,  scale: 0.01, source: { live: "_WH_V[0]" } }
+    - { addr: 0x0042, type: int32,  scale: 0.01, source: { live: "_WH_V[1]" } }
+    - { addr: 0x0044, type: int32,  scale: 0.01, source: { live: "_WH_V[2]" } }
+    # ── per-phase V / I / P (live) ──
+    - { addr: 0x0000, type: int32,  scale: 10,   source: { live: "_G_ULN[0]" } }
+    - { addr: 0x0002, type: int32,  scale: 10,   source: { live: "_G_ULN[1]" } }
+    - { addr: 0x0004, type: int32,  scale: 10,   source: { live: "_G_ULN[2]" } }
+    - { addr: 0x000c, type: int32,  scale: 1000, source: { live: "_ILN[0]" } }
+    - { addr: 0x000e, type: int32,  scale: 1000, source: { live: "_ILN[1]" } }
+    - { addr: 0x0010, type: int32,  scale: 1000, source: { live: "_ILN[2]" } }
+    - { addr: 0x0012, type: int32,  scale: 10,   source: { live: "_PLN[0]" } }
+    - { addr: 0x0014, type: int32,  scale: 10,   source: { live: "_PLN[1]" } }
+    - { addr: 0x0016, type: int32,  scale: 10,   source: { live: "_PLN[2]" } }
+    # ── Fronius NATIVE data blocks 258/286/1024 — the DM reads THESE for the
+    #    meter data (confirmed live: it polls 258 qty16, 286 qty42, 1024 qty16) ──
+    # summary @258 (qty 16)
+    - { addr: 258, type: int32, scale: 10,   source: { live: "_G_ULN[0]" } }  # Voltage L-N
+    - { addr: 260, type: int32, scale: 10,   source: { live: "_G_ULL[0]" } }  # Voltage L-L
+    - { addr: 262, type: int32, scale: 10,   source: { live: "_G_P_SUM3" } }  # Power W
+    - { addr: 264, type: int32, scale: 10,   source: { live: "_S_SUM3" } }    # Apparent VA
+    - { addr: 266, type: int32, scale: 10,   source: { live: "_Q_SUM3" } }    # Reactive var
+    - { addr: 268, type: int32, scale: 1000, source: { live: "_PF_TOTAL" } }  # PowerFactor
+    - { addr: 272, type: int32, scale: 10,   source: { live: "_G_FREQ" } }    # Frequency
+    # per-phase @286 (qty 42)
+    - { addr: 286, type: int32, scale: 10,   source: { live: "_G_ULL[0]" } }
+    - { addr: 288, type: int32, scale: 10,   source: { live: "_G_ULN[0]" } }
+    - { addr: 290, type: int32, scale: 1000, source: { live: "_ILN[0]" } }
+    - { addr: 292, type: int32, scale: 10,   source: { live: "_PLN[0]" } }
+    - { addr: 294, type: int32, scale: 10,   source: { live: "_SLN[0]" } }
+    - { addr: 296, type: int32, scale: 10,   source: { live: "_QLN[0]" } }
+    - { addr: 298, type: int32, scale: 1000, source: { live: "_G_COS_PHI[0]" } }
+    - { addr: 300, type: int32, scale: 10,   source: { live: "_G_ULL[1]" } }
+    - { addr: 302, type: int32, scale: 10,   source: { live: "_G_ULN[1]" } }
+    - { addr: 304, type: int32, scale: 1000, source: { live: "_ILN[1]" } }
+    - { addr: 306, type: int32, scale: 10,   source: { live: "_PLN[1]" } }
+    - { addr: 308, type: int32, scale: 10,   source: { live: "_SLN[1]" } }
+    - { addr: 310, type: int32, scale: 10,   source: { live: "_QLN[1]" } }
+    - { addr: 312, type: int32, scale: 1000, source: { live: "_G_COS_PHI[1]" } }
+    - { addr: 314, type: int32, scale: 10,   source: { live: "_G_ULL[2]" } }
+    - { addr: 316, type: int32, scale: 10,   source: { live: "_G_ULN[2]" } }
+    - { addr: 318, type: int32, scale: 1000, source: { live: "_ILN[2]" } }
+    - { addr: 320, type: int32, scale: 10,   source: { live: "_PLN[2]" } }
+    - { addr: 322, type: int32, scale: 10,   source: { live: "_SLN[2]" } }
+    - { addr: 324, type: int32, scale: 10,   source: { live: "_QLN[2]" } }
+    - { addr: 326, type: int32, scale: 1000, source: { live: "_G_COS_PHI[2]" } }
+    # energy @1024 (qty 16) — each value split kWh/kVArh part (gap=0) + Wh/VArh part.
+    # Put full value in the Wh/VArh slot (mirrors active import: 1024 kWh=0, 1026 Wh=val).
+    - { addr: 1026, type: int32, scale: 1, source: { live: "_WH_V[4]" } }   # active import Wh
+    - { addr: 1030, type: int32, scale: 1, source: { live: "_IQH[4]" } }    # reactive consumed VArh (inductive)
+    - { addr: 1034, type: int32, scale: 1, source: { live: "_WH_Z[4]" } }   # active export Wh
+    - { addr: 1038, type: int32, scale: 1, source: { live: "_CQH[4]" } }    # reactive produced VArh (capacitive)

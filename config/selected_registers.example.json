@@ -1,208 +1,1758 @@
 {
-  "_comment": "Registre selectate pentru monitorizare. Editeaza din UI sau manual.",
-  "version": "1.0",
-  "registers": [
-    {
-      "address": 19000,
-      "name": "_G_ULN[0]",
-      "label": "Tensiune L1-N",
-      "unit": "V",
-      "data_type": "float",
-      "poll_group": "realtime",
-      "mqtt": {
-        "enabled": true,
-        "topic": "voltage/l1_n"
-      },
-      "influxdb": {
-        "enabled": true,
-        "measurement": "voltage",
-        "tags": {
-          "phase": "L1",
-          "type": "line_neutral"
+    "version": "1.0",
+    "registers": [
+        {
+            "address": 19000,
+            "name": "_G_ULN[0]",
+            "description": "",
+            "label": "Tensiune L1-N",
+            "unit": "V",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "voltage/l1_n"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "voltage",
+                "tags": {
+                    "phase": "L1",
+                    "type": "line_neutral"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "gauge",
+                "min": 0,
+                "max": 300,
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 2
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": 200.0,
+                "warningLow": 210.0,
+                "warningHigh": 245.0,
+                "dangerHigh": 253.0
+            }
+        },
+        {
+            "address": 19002,
+            "name": "_G_ULN[1]",
+            "description": "",
+            "label": "Tensiune L2-N",
+            "unit": "V",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "voltage/l2_n"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "voltage",
+                "tags": {
+                    "phase": "L2",
+                    "type": "line_neutral"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "gauge",
+                "min": 0,
+                "max": 300,
+                "color": "#22c55e",
+                "wide": false,
+                "dashboard_order": 3
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": 200.0,
+                "warningLow": 210.0,
+                "warningHigh": 245.0,
+                "dangerHigh": 253.0
+            }
+        },
+        {
+            "address": 19004,
+            "name": "_G_ULN[2]",
+            "description": "",
+            "label": "Tensiune L3-N",
+            "unit": "V",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "voltage/l3_n"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "voltage",
+                "tags": {
+                    "phase": "L3",
+                    "type": "line_neutral"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "gauge",
+                "min": 0,
+                "max": 300,
+                "color": "#eab308",
+                "wide": false,
+                "dashboard_order": 4
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": 200.0,
+                "warningLow": 210.0,
+                "warningHigh": 245.0,
+                "dangerHigh": 253.0
+            }
+        },
+        {
+            "address": 19026,
+            "name": "_G_P_SUM3",
+            "description": "",
+            "label": "Putere Activa Totala",
+            "unit": "W",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/active/total"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "type": "active",
+                    "aggregate": "sum"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "chart_type": "line",
+                "wide": false,
+                "dashboard_order": 5
+            },
+            "thresholds": null
+        },
+        {
+            "address": 19050,
+            "name": "_G_FREQ",
+            "description": "",
+            "label": "Frecventa",
+            "unit": "Hz",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "frequency"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "frequency",
+                "tags": {}
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "decimals": 2,
+                "wide": false,
+                "dashboard_order": 6
+            },
+            "thresholds": null
+        },
+        {
+            "address": 19060,
+            "name": "_G_WH_SUML13",
+            "description": "",
+            "label": "Energie Activa Totala",
+            "unit": "Wh",
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "energy/active/total"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "energy",
+                "tags": {
+                    "type": "active",
+                    "aggregate": "sum"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "decimals": 0,
+                "format": "kWh",
+                "wide": false,
+                "dashboard_order": 14
+            },
+            "thresholds": null
+        },
+        {
+            "address": 19006,
+            "name": "_G_ULL[0]",
+            "description": "Voltage L1-L2",
+            "label": "Voltage L1-L2",
+            "unit": "V",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "voltage/voltage_l1l2"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "voltage",
+                "tags": {
+                    "phase": "L1",
+                    "connection": "line_line"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "wide": false,
+                "dashboard_order": 7,
+                "color": "#3b82f6"
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": 346.0,
+                "warningLow": 363.0,
+                "warningHigh": 424.0,
+                "dangerHigh": 438.0
+            }
+        },
+        {
+            "address": 19008,
+            "name": "_G_ULL[1]",
+            "description": "Voltage L2-L3",
+            "label": "Voltage L2-L3",
+            "unit": "V",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "voltage/voltage_l2l3"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "voltage",
+                "tags": {
+                    "phase": "L2",
+                    "connection": "line_line"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "wide": false,
+                "dashboard_order": 8,
+                "color": "#3b82f6"
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": 346.0,
+                "warningLow": 363.0,
+                "warningHigh": 424.0,
+                "dangerHigh": 438.0
+            }
+        },
+        {
+            "address": 19010,
+            "name": "_G_ULL[2]",
+            "description": "Voltage L3-L1",
+            "label": "Voltage L3-L1",
+            "unit": "V",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "voltage/voltage_l3l1"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "voltage",
+                "tags": {
+                    "phase": "L3",
+                    "connection": "line_line"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "wide": false,
+                "dashboard_order": 9,
+                "color": "#3b82f6"
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": 360.0,
+                "warningLow": 380.0,
+                "warningHigh": 425.0,
+                "dangerHigh": 439.0
+            }
+        },
+        {
+            "address": 3919,
+            "name": "_I_SUM3",
+            "description": "Vector sum; IN = I1 + I2 + I3",
+            "label": "Vector sum; IN = I1 + I2 + I3",
+            "unit": "A",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "current/vector_sum_in_i1_i2_i3"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "current",
+                "tags": {
+                    "aggregate": "total"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "wide": false,
+                "dashboard_order": 15,
+                "color": "#3b82f6"
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 90.0,
+                "dangerHigh": 100.0
+            }
+        },
+        {
+            "address": 4005,
+            "name": "_U_SYM",
+            "description": "Unsymmetrical, voltage",
+            "label": "Unsymmetrical, voltage",
+            "unit": "%",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "quality/unsymmetrical_voltage"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "quality",
+                "tags": {}
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 16
+            },
+            "thresholds": {
+                "enabled": false,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": null,
+                "dangerHigh": null
+            }
+        },
+        {
+            "address": 4007,
+            "name": "_I_SYM",
+            "description": "Unsymmetrical, current",
+            "label": "Unsymmetrical, current",
+            "unit": "%",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "quality/unsymmetrical_current"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "quality",
+                "tags": {}
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 17
+            },
+            "thresholds": {
+                "enabled": false,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": null,
+                "dangerHigh": null
+            }
+        },
+        {
+            "address": 3853,
+            "name": "_ILN[0]",
+            "description": "Apparent current, L1",
+            "label": "Apparent current, L1",
+            "unit": "A",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "current/apparent_current_l1"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "current",
+                "tags": {
+                    "phase": "L1",
+                    "type": "apparent"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 10
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 90.0,
+                "dangerHigh": 100.0
+            }
+        },
+        {
+            "address": 3855,
+            "name": "_ILN[1]",
+            "description": "Apparent current, L2",
+            "label": "Apparent current, L2",
+            "unit": "A",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "current/apparent_current_l2"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "current",
+                "tags": {
+                    "phase": "L2",
+                    "type": "apparent"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 11
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 90.0,
+                "dangerHigh": 100.0
+            }
+        },
+        {
+            "address": 3857,
+            "name": "_ILN[2]",
+            "description": "Apparent current, L3",
+            "label": "Apparent current, L3",
+            "unit": "A",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "current/apparent_current_l3"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "current",
+                "tags": {
+                    "phase": "L3",
+                    "type": "apparent"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 12
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 90.0,
+                "dangerHigh": 100.0
+            }
+        },
+        {
+            "address": 3869,
+            "name": "_QLN[0]",
+            "description": "Reactive power L1 (fundamental comp.)",
+            "label": "Reactive power L1 (fundamental comp.)",
+            "unit": "var",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/reactive_power_l1_fundamental_comp"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "phase": "L1",
+                    "type": "active"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 18
+            },
+            "thresholds": {
+                "enabled": false,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": null,
+                "dangerHigh": null
+            }
+        },
+        {
+            "address": 3871,
+            "name": "_QLN[1]",
+            "description": "Reactive power L2 (fundamental comp.)",
+            "label": "Reactive power L2 (fundamental comp.)",
+            "unit": "var",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/reactive_power_l2_fundamental_comp"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "phase": "L2",
+                    "type": "active"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 19
+            },
+            "thresholds": {
+                "enabled": false,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": null,
+                "dangerHigh": null
+            }
+        },
+        {
+            "address": 3873,
+            "name": "_QLN[2]",
+            "description": "Reactive power L3 (fundamental comp.)",
+            "label": "Reactive power L3 (fundamental comp.)",
+            "unit": "var",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/reactive_power_l3_fundamental_comp"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "phase": "L3",
+                    "type": "active"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 20
+            },
+            "thresholds": {
+                "enabled": false,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": null,
+                "dangerHigh": null
+            }
+        },
+        {
+            "address": 3877,
+            "name": "_SLN[0]",
+            "description": "Apparent power L1",
+            "label": "Apparent power L1",
+            "unit": "VA",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/apparent_power_l1"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "phase": "L1",
+                    "type": "apparent"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 21
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 90.0,
+                "dangerHigh": 100.0
+            }
+        },
+        {
+            "address": 3879,
+            "name": "_SLN[1]",
+            "description": "Apparent power L2",
+            "label": "Apparent power L2",
+            "unit": "VA",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/apparent_power_l2"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "phase": "L2",
+                    "type": "apparent"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 22
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 90.0,
+                "dangerHigh": 100.0
+            }
+        },
+        {
+            "address": 3881,
+            "name": "_SLN[2]",
+            "description": "Apparent power L3",
+            "label": "Apparent power L3",
+            "unit": "VA",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/apparent_power_l3"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "phase": "L3",
+                    "type": "apparent"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 23
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 90.0,
+                "dangerHigh": 100.0
+            }
+        },
+        {
+            "address": 3923,
+            "name": "_S_SUM3",
+            "description": "Sum; S = S1 + S2 + S3",
+            "label": "Sum; S = S1 + S2 + S3",
+            "unit": "VA",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/sum_s_s1_s2_s3"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "aggregate": "total"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 0
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 90.0,
+                "dangerHigh": 100.0
+            }
+        },
+        {
+            "address": 3925,
+            "name": "_P_SUM3",
+            "description": "Sum; P = P1 + P2 + P3",
+            "label": "Sum; P = P1 + P2 + P3",
+            "unit": "W",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/sum_p_p1_p2_p3"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "aggregate": "total"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 1
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 90.0,
+                "dangerHigh": 100.0
+            }
+        },
+        {
+            "address": 3927,
+            "name": "_Q_SUM3",
+            "description": "Mains frequency reactive power Sum; Q = Q1 + Q2 + Q3",
+            "label": "Mains frequency reactive power Sum; Q = Q1 + Q2 + Q3",
+            "unit": "var",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/mains_frequency_reactive_power_sum_q_q1_q2_q3"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "type": "active",
+                    "aggregate": "total"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 24
+            },
+            "thresholds": {
+                "enabled": false,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": null,
+                "dangerHigh": null
+            }
+        },
+        {
+            "address": 3861,
+            "name": "_PLN[0]",
+            "description": "Active power L1",
+            "label": "Putere Activa L1",
+            "unit": "W",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/active/l1"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "phase": "L1",
+                    "type": "active"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 25
+            },
+            "thresholds": null
+        },
+        {
+            "address": 3863,
+            "name": "_PLN[1]",
+            "description": "Active power L2",
+            "label": "Putere Activa L2",
+            "unit": "W",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/active/l2"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "phase": "L2",
+                    "type": "active"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#22c55e",
+                "wide": false,
+                "dashboard_order": 26
+            },
+            "thresholds": null
+        },
+        {
+            "address": 3865,
+            "name": "_PLN[2]",
+            "description": "Active power L3",
+            "label": "Putere Activa L3",
+            "unit": "W",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power/active/l3"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power",
+                "tags": {
+                    "phase": "L3",
+                    "type": "active"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#eab308",
+                "wide": false,
+                "dashboard_order": 27
+            },
+            "thresholds": null
+        },
+        {
+            "address": 19044,
+            "name": "_G_COS_PHI[0]",
+            "description": "Power factor L1",
+            "label": "Factor Putere L1",
+            "unit": "",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power_factor/l1"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power_factor",
+                "tags": {
+                    "phase": "L1"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "decimals": 3,
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 28
+            },
+            "thresholds": null
+        },
+        {
+            "address": 19046,
+            "name": "_G_COS_PHI[1]",
+            "description": "Power factor L2",
+            "label": "Factor Putere L2",
+            "unit": "",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power_factor/l2"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power_factor",
+                "tags": {
+                    "phase": "L2"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "decimals": 3,
+                "color": "#22c55e",
+                "wide": false,
+                "dashboard_order": 29
+            },
+            "thresholds": null
+        },
+        {
+            "address": 19048,
+            "name": "_G_COS_PHI[2]",
+            "description": "Power factor L3",
+            "label": "Factor Putere L3",
+            "unit": "",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power_factor/l3"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power_factor",
+                "tags": {
+                    "phase": "L3"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "decimals": 3,
+                "color": "#eab308",
+                "wide": false,
+                "dashboard_order": 30
+            },
+            "thresholds": null
+        },
+        {
+            "address": 19110,
+            "name": "_G_THD_ULN[0]",
+            "description": "THD voltage L1",
+            "label": "THD Tensiune L1",
+            "unit": "%",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "thd/voltage/l1"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "thd",
+                "tags": {
+                    "phase": "L1",
+                    "type": "voltage"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "decimals": 1,
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 31
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 5.0,
+                "dangerHigh": 8.0
+            }
+        },
+        {
+            "address": 19112,
+            "name": "_G_THD_ULN[1]",
+            "description": "THD voltage L2",
+            "label": "THD Tensiune L2",
+            "unit": "%",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "thd/voltage/l2"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "thd",
+                "tags": {
+                    "phase": "L2",
+                    "type": "voltage"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "decimals": 1,
+                "color": "#22c55e",
+                "wide": false,
+                "dashboard_order": 32
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 5.0,
+                "dangerHigh": 8.0
+            }
+        },
+        {
+            "address": 19114,
+            "name": "_G_THD_ULN[2]",
+            "description": "THD voltage L3",
+            "label": "THD Tensiune L3",
+            "unit": "%",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "thd/voltage/l3"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "thd",
+                "tags": {
+                    "phase": "L3",
+                    "type": "voltage"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "decimals": 1,
+                "color": "#eab308",
+                "wide": false,
+                "dashboard_order": 33
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 5.0,
+                "dangerHigh": 8.0
+            }
+        },
+        {
+            "address": 3813,
+            "name": "_THD_IL[0]",
+            "description": "THD current L1",
+            "label": "THD Curent L1",
+            "unit": "%",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "thd/current/l1"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "thd",
+                "tags": {
+                    "phase": "L1",
+                    "type": "current"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "decimals": 1,
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 34
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 5.0,
+                "dangerHigh": 8.0
+            }
+        },
+        {
+            "address": 3815,
+            "name": "_THD_IL[1]",
+            "description": "THD current L2",
+            "label": "THD Curent L2",
+            "unit": "%",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "thd/current/l2"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "thd",
+                "tags": {
+                    "phase": "L2",
+                    "type": "current"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "decimals": 1,
+                "color": "#22c55e",
+                "wide": false,
+                "dashboard_order": 35
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 5.0,
+                "dangerHigh": 8.0
+            }
+        },
+        {
+            "address": 3817,
+            "name": "_THD_IL[2]",
+            "description": "THD current L3",
+            "label": "THD Curent L3",
+            "unit": "%",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "thd/current/l3"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "thd",
+                "tags": {
+                    "phase": "L3",
+                    "type": "current"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "decimals": 1,
+                "color": "#eab308",
+                "wide": false,
+                "dashboard_order": 36
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 5.0,
+                "dangerHigh": 8.0
+            }
+        },
+        {
+            "address": 3859,
+            "name": "_ILN[3]",
+            "description": "Apparent current, L4",
+            "label": "Apparent current, L4",
+            "unit": "A",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "current/apparent_current_l4"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "current",
+                "tags": {
+                    "type": "apparent"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#3b82f6",
+                "wide": false,
+                "dashboard_order": 13
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": 90.0,
+                "dangerHigh": 100.0
+            }
+        },
+        {
+            "address": 4209,
+            "name": "_TEMPERATUR",
+            "description": "Internal temperature",
+            "label": "Internal temperature",
+            "unit": "°C",
+            "data_type": "float",
+            "poll_group": "normal",
+            "mqtt": {
+                "enabled": true,
+                "topic": "config/internal_temperature"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "config",
+                "tags": {}
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "chart",
+                "color": "#3b82f6"
+            },
+            "thresholds": {
+                "enabled": false,
+                "dangerLow": null,
+                "warningLow": null,
+                "warningHigh": null,
+                "dangerHigh": null
+            }
+        },
+        {
+            "address": 19636,
+            "name": "_PF_TOTAL",
+            "description": "PF Total = P_Sum3 / S_Sum3",
+            "label": "Power Factor Total",
+            "unit": "",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power_factor/total"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power_factor",
+                "tags": {
+                    "aggregate": "total"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": true,
+                "widget": "value",
+                "min": -1,
+                "max": 1,
+                "color": "#14b8a6",
+                "wide": false,
+                "dashboard_order": 50
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": -0.5,
+                "warningLow": 0.7,
+                "warningHigh": 1.01,
+                "dangerHigh": 1.01
+            }
+        },
+        {
+            "address": 3929,
+            "name": "_COS_SUM3",
+            "description": "CosPhi calculated from Psum3 and Qsum3",
+            "label": "Cos Phi Total",
+            "unit": "",
+            "data_type": "float",
+            "poll_group": "realtime",
+            "mqtt": {
+                "enabled": true,
+                "topic": "power_factor/cos_phi_total"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "power_factor",
+                "tags": {
+                    "type": "cos_phi",
+                    "aggregate": "total"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "min": -1,
+                "max": 1,
+                "color": "#06b6d4",
+                "wide": false,
+                "dashboard_order": 51
+            },
+            "thresholds": {
+                "enabled": false
+            }
+        },
+        {
+            "address": 4693,
+            "name": "_FREQ_MIN",
+            "description": "Min value, measured frequency",
+            "label": "Frecventa Min",
+            "unit": "Hz",
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "frequency/min"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "frequency",
+                "tags": {
+                    "type": "min"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "min": 49,
+                "max": 51,
+                "color": "#a855f7",
+                "wide": false,
+                "dashboard_order": 52
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": 49.0,
+                "warningLow": 49.8,
+                "warningHigh": 50.2,
+                "dangerHigh": 51.0
+            }
+        },
+        {
+            "address": 4867,
+            "name": "_FREQ_MAX",
+            "description": "Max value, measured frequency",
+            "label": "Frecventa Max",
+            "unit": "Hz",
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "frequency/max"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "frequency",
+                "tags": {
+                    "type": "max"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "min": 49,
+                "max": 51,
+                "color": "#a855f7",
+                "wide": false,
+                "dashboard_order": 53
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": 49.0,
+                "warningLow": 49.8,
+                "warningHigh": 50.2,
+                "dangerHigh": 51.0
+            }
+        },
+        {
+            "address": 4161,
+            "name": "_FLI_SHORT_TERM[0]",
+            "description": "Short-term flicker level Pst (10min), L1-N",
+            "label": "Flicker Pst L1",
+            "unit": "",
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "quality/flicker_pst/l1"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "quality",
+                "tags": {
+                    "phase": "L1",
+                    "type": "flicker_pst"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "min": 0,
+                "max": 5,
+                "color": "#f59e0b",
+                "wide": false,
+                "dashboard_order": 54
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": -1,
+                "warningLow": -1,
+                "warningHigh": 1.0,
+                "dangerHigh": 2.0
+            }
+        },
+        {
+            "address": 4163,
+            "name": "_FLI_SHORT_TERM[1]",
+            "description": "Short-term flicker level Pst (10min), L2-N",
+            "label": "Flicker Pst L2",
+            "unit": "",
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "quality/flicker_pst/l2"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "quality",
+                "tags": {
+                    "phase": "L2",
+                    "type": "flicker_pst"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "min": 0,
+                "max": 5,
+                "color": "#f59e0b",
+                "wide": false,
+                "dashboard_order": 55
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": -1,
+                "warningLow": -1,
+                "warningHigh": 1.0,
+                "dangerHigh": 2.0
+            }
+        },
+        {
+            "address": 4165,
+            "name": "_FLI_SHORT_TERM[2]",
+            "description": "Short-term flicker level Pst (10min), L3-N",
+            "label": "Flicker Pst L3",
+            "unit": "",
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "quality/flicker_pst/l3"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "quality",
+                "tags": {
+                    "phase": "L3",
+                    "type": "flicker_pst"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "min": 0,
+                "max": 5,
+                "color": "#f59e0b",
+                "wide": false,
+                "dashboard_order": 56
+            },
+            "thresholds": {
+                "enabled": true,
+                "dangerLow": -1,
+                "warningLow": -1,
+                "warningHigh": 1.0,
+                "dangerHigh": 2.0
+            }
+        },
+        {
+            "address": 4009,
+            "name": "_PHASE_SEQ",
+            "description": "Rotation field: 1=right, 0=none, -1=left",
+            "label": "Secventa Faze",
+            "unit": "",
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "quality/phase_sequence"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "quality",
+                "tags": {
+                    "type": "phase_sequence"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "min": -1,
+                "max": 1,
+                "color": "#64748b",
+                "wide": false,
+                "dashboard_order": 57
+            },
+            "thresholds": {
+                "enabled": false
+            }
+        },
+        {
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "energy/reactive/total"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "energy",
+                "tags": {
+                    "type": "reactive",
+                    "aggregate": "sum"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "decimals": 1,
+                "format": "kVArh",
+                "wide": false,
+                "dashboard_order": 100
+            },
+            "thresholds": null,
+            "address": 6496,
+            "name": "_QH[4]",
+            "description": "",
+            "label": "Energie Reactiva Totala",
+            "unit": "varh"
+        },
+        {
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "energy/reactive/inductive"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "energy",
+                "tags": {
+                    "type": "reactive",
+                    "aggregate": "sum",
+                    "quadrant": "inductive"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "decimals": 1,
+                "format": "kVArh",
+                "wide": false,
+                "dashboard_order": 101
+            },
+            "thresholds": null,
+            "address": 19100,
+            "name": "_G_IQH_SUML13",
+            "description": "",
+            "label": "Energie Reactiva Inductiva",
+            "unit": "varh"
+        },
+        {
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "energy/reactive/capacitive"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "energy",
+                "tags": {
+                    "type": "reactive",
+                    "aggregate": "sum",
+                    "quadrant": "capacitive"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "decimals": 1,
+                "format": "kVArh",
+                "wide": false,
+                "dashboard_order": 102
+            },
+            "thresholds": null,
+            "address": 19108,
+            "name": "_G_CQH_SUML13",
+            "description": "",
+            "label": "Energie Reactiva Capacitiva",
+            "unit": "varh"
+        },
+        {
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "energy/apparent/total"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "energy",
+                "tags": {
+                    "type": "apparent",
+                    "aggregate": "sum"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "decimals": 1,
+                "format": "kVAh",
+                "wide": false,
+                "dashboard_order": 103
+            },
+            "thresholds": null,
+            "address": 6472,
+            "name": "_WH_S[4]",
+            "description": "",
+            "label": "Energie Aparenta Totala",
+            "unit": "VAh"
+        },
+        {
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "energy/active/consumed"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "energy",
+                "tags": {
+                    "type": "active",
+                    "aggregate": "sum",
+                    "direction": "consumed"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "decimals": 1,
+                "format": "kWh",
+                "wide": false,
+                "dashboard_order": 104
+            },
+            "thresholds": null,
+            "address": 6508,
+            "name": "_WH_V[4]",
+            "description": "",
+            "label": "Energie Activa Consumata (Import)",
+            "unit": "Wh"
+        },
+        {
+            "data_type": "float",
+            "poll_group": "slow",
+            "mqtt": {
+                "enabled": true,
+                "topic": "energy/active/delivered"
+            },
+            "influxdb": {
+                "enabled": true,
+                "measurement": "energy",
+                "tags": {
+                    "type": "active",
+                    "aggregate": "sum",
+                    "direction": "delivered"
+                }
+            },
+            "ui": {
+                "show_on_dashboard": false,
+                "widget": "value",
+                "decimals": 1,
+                "format": "kWh",
+                "wide": false,
+                "dashboard_order": 105
+            },
+            "thresholds": null,
+            "address": 6520,
+            "name": "_WH_Z[4]",
+            "description": "",
+            "label": "Energie Activa Livrata (Export)",
+            "unit": "Wh"
         }
-      },
-      "ui": {
-        "show_on_dashboard": true,
-        "widget": "gauge",
-        "min": 0,
-        "max": 300,
-        "color": "#3b82f6"
-      }
-    },
-    {
-      "address": 19002,
-      "name": "_G_ULN[1]",
-      "label": "Tensiune L2-N",
-      "unit": "V",
-      "data_type": "float",
-      "poll_group": "realtime",
-      "mqtt": {
-        "enabled": true,
-        "topic": "voltage/l2_n"
-      },
-      "influxdb": {
-        "enabled": true,
-        "measurement": "voltage",
-        "tags": {
-          "phase": "L2",
-          "type": "line_neutral"
+    ],
+    "poll_groups": {
+        "realtime": {
+            "interval": 1,
+            "description": "Valori real-time (tensiune, curent, putere)"
+        },
+        "normal": {
+            "interval": 5,
+            "description": "Masuratori standard"
+        },
+        "slow": {
+            "interval": 60,
+            "description": "Contoare energie, statistici"
         }
-      },
-      "ui": {
-        "show_on_dashboard": true,
-        "widget": "gauge",
-        "min": 0,
-        "max": 300,
-        "color": "#22c55e"
-      }
-    },
-    {
-      "address": 19004,
-      "name": "_G_ULN[2]",
-      "label": "Tensiune L3-N",
-      "unit": "V",
-      "data_type": "float",
-      "poll_group": "realtime",
-      "mqtt": {
-        "enabled": true,
-        "topic": "voltage/l3_n"
-      },
-      "influxdb": {
-        "enabled": true,
-        "measurement": "voltage",
-        "tags": {
-          "phase": "L3",
-          "type": "line_neutral"
-        }
-      },
-      "ui": {
-        "show_on_dashboard": true,
-        "widget": "gauge",
-        "min": 0,
-        "max": 300,
-        "color": "#eab308"
-      }
-    },
-    {
-      "address": 19012,
-      "name": "_G_ILN[0]",
-      "label": "Curent L1",
-      "unit": "A",
-      "data_type": "float",
-      "poll_group": "realtime",
-      "mqtt": {
-        "enabled": true,
-        "topic": "current/l1"
-      },
-      "influxdb": {
-        "enabled": true,
-        "measurement": "current",
-        "tags": {
-          "phase": "L1"
-        }
-      },
-      "ui": {
-        "show_on_dashboard": true,
-        "widget": "value",
-        "decimals": 2
-      }
-    },
-    {
-      "address": 19026,
-      "name": "_G_P_SUM3",
-      "label": "Putere Activa Totala",
-      "unit": "W",
-      "data_type": "float",
-      "poll_group": "realtime",
-      "mqtt": {
-        "enabled": true,
-        "topic": "power/active/total"
-      },
-      "influxdb": {
-        "enabled": true,
-        "measurement": "power",
-        "tags": {
-          "type": "active",
-          "aggregate": "sum"
-        }
-      },
-      "ui": {
-        "show_on_dashboard": true,
-        "widget": "chart",
-        "chart_type": "line"
-      }
-    },
-    {
-      "address": 19050,
-      "name": "_G_FREQ",
-      "label": "Frecventa",
-      "unit": "Hz",
-      "data_type": "float",
-      "poll_group": "normal",
-      "mqtt": {
-        "enabled": true,
-        "topic": "frequency"
-      },
-      "influxdb": {
-        "enabled": true,
-        "measurement": "frequency",
-        "tags": {}
-      },
-      "ui": {
-        "show_on_dashboard": true,
-        "widget": "value",
-        "decimals": 2
-      }
-    },
-    {
-      "address": 19060,
-      "name": "_G_WH_SUML13",
-      "label": "Energie Activa Totala",
-      "unit": "Wh",
-      "data_type": "float",
-      "poll_group": "slow",
-      "mqtt": {
-        "enabled": true,
-        "topic": "energy/active/total"
-      },
-      "influxdb": {
-        "enabled": true,
-        "measurement": "energy",
-        "tags": {
-          "type": "active",
-          "aggregate": "sum"
-        }
-      },
-      "ui": {
-        "show_on_dashboard": true,
-        "widget": "value",
-        "decimals": 0,
-        "format": "kWh"
-      }
     }
-  ],
-  "poll_groups": {
-    "realtime": {
-      "interval": 1,
-      "description": "Valori real-time (tensiune, curent, putere)"
-    },
-    "normal": {
-      "interval": 5,
-      "description": "Masuratori standard"
-    },
-    "slow": {
-      "interval": 60,
-      "description": "Contoare energie, statistici"
-    }
-  },
-  "mqtt_topic_structure": {
-    "_comment": "Topic final: {prefix}/{topic} ex: janitza/umg512/voltage/l1_n",
-    "examples": [
-      "janitza/umg512/voltage/l1_n",
-      "janitza/umg512/voltage/l2_n",
-      "janitza/umg512/current/l1",
-      "janitza/umg512/power/active/total",
-      "janitza/umg512/energy/active/total"
-    ]
-  }
 }
