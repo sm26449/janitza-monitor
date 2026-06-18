@@ -195,6 +195,39 @@ Every ~10 s each meter's health is published **retained** to
 
 ---
 
+## Performance & latency
+
+Benchmarked on the reference setup (reading the 16-register summary block):
+
+| Path | Throughput | Latency p50 / p99 |
+|------|-----------|-------------------|
+| Single client, over the LAN | **~10,000 req/s** | ~94 µs / ~189 µs |
+| Single client, loopback (pymodbus) | ~8,000 req/s | ~120 µs / ~200 µs |
+| 6 concurrent clients, loopback | **~11,600 req/s** aggregate | — |
+
+The server is **never the bottleneck** — it answers tens of thousands of reads
+per second at sub-millisecond latency, far beyond any real meter consumer.
+
+**But fast reads ≠ fresh data.** The pipeline:
+
+```
+Janitza poll (realtime group ~1s) → live cache → block rebuilt every
+update_interval_s (1s) → answered in ~100 µs
+```
+
+Served values refresh **about once per second** (the Janitza realtime poll + the
+1 s block rebuild), so end-to-end data age is ≤ ~2 s (typically ~1 s). **Polling
+faster than ~1 Hz returns the same value** — a µs-fast response, but not newer
+data. The virtual layer itself adds only **microseconds**; the ~1 s is the
+meter's own measurement cadence.
+
+To trade load for freshness, lower `update_interval_s` (per instance) *and* the
+realtime poll-group interval — but the UMG512's realtime values are already ~1 s
+and faster polling loads the physical meter. For grid-power into a control loop,
+~1 s is what the meter provides.
+
+---
+
 ## Templates
 
 A template is a register map. Anatomy:

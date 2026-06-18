@@ -210,6 +210,39 @@ ex. o variabilă **alertd** pe acel topic cu `json_path: state` și reguli precu
 
 ---
 
+## Performanță & latență
+
+Măsurat pe setup-ul de referință (citire blocul sumar de 16 registre):
+
+| Cale | Debit | Latență p50 / p99 |
+|------|-------|-------------------|
+| Un client, peste LAN | **~10.000 req/s** | ~94 µs / ~189 µs |
+| Un client, loopback (pymodbus) | ~8.000 req/s | ~120 µs / ~200 µs |
+| 6 clienți concurenți, loopback | **~11.600 req/s** agregat | — |
+
+Serverul **nu e nicidecum bottleneck** — răspunde la zeci de mii de citiri pe
+secundă cu latență sub-milisecundă, mult peste orice consumator real.
+
+**Dar citiri rapide ≠ date proaspete.** Lanțul:
+
+```
+poll Janitza (grup realtime ~1s) → cache live → bloc reconstruit la fiecare
+update_interval_s (1s) → răspuns în ~100 µs
+```
+
+Valorile servite se reîmprospătează **cam o dată pe secundă** (poll-ul realtime
+Janitza + reconstruirea blocului la 1 s), deci vechimea end-to-end e ≤ ~2 s
+(tipic ~1 s). **Poll mai des de ~1 Hz întoarce aceeași valoare** — răspuns rapid
+în µs, dar nu date mai noi. Stratul virtual adaugă doar **microsecunde**; cei ~1 s
+sunt cadența proprie de măsură a contorului.
+
+Ca să dai mai multă prospețime pe cost de încărcare, scazi `update_interval_s`
+(per instanță) *și* intervalul grupului realtime — dar valorile realtime ale
+UMG512 sunt deja la ~1 s și poll-ul mai des încarcă contorul fizic. Pentru
+puterea de rețea într-o buclă de control, ~1 s e ce oferă contorul.
+
+---
+
 ## Șabloane
 
 Un șablon este o hartă de registre. Anatomie:
