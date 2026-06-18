@@ -247,6 +247,20 @@ Monitored registers list with category filtering. Edit label, poll group, widget
 
 ![Edit Register](screenshots/config-edit-register.png)
 
+### Virtual Meters
+
+Serve the live values as standard Modbus meters to other systems. Tabbed page: **Meters** (instances, status, live values, client connections ip:port — accordion cards), **Templates** (editor + YAML import/export), **Logs**, **Stats & Debug**. Full guide: **[docs/VIRTUAL-METER.md](docs/VIRTUAL-METER.md)**.
+
+![Virtual Meters](docs/img/vm-meters.png)
+
+**Logs** - live log of the last 1024 Modbus requests (time, function code, address, count, OK/exception, latency, response) — exactly what the consumer reads.
+
+![Virtual Meters - Logs](docs/img/vm-logs.png)
+
+**Stats & Debug** - counters (requests/errors/rate/RX/TX/uptime), a requests-per-second chart, and the most-read registers.
+
+![Virtual Meters - Stats](docs/img/vm-stats.png)
+
 ## API Endpoints
 
 | Endpoint | Method | Description |

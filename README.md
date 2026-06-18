@@ -247,6 +247,20 @@ Lista registrilor monitorizati cu filtrare pe categorii. Editare label, poll gro
 
 ![Edit Register](screenshots/config-edit-register.png)
 
+### Virtual Meters
+
+Servește valorile live ca metere Modbus standard pentru alte sisteme. Pagină cu tab-uri: **Meters** (instanțe, status, valori live, conexiuni IP:port — carduri acordeon), **Templates** (editor + import/export YAML), **Logs**, **Stats & Debug**. Ghid complet: **[docs/VIRTUAL-METER.ro.md](docs/VIRTUAL-METER.ro.md)**.
+
+![Virtual Meters](docs/img/vm-meters.png)
+
+**Logs** - jurnal live al ultimelor 1024 cereri Modbus (timp, function code, adresă, count, OK/excepție, latență, răspuns) — exact ce citește consumatorul.
+
+![Virtual Meters - Logs](docs/img/vm-logs.png)
+
+**Stats & Debug** - countere (cereri/erori/rate/RX/TX/uptime), chart cereri/secundă și registrele cele mai citite.
+
+![Virtual Meters - Stats](docs/img/vm-stats.png)
+
 ## API Endpoints
 
 | Endpoint | Metoda | Descriere |
