@@ -164,6 +164,19 @@ class VMeterStats:
                     return dict(e)
         return None
 
+    def req_rate(self, window_s: int = 10) -> float:
+        """Average requests/sec over the last window_s seconds. Silent seconds
+        count as zero (buckets only exist for seconds that had traffic)."""
+        with self._lock:
+            buckets = list(self.rate)
+            if self._cur_sec:
+                buckets.append((self._cur_sec, self._cur_cnt))
+        if not buckets:
+            return 0.0
+        cutoff = buckets[-1][0] - window_s + 1
+        recent = sum(c for (s, c) in buckets if s >= cutoff)
+        return round(recent / window_s, 2)
+
     def snapshot(self, limit: int = 200) -> dict:
         with self._lock:
             rate = list(self.rate)
@@ -213,6 +226,7 @@ class VirtualMeter:
         self._server_loop: asyncio.AbstractEventLoop | None = None
         self._running = False
         self._last_fresh_ts = 0.0
+        self._started_ts = 0.0                  # current serving session start (for uptime)
         self.stats = VMeterStats()              # in-RAM query log + counters
 
     # ── value resolution + encoding ────────────────────────────────────────
@@ -352,6 +366,7 @@ class VirtualMeter:
                                                name=f"vmeter-{self.t.id}")
         self._server_thread.start()
         self._running = True
+        self._started_ts = time.time()
         self.stats.record_event("info", "started",
                                 f"listening on {host}:{port} unit {unit}")
         logger.info("virtual meter %s LISTENING on %s:%d unit %d",
@@ -504,12 +519,31 @@ class VirtualMeter:
             pass
         return out
 
+    def health_state(self) -> str:
+        """ok (serving + fresh) · stale (serving but source stale = fail-safe) ·
+        down (not serving). The single classification the UI/MQTT/health agree on."""
+        if not self._alive():
+            return "down"
+        lf = self._last_fresh_ts
+        if lf and (time.time() - lf) <= self.stale_after_s:
+            return "ok"
+        return "stale"
+
     def status(self) -> dict:
+        now = time.time()
         conns = self.connections()
+        lf = self._last_fresh_ts
         return {"id": self.t.id, "name": self.t.name, "running": self._running,
-                "last_fresh": datetime.fromtimestamp(self._last_fresh_ts).isoformat()
-                if self._last_fresh_ts else None,
-                "port": self.t.transport.get("port"), "registers": len(self.t.registers),
+                "state": self.health_state(),
+                "bind": self.t.transport.get("bind", "0.0.0.0"),
+                "port": self.t.transport.get("port"),
+                "unit_id": self.t.transport.get("unit_id", 1),
+                "registers": len(self.t.registers),
+                "last_fresh": datetime.fromtimestamp(lf).isoformat() if lf else None,
+                "freshness_age_s": round(now - lf, 1) if lf else None,
+                "uptime_s": int(now - self._started_ts) if self._started_ts else None,
                 "connections": conns, "conn_count": len(conns),
-                "requests": self.stats.total, "errors": self.stats.errors,
+                "requests": self.stats.total, "req_rate": self.stats.req_rate(),
+                "errors": self.stats.errors,
+                "bytes_rx": self.stats.bytes_rx, "bytes_tx": self.stats.bytes_tx,
                 "last_error": self.stats.last_error()}

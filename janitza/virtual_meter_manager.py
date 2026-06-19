@@ -83,23 +83,61 @@ class VirtualMeterManager:
         for vm in list(self.meters):
             try:
                 st = vm.status()
-                running = bool(st.get("running"))
+                # Full picture for monitoring (alertd / HA / dashboards): who is
+                # serving where, who is connected (ip:port), throughput, freshness,
+                # and the last error — no electrical data is duplicated here.
                 payload = {
-                    "id": st.get("id"), "name": st.get("name"), "port": st.get("port"),
-                    "unit_id": vm.t.transport.get("unit_id", 1),
-                    "enabled": True, "running": running,
-                    "state": "listening" if running else "stale",
-                    "connections": st.get("conn_count", 0),
-                    "requests": st.get("requests", 0), "errors": st.get("errors", 0),
-                    "last_fresh": st.get("last_fresh"), "ts": int(time.time()),
+                    "id": st.get("id"), "name": st.get("name"),
+                    "bind": st.get("bind"), "port": st.get("port"),
+                    "unit_id": st.get("unit_id"), "registers": st.get("registers"),
+                    "enabled": True, "running": bool(st.get("running")),
+                    "state": st.get("state"),
+                    "connections": st.get("connections", []),
+                    "conn_count": st.get("conn_count", 0),
+                    "requests": st.get("requests", 0),
+                    "req_rate": st.get("req_rate", 0.0),
+                    "errors": st.get("errors", 0),
+                    "bytes_rx": st.get("bytes_rx", 0), "bytes_tx": st.get("bytes_tx", 0),
+                    "last_fresh": st.get("last_fresh"),
+                    "freshness_age_s": st.get("freshness_age_s"),
+                    "uptime_s": st.get("uptime_s"),
+                    "last_error": st.get("last_error"),
+                    "ts": int(time.time()),
                 }
                 pub.publish_state(f"vmeter/{st.get('id')}/state", json.dumps(payload))
             except Exception as e:  # noqa: BLE001
                 logger.debug("vmeter state publish failed: %s", e)
 
+    def publish_ha_discovery(self) -> int:
+        """Publish HA autodiscovery for every enabled instance (idempotent;
+        retained). No-op without an MQTT publisher."""
+        pub = self.mqtt_publisher
+        if pub is None or not hasattr(pub, "publish_vmeter_discovery"):
+            return 0
+        running = {vm.t.id: vm for vm in self.meters}
+        meters = []
+        for inst in self._load_cfg().get("instances", []):
+            if not inst.get("enabled", True):
+                continue
+            tid = inst.get("template")
+            vm = running.get(tid)
+            name = vm.t.name if vm else tid
+            if vm is None:
+                try:
+                    name = load_template(str(self.templates_dir / f"{tid}.yaml")).name
+                except Exception:  # noqa: BLE001
+                    pass
+            meters.append({"id": tid, "name": name})
+        try:
+            return pub.publish_vmeter_discovery(meters)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("vmeter HA discovery failed: %s", e)
+            return 0
+
     def start_state_publisher(self, interval: float = 10.0) -> None:
-        """Background thread that publishes meter states to MQTT every `interval`s.
-        Idempotent — a second call is a no-op while a publisher is already live."""
+        """Background thread that publishes meter states to MQTT every `interval`s,
+        and (re)asserts HA autodiscovery periodically so it self-heals after a
+        broker restart. Idempotent — a second call is a no-op while live."""
         if self.mqtt_publisher is None:
             return
         if getattr(self, "_state_thread", None) and self._state_thread.is_alive():
@@ -107,11 +145,15 @@ class VirtualMeterManager:
         self._states_stop.clear()
 
         def _loop():
+            tick = 0
             while not self._states_stop.wait(interval):
                 try:
                     self._publish_states()
+                    if tick % 30 == 0:                # ~every 5 min + first tick
+                        self.publish_ha_discovery()
                 except Exception as e:  # noqa: BLE001
                     logger.warning("vmeter state publisher error: %s", e)
+                tick += 1
         self._state_thread = threading.Thread(target=_loop, daemon=True, name="vmeter-state-pub")
         self._state_thread.start()
         logger.info("virtual-meter state publisher started (every %ss)", interval)
@@ -628,3 +670,36 @@ class VirtualMeterManager:
 
     def status(self) -> list[dict]:
         return [vm.status() for vm in self.meters]
+
+    def health(self) -> dict:
+        """Aggregate health of the ENABLED meters, for /health + container probe.
+
+        Per meter: ok (serving + fresh) · stale (serving, source stale = correct
+        fail-safe) · down (enabled but not serving = genuine fault). Overall maps
+        ok→ok, any-stale→degraded, any-down→down. 'down' is the only state that
+        should fail a container probe — a stale source is expected (the meter is
+        fail-safing) and a restart would not fix it; a 'down' meter (crashed /
+        failed to start) is a real fault a restart might clear."""
+        now = time.time()
+        running = {vm.t.id: vm for vm in self.meters}
+        rank = {"ok": 0, "stale": 1, "down": 2}
+        meters, worst = [], "ok"
+        for inst in self._load_cfg().get("instances", []):
+            if not inst.get("enabled", True):
+                continue
+            tid = inst.get("template")
+            vm = running.get(tid)
+            if vm is None:
+                state, age, last_err = "down", None, None
+            else:
+                state = vm.health_state()
+                lf = vm._last_fresh_ts
+                age = round(now - lf, 1) if lf else None
+                last_err = vm.stats.last_error()
+            meters.append({"id": tid, "state": state, "freshness_age_s": age,
+                           "port": inst.get("port"), "last_error": last_err})
+            if rank[state] > rank[worst]:
+                worst = state
+        status = {"ok": "ok", "stale": "degraded", "down": "down"}[worst]
+        return {"status": status, "enabled_meters": len(meters),
+                "meters": meters, "ts": int(now)}

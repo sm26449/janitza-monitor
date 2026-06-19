@@ -168,7 +168,7 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
     app = FastAPI(
         title="Janitza UMG 512-PRO Monitor",
         description="Monitor and query Janitza power quality analyzer",
-        version="2.1.0",
+        version="2.2.0",
         lifespan=lifespan
     )
 
@@ -251,6 +251,18 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
             "websocket_clients": len(ws_manager.active_connections),
             "last_update": last_update['timestamp'],
         }
+
+    @app.get("/health")
+    async def health():
+        """Health for the container probe + external monitors. Returns 503 ONLY
+        when an enabled virtual meter is genuinely down (crashed / failed to
+        start); 200 for ok and for 'degraded' (a source went stale → the meter
+        correctly stops responding, and a restart would not fix the source)."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            return {"status": "ok", "enabled_meters": 0, "meters": []}
+        h = mgr.health()
+        return JSONResponse(content=h, status_code=503 if h.get("status") == "down" else 200)
 
     @app.get("/api/config")
     async def get_config():

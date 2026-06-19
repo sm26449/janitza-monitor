@@ -351,6 +351,64 @@ class MQTTPublisher:
         logger.info(f"Published {count} HA discovery configs")
         return count
 
+    def publish_vmeter_discovery(self, meters: List[Dict]) -> int:
+        """Publish HA autodiscovery for the virtual meters. Each meter becomes an
+        HA device (linked to the Janitza via `via_device`) exposing serving
+        state, throughput, connections, freshness, uptime and last error — read
+        from the retained `…/vmeter/<id>/state` JSON. No electrical data here."""
+        if not self.connected or not self.config.ha_discovery_enabled:
+            return 0
+        # (key, friendly, component, value_template, extra)
+        specs = [
+            ("serving", "serving", "binary_sensor",
+             "{{ 'ON' if value_json.running else 'OFF' }}",
+             {"payload_on": "ON", "payload_off": "OFF", "device_class": "connectivity"}),
+            ("state", "state", "sensor", "{{ value_json.state }}", {"icon": "mdi:state-machine"}),
+            ("req_rate", "req/s", "sensor", "{{ value_json.req_rate }}",
+             {"unit_of_measurement": "req/s", "state_class": "measurement", "icon": "mdi:speedometer"}),
+            ("requests", "requests", "sensor", "{{ value_json.requests }}",
+             {"state_class": "total_increasing", "icon": "mdi:counter"}),
+            ("errors", "errors", "sensor", "{{ value_json.errors }}",
+             {"state_class": "total_increasing", "icon": "mdi:alert-circle-outline"}),
+            ("connections", "connections", "sensor", "{{ value_json.conn_count }}",
+             {"state_class": "measurement", "icon": "mdi:lan-connect"}),
+            ("freshness", "data age", "sensor", "{{ value_json.freshness_age_s }}",
+             {"unit_of_measurement": "s", "device_class": "duration", "icon": "mdi:clock-outline"}),
+            ("uptime", "uptime", "sensor", "{{ value_json.uptime_s }}",
+             {"unit_of_measurement": "s", "device_class": "duration", "icon": "mdi:timer-outline"}),
+            ("last_error", "last error", "sensor",
+             "{{ value_json.last_error.kind if value_json.last_error else 'none' }}",
+             {"icon": "mdi:alert"}),
+        ]
+        count = 0
+        for m in meters:
+            mid = m.get("id")
+            if not mid:
+                continue
+            state_topic = f"{self.config.topic_prefix}/vmeter/{mid}/state"
+            device = {
+                "identifiers": [f"janitza_vmeter_{mid}"],
+                "name": f"Virtual Meter: {m.get('name', mid)}",
+                "manufacturer": "janitza-monitor",
+                "model": "Virtual Modbus meter",
+                "via_device": "janitza_umg512",
+            }
+            for key, friendly, component, tmpl, extra in specs:
+                config = {
+                    "name": friendly,
+                    "state_topic": state_topic,
+                    "value_template": tmpl,
+                    "availability_topic": f"{self.config.topic_prefix}/status",
+                    "unique_id": f"janitza_vmeter_{mid}_{key}",
+                    "device": device,
+                }
+                config.update(extra)
+                topic = f"{self.config.ha_discovery_prefix}/{component}/janitza_vmeter/{mid}_{key}/config"
+                if self._publish(topic, json.dumps(config), retain=True):
+                    count += 1
+        logger.info(f"Published {count} virtual-meter HA discovery configs ({len(meters)} meters)")
+        return count
+
     def _build_ha_device_info(self) -> Dict:
         """Build Home Assistant device info block."""
         return {
@@ -358,7 +416,7 @@ class MQTTPublisher:
             "name": self.config.ha_device_name,
             "manufacturer": "Janitza electronics GmbH",
             "model": "UMG 512-PRO",
-            "sw_version": "2.1.0",
+            "sw_version": "2.2.0",
         }
 
     def _build_ha_sensor_config(self, register: SelectedRegister, device_info: Dict) -> Dict:

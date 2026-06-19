@@ -188,6 +188,7 @@ O linie reală din jurnalul de interogări arată astfel:
 
 | Endpoint | Scop |
 |----------|------|
+| `GET /health` | sănătate conștientă de metere (vezi mai jos) — 200 ok/degraded, 503 down |
 | `GET /api/virtual-meters` | instanțe + stare live + valori servite |
 | `GET /api/virtual-meters/{id}/stats?limit=N` | jurnal de interogări + contoare + rată + per-registru |
 | `GET /api/virtual-meters/template/{id}/export` | șablon YAML (descărcare) |
@@ -195,26 +196,56 @@ O linie reală din jurnalul de interogări arată astfel:
 | `PUT /api/virtual-meters/template/{id}` | creează / editează un șablon |
 | `POST /api/virtual-meters/{id}/toggle?on=true` | activează / dezactivează o instanță |
 
-### Monitorizare prin MQTT (ex. alertd)
+### Endpoint de sănătate (probă container + monitoare)
 
-La fiecare ~10 s, starea fiecărui contor este publicată **retained** pe
-`<MQTT_PREFIX>/vmeter/<id>/state` (ex. `janitza/umg512/vmeter/fronius_ts_native/state`):
+`GET /health` raportează starea agregată a meterelor **activate** și e ce probează
+`HEALTHCHECK`-ul Docker:
+
+```json
+{ "status": "ok", "enabled_meters": 2, "meters": [
+  { "id": "em24_av53", "state": "ok",    "freshness_age_s": 1.3, "port": 1502, "last_error": null },
+  { "id": "fronius_ts_native", "state": "ok", "freshness_age_s": 1.3, "port": 502, "last_error": null } ] }
+```
+
+Per contor: `ok` (servește + proaspăt) · `stale` (servește dar sursa a devenit
+stale → contorul oprește corect răspunsul, fail-safe pentru consumator) · `down`
+(activat dar nu servește = defect real). Codul HTTP e **200 pentru ok și degraded**,
+și **503 doar când un contor e `down`** — o sursă stale e așteptată și un restart
+n-ar repara-o, pe când un contor `down` (crash / pornire eșuată) e un defect real
+pe care un restart de container l-ar putea curăța. E intenționat: healthcheck-ul
+reflectă *meterele*, nu doar „e serverul web pornit".
+
+### Monitorizare prin MQTT (ex. alertd / Home Assistant)
+
+La fiecare ~10 s, starea completă a fiecărui contor e publicată **retained** pe
+`<MQTT_PREFIX>/vmeter/<id>/state` (ex. `janitza/umg512/vmeter/fronius_ts_native/state`) —
+imaginea completă pentru monitorizare, **fără a duplica datele electrice**:
 
 ```json
 { "id": "fronius_ts_native", "name": "Fronius Smart Meter TS 5kA-3 (native CG)",
-  "port": 502, "unit_id": 1, "enabled": true, "running": true,
-  "state": "listening", "connections": 1, "requests": 84213, "errors": 0,
-  "last_fresh": "2026-06-18T22:29:17", "ts": 1781821757 }
+  "bind": "0.0.0.0", "port": 502, "unit_id": 1, "registers": 62,
+  "enabled": true, "running": true, "state": "ok",
+  "connections": [ { "ip": "192.168.1.241", "port": 45098 } ], "conn_count": 1,
+  "requests": 84213, "req_rate": 2.1, "errors": 0,
+  "bytes_rx": 4392, "bytes_tx": 21716,
+  "last_fresh": "2026-06-18T22:29:17", "freshness_age_s": 1.6, "uptime_s": 198,
+  "last_error": null, "ts": 1781821757 }
 ```
 
-`state` e `listening` / `stale` / `disabled`. Orientează orice monitor spre el —
-ex. o variabilă **alertd** pe acel topic cu `json_path: state` și reguli precum:
+`state` e `ok` / `stale` / `down`. `connections` listează fiecare client live cu
+`ip`/`port` (cine citește contorul — Victron-ul / DataManager-ul tău). Orientează
+orice monitor spre el — ex. o variabilă **alertd** cu `json_path: state` și reguli:
 
-- `state != "listening"` cât e activat → contorul a încetat să servească (sursă
-  stale sau crash) — alertează operatorul.
-- `var_age() > 60` → publisher-ul însuși e căzut (monitorul a crăpat) — câmpul
-  `ts` / vechimea mesajului retained face asta trivial de detectat.
+- `state != "ok"` cât e activat → contorul a încetat să servească (sursă stale sau crash) — alertează operatorul.
+- `var_age() > 60` → publisher-ul însuși e căzut (monitorul a crăpat) — câmpul `ts` / vechimea retained face asta trivial.
 - `errors` în creștere → consumatorul lovește citiri illegal-address (mapă greșită).
+- `last_error` nenul → inspectezi cel mai recent eveniment (crash / restart / stale) fără să deschizi UI-ul.
+
+**Autodiscovery Home Assistant** — dacă `MQTT_HA_DISCOVERY=true`, fiecare contor
+virtual e publicat automat ca **device** HA (legat de Janitza prin `via_device`) cu
+entități: `serving` (connectivity), `state`, `req/s`, `requests`, `errors`,
+`connections`, `data age`, `uptime`, `last error`. Apar în HA fără nicio configurare
+manuală — construiești dashboard-uri sau automatizări direct pe ele.
 
 ---
 

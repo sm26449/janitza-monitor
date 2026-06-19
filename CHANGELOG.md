@@ -2,6 +2,15 @@
 
 Toate modificarile notabile ale proiectului sunt documentate in acest fisier.
 
+## [2.2.0] - 2026-06-19
+
+### Adaugat
+- **Decodare interogari** - click pe orice rand din jurnalul Logs deschide un modal care desface raspunsul Modbus brut in valori ingineresti: adresa (dec+hex), variabila sursa, tip, cuvinte brute, valoare decodata. Cel mai rapid mod de a confirma o mapa.
+- **Jurnal de evenimente per contor** - ultimele 50 de evenimente de ciclu-de-viata in RAM (started / crash / restart_failed / wedged / stopped-stale / supervise), afisate in tab-ul Stats & Debug. Vezi *de ce* a tacut un contor, nu doar *ca* a tacut.
+- **Endpoint `/health` constient de metere** - 200 pentru ok/degraded, 503 doar cand un contor activat e `down` (crash/pornire esuata). Healthcheck-ul Docker reflecta acum starea meterelor, nu doar „e serverul pornit". O sursa stale = degraded (200), fail-safe corect, fara restart inutil.
+- **Stare MQTT completa** - payload-ul `<prefix>/vmeter/<id>/state` include acum conexiunile active (ip:port), req/s, bytes RX/TX, uptime, vechimea datelor, ultima eroare si starea `ok/stale/down` — imaginea completa pentru monitorizare, fara a duplica datele electrice.
+- **Autodiscovery Home Assistant pentru contoare virtuale** - fiecare contor apare automat ca device HA (legat de Janitza prin `via_device`) cu entitati: serving, state, req/s, requests, errors, connections, data age, uptime, last error.
+
 ## [2.1.0] - 2026-06-18
 
 ### Adaugat

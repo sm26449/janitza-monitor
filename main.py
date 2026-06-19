@@ -116,9 +116,11 @@ class JanitzaMonitor:
             logger.info("Attempting MQTT connection in background...")
             if self.mqtt_publisher.connect():
                 logger.info("MQTT connected successfully")
-                # Publish Home Assistant discovery
+                # Publish Home Assistant discovery (Janitza sensors + virtual meters)
                 if self.config.mqtt.ha_discovery_enabled:
                     self.mqtt_publisher.publish_ha_discovery()
+                    if self.vmeter_manager:
+                        self.vmeter_manager.publish_ha_discovery()
             else:
                 logger.warning("MQTT connection failed - will retry automatically")
 

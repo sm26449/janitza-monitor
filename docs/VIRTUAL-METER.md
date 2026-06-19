@@ -173,6 +173,7 @@ A real query-log line looks like:
 
 | Endpoint | Purpose |
 |----------|---------|
+| `GET /health` | meter-aware health (see below) — 200 ok/degraded, 503 down |
 | `GET /api/virtual-meters` | instances + live status + served values |
 | `GET /api/virtual-meters/{id}/stats?limit=N` | query log + counters + rate + per-register |
 | `GET /api/virtual-meters/template/{id}/export` | template YAML (download) |
@@ -180,26 +181,56 @@ A real query-log line looks like:
 | `PUT /api/virtual-meters/template/{id}` | create / edit a template |
 | `POST /api/virtual-meters/{id}/toggle?on=true` | enable / disable an instance |
 
-### Monitoring via MQTT (e.g. alertd)
+### Health endpoint (container probe + monitors)
 
-Every ~10 s each meter's health is published **retained** to
-`<MQTT_PREFIX>/vmeter/<id>/state` (e.g. `janitza/umg512/vmeter/fronius_ts_native/state`):
+`GET /health` reports the aggregate state of the **enabled** meters and is what
+the Docker `HEALTHCHECK` probes:
+
+```json
+{ "status": "ok", "enabled_meters": 2, "meters": [
+  { "id": "em24_av53", "state": "ok",    "freshness_age_s": 1.3, "port": 1502, "last_error": null },
+  { "id": "fronius_ts_native", "state": "ok", "freshness_age_s": 1.3, "port": 502, "last_error": null } ] }
+```
+
+Per meter: `ok` (serving + fresh) · `stale` (serving but the source went stale →
+the meter correctly stops responding, a consumer fail-safe) · `down` (enabled but
+not serving = a genuine fault). The HTTP code is **200 for ok and degraded**, and
+**503 only when a meter is `down`** — a stale source is expected and a restart
+would not fix it, whereas a `down` meter (crashed / failed to start) is a real
+fault a container restart might clear. This is deliberate: the healthcheck reflects
+the *meters*, not just "is the web server up".
+
+### Monitoring via MQTT (e.g. alertd / Home Assistant)
+
+Every ~10 s each meter's full state is published **retained** to
+`<MQTT_PREFIX>/vmeter/<id>/state` (e.g. `janitza/umg512/vmeter/fronius_ts_native/state`) —
+the complete picture for monitoring, with **no electrical data duplicated**:
 
 ```json
 { "id": "fronius_ts_native", "name": "Fronius Smart Meter TS 5kA-3 (native CG)",
-  "port": 502, "unit_id": 1, "enabled": true, "running": true,
-  "state": "listening", "connections": 1, "requests": 84213, "errors": 0,
-  "last_fresh": "2026-06-18T22:29:17", "ts": 1781821757 }
+  "bind": "0.0.0.0", "port": 502, "unit_id": 1, "registers": 62,
+  "enabled": true, "running": true, "state": "ok",
+  "connections": [ { "ip": "192.168.1.241", "port": 45098 } ], "conn_count": 1,
+  "requests": 84213, "req_rate": 2.1, "errors": 0,
+  "bytes_rx": 4392, "bytes_tx": 21716,
+  "last_fresh": "2026-06-18T22:29:17", "freshness_age_s": 1.6, "uptime_s": 198,
+  "last_error": null, "ts": 1781821757 }
 ```
 
-`state` is `listening` / `stale` / `disabled`. Point any monitor at it — e.g. an
-**alertd** variable on that topic with `json_path: state`, and rules like:
+`state` is `ok` / `stale` / `down`. `connections` lists each live client by `ip`/`port`
+(who is reading the meter — your Victron / DataManager). Point any monitor at it —
+e.g. an **alertd** variable with `json_path: state`, and rules like:
 
-- `state != "listening"` while enabled → the meter stopped serving (source stale
-  or crashed) — page the operator.
-- `var_age() > 60` → the publisher itself is down (monitor crashed) — the `ts`
-  field / retained message age makes this trivial to detect.
+- `state != "ok"` while enabled → the meter stopped serving (source stale or crashed) — page the operator.
+- `var_age() > 60` → the publisher itself is down (monitor crashed) — the `ts` field / retained age makes this trivial.
 - `errors` rising → the consumer is hitting illegal-address reads (map mismatch).
+- `last_error` non-null → inspect the most recent lifecycle event (crash / restart / stale) without opening the UI.
+
+**Home Assistant autodiscovery** — if `MQTT_HA_DISCOVERY=true`, each virtual meter
+is auto-published as an HA **device** (linked to the Janitza via `via_device`) with
+entities: `serving` (connectivity), `state`, `req/s`, `requests`, `errors`,
+`connections`, `data age`, `uptime`, `last error`. They appear in HA with zero
+manual configuration — build dashboards or automations on them directly.
 
 ---
 
