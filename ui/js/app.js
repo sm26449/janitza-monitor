@@ -856,6 +856,15 @@ class JanitzaMonitor {
         if (!sel || !out) return;
         const id = sel.value;
         if (!id) { out.innerHTML = '<p style="color:#8a94a0;">No running meter selected.</p>'; return; }
+        if (!out._decodeWired) {                  // delegated: click a row → decode modal
+            out._decodeWired = true;
+            out.addEventListener('click', (e) => {
+                const row = e.target.closest('.vm-log-row');
+                if (!row) return;
+                const cur = document.getElementById('vmLogMeter');
+                this.showDecodeModal(cur ? cur.value : id, +row.dataset.addr, +row.dataset.count);
+            });
+        }
         const load = async () => {
             if (document.hidden) return;          // don't poll a backgrounded tab
             let d;
@@ -870,7 +879,7 @@ class JanitzaMonitor {
                 const resp = q.resp ? q.resp.slice(0, 6).join(' ') + (q.count > 6 ? ' …' : '') : '—';
                 const res = q.err ? '<span style="color:#c0392b;font-weight:600;">EXC</span>'
                                   : '<span style="color:#1a8f4c;">OK</span>';
-                return `<tr style="border-bottom:1px solid var(--border-light);">
+                return `<tr class="vm-log-row" data-addr="${q.addr}" data-count="${q.count}" title="click to decode this read" style="border-bottom:1px solid var(--border-light);cursor:pointer;">
                   <td style="padding:3px 10px 3px 0;color:#8a94a0;font-variant-numeric:tabular-nums;">${t}</td>
                   <td style="padding:3px 10px 3px 0;">FC${q.fc}</td>
                   <td style="padding:3px 10px 3px 0;font-variant-numeric:tabular-nums;">${q.addr}</td>
@@ -947,6 +956,52 @@ class JanitzaMonitor {
           <polygon points="${area}" fill="rgba(59,130,246,0.13)"/>
           <polyline points="${pts}" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
           <text x="3" y="13" font-size="11" fill="#8a94a0">peak ${max}/s</text></svg>`;
+    }
+
+    // ── Decode a logged read: raw words → value → the source variable ──────
+    async showDecodeModal(id, addr, count) {
+        if (!id || !Number.isFinite(addr)) return;
+        let d;
+        try {
+            d = await (await fetch(`/api/virtual-meters/${encodeURIComponent(id)}/decode?addr=${addr}&count=${count}`)).json();
+        } catch (e) { this.showToast('error', 'Decode failed', `${addr}/${count}`); return; }
+        if (d.error) { this.showToast('error', 'Decode', d.error); return; }
+        const rows = (d.registers || []).map(r => {
+            const words = (r.words || []).join(' ');
+            const val = (r.value === null || r.value === undefined) ? '—' : r.value;
+            const scale = (r.scale !== 1) ? ` <span style="opacity:.6">×${r.scale}</span>` : '';
+            return `<tr style="border-bottom:1px solid var(--border-light);">
+              <td style="padding:3px 12px 3px 0;font-variant-numeric:tabular-nums;color:#8a94a0;white-space:nowrap;">${r.addr} <span style="opacity:.55;">0x${(r.addr).toString(16)}</span></td>
+              <td style="padding:3px 12px 3px 0;font-family:monospace;">${this._esc(r.source)}</td>
+              <td style="padding:3px 12px 3px 0;color:#8a94a0;white-space:nowrap;">${this._esc(r.type)}${scale}</td>
+              <td style="padding:3px 12px 3px 0;font-family:monospace;font-size:11.5px;color:#5a6470;">${this._esc(words)}</td>
+              <td style="padding:3px 0;font-weight:600;font-variant-numeric:tabular-nums;">${this._esc(val)}</td></tr>`;
+        }).join('');
+        const body = `<p style="color:#8a94a0;font-size:12px;margin:0 0 10px;">Live decode of the served block — raw registers → value → the source each maps to.</p>
+          <div style="overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+            <thead><tr style="text-align:left;color:#8a94a0;border-bottom:2px solid var(--border);">
+              <th style="padding:4px 12px 4px 0;">addr</th><th>source / variable</th><th>type</th><th>raw words</th><th>value</th>
+            </tr></thead><tbody>${rows || '<tr><td colspan="5" style="color:#8a94a0;padding:8px 0;">No template registers map into this range.</td></tr>'}</tbody></table></div>`;
+        this._showModal(`Decode · FC3 · addr ${addr} · count ${count}`, body);
+    }
+
+    _showModal(title, html) {
+        const old = document.getElementById('vmDecodeModal');
+        if (old) old.remove();
+        const ov = document.createElement('div');
+        ov.id = 'vmDecodeModal';
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;';
+        ov.innerHTML = `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;max-width:780px;width:92%;max-height:82vh;overflow:auto;padding:18px;box-shadow:0 12px 44px rgba(0,0,0,.35);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;">
+              <h3 style="margin:0;font-size:15px;"><i class="bi bi-braces"></i> ${this._esc(title)}</h3>
+              <button class="btn btn-ghost btn-sm" id="vmDecodeClose" aria-label="Close">✕</button>
+            </div>${html}</div>`;
+        document.body.appendChild(ov);
+        const close = () => ov.remove();
+        ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+        ov.querySelector('#vmDecodeClose').addEventListener('click', close);
+        const esc = (e) => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } };
+        document.addEventListener('keydown', esc);
     }
 
     async openTemplateEditor(templateId) {

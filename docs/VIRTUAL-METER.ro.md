@@ -154,7 +154,7 @@ caz de mai jos), acum integrat în interfață.
 |-----|----------|
 | **Meters** | fiecare instanță: stare, valori live servite, port/unitate, comutator de activare |
 | **Templates** | listă · editor · **Import / Export YAML** |
-| **Logs** | tabel live al ultimelor interogări — `time · FC · addr · count · OK/EXC · latency · response` |
+| **Logs** | tabel live al ultimelor interogări — `time · FC · addr · count · OK/EXC · latency · response` · **click pe orice rând pentru decodare** |
 | **Stats & Debug** | total / erori / rată-cereri / RX / TX / uptime · **grafic cereri-pe-secundă** · cele mai citite registre |
 
 O linie reală din jurnalul de interogări arată astfel:
@@ -171,6 +171,10 @@ O linie reală din jurnalul de interogări arată astfel:
 **Logs** — fiecare citire pe care o emite consumatorul, în timp real (așa a fost găsită harta Fronius):
 
 ![Contoare virtuale — jurnal de interogări live](img/vm-logs.png)
+
+**Decode** — click pe orice rând din jurnal pentru a desface răspunsul Modbus brut în valori inginerești. Modalul parcurge blocul cerut pe baza template-ului și afișează, pentru fiecare registru: `addr` (dec + hex) · `sursa / variabila` asociată (ex. `_G_ULN[0]`, `_PLN[0]`, `const 1651`) · tipul de date · cuvintele brute · valoarea decodată. E cel mai rapid mod de a confirma că o hartă e corectă — citești exact octeții pe care îi citește consumatorul, deja etichetați:
+
+![Contoare virtuale — decodarea unei interogări](img/vm-decode.png)
 
 **Stats & Debug** — contoare, grafic cereri-pe-secundă și registrele pe care consumatorul le citește cel mai mult:
 

@@ -139,7 +139,7 @@ Fronius Smart Meter protocol** (see the case study below), now built into the UI
 |-----|--------------|
 | **Meters** | every instance: status, served live values, port/unit, enable toggle |
 | **Templates** | list · editor · **Import / Export YAML** |
-| **Logs** | live table of the last queries — `time · FC · addr · count · OK/EXC · latency · response` |
+| **Logs** | live table of the last queries — `time · FC · addr · count · OK/EXC · latency · response` · **click any row to decode** |
 | **Stats & Debug** | total / errors / req-rate / RX / TX / uptime · **requests-per-second chart** · most-read registers |
 
 A real query-log line looks like:
@@ -156,6 +156,10 @@ A real query-log line looks like:
 **Logs** — every read the consumer issues, live (this is how the Fronius map was found):
 
 ![Virtual Meters — live query log](img/vm-logs.png)
+
+**Decode** — click any log row to expand the raw Modbus response into engineering values. The modal walks the requested block against the template and shows, per register: `addr` (dec + hex) · the bound `source / variable` (e.g. `_G_ULN[0]`, `_PLN[0]`, `const 1651`) · data type · raw words · decoded value. This is the fastest way to confirm a map is correct — you read the same bytes the consumer reads, already labelled:
+
+![Virtual Meters — decode a query](img/vm-decode.png)
 
 **Stats & Debug** — counters, requests-per-second chart, and the registers the consumer reads most:
 

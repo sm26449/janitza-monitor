@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import re
+import struct
 import threading
 import time
 from datetime import datetime
@@ -376,6 +377,74 @@ class VirtualMeterManager:
                      "name": vm.t.name, "port": vm.t.transport.get("port"),
                      "unit_id": vm.t.transport.get("unit_id", 1)})
         return snap
+
+    @staticmethod
+    def _decode_words(words: list, dtype: str, scale: float, order: str):
+        """Decode raw registers back to an engineering value — the exact inverse
+        of RegisterEncoder (NOT RegisterParser). Used by the Logs decode view."""
+        dt = (dtype or "").lower()
+        w = [int(x) & 0xffff for x in words]
+        try:
+            if dt == "string":
+                b = b"".join(struct.pack(">H", x) for x in w)
+                return b.split(b"\x00")[0].decode("latin1", "ignore")
+            if dt in ("float", "float32"):
+                r = w[:2] if order == "big" else list(reversed(w[:2]))
+                v = struct.unpack(">f", struct.pack(">HH", r[0], r[1]))[0]
+                return round(v / scale, 4)
+            if dt == "double":
+                r = w[:4] if order == "big" else list(reversed(w[:4]))
+                v = struct.unpack(">d", struct.pack(">HHHH", *r))[0]
+                return round(v / scale, 6)
+            if dt in ("int16", "short", "uint16"):
+                u = w[0]
+                if dt != "uint16" and u >= 0x8000:
+                    u -= 0x10000
+            elif dt in ("int32", "uint32"):
+                u = (w[0] << 16 | w[1]) if order == "big" else (w[1] << 16 | w[0])
+                if dt == "int32" and u >= 0x80000000:
+                    u -= 0x100000000
+            else:  # 64-bit
+                q = w[:4] if order == "big" else list(reversed(w[:4]))
+                u = q[0] << 48 | q[1] << 32 | q[2] << 16 | q[3]
+                if dt != "uint64" and u >= 2 ** 63:
+                    u -= 2 ** 64
+            return u if scale in (0, 1) else round(u / scale, 4)
+        except Exception:  # noqa: BLE001
+            return None
+
+    def decode_range(self, template_id: str, addr: int, count: int) -> dict:
+        """Decode the register block over [addr, addr+count) against the template:
+        raw words -> value -> the source variable each maps to. Debug aid for the
+        Logs view (shows exactly what a consumer's read returns)."""
+        vm = next((m for m in self.meters if m.t.id == template_id), None)
+        if vm is None or not getattr(vm, "_block", None):
+            return {"error": "meter not running", "id": template_id}
+        enc = RegisterEncoder
+        out = []
+        for r in vm.t.registers:
+            if not (addr <= int(r.addr) < addr + count):
+                continue
+            span = (r.length if r.type == "string"
+                    else enc.REGISTER_COUNTS.get(r.type.lower(), 2))
+            try:
+                words = list(vm._block.getValues(int(r.addr), max(1, span)))
+            except Exception:  # noqa: BLE001
+                words = []
+            if r.source_kind == "live":
+                src = r.source
+            elif r.source_kind == "sum":
+                src = "Σ " + "+".join(r.source) if isinstance(r.source, list) else "sum"
+            elif r.source_kind == "const_str":
+                src = f'"{r.source}"'
+            else:
+                src = f"const {r.source}"
+            out.append({"addr": int(r.addr), "type": r.type, "scale": r.scale,
+                        "order": r.order, "kind": r.source_kind, "source": src,
+                        "note": r.note, "words": words,
+                        "value": self._decode_words(words, r.type, r.scale, r.order)})
+        out.sort(key=lambda x: x["addr"])
+        return {"id": template_id, "addr": addr, "count": count, "registers": out}
 
     def export_template(self, template_id: str) -> dict:
         """Return the raw template YAML for download."""

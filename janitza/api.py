@@ -476,6 +476,17 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
             raise HTTPException(status_code=503, detail="virtual meters not initialized")
         return mgr.get_stats(template, limit)
 
+    @app.get("/api/virtual-meters/{template}/decode")
+    async def vm_decode(template: str, addr: int = Query(...), count: int = Query(1, ge=1, le=125)):
+        """Decode a register range -> values + the source variable each maps to."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            raise HTTPException(status_code=503, detail="virtual meters not initialized")
+        res = mgr.decode_range(template, addr, count)
+        if "error" in res:
+            raise HTTPException(status_code=404, detail=res["error"])
+        return res
+
     @app.post("/api/virtual-meters/{template}/toggle")
     async def toggle_virtual_meter(template: str, on: bool = Query(True)):
         """Enable/disable a virtual meter (persists + starts/stops live)."""
