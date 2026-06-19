@@ -682,6 +682,14 @@ class JanitzaMonitor {
             <div data-vmpanel="meters">${addBar}${cards}</div>
             <div data-vmpanel="templates" hidden>${tmplSection}</div>
             <div data-vmpanel="logs" hidden>
+              <style>
+                .vm-log-row{cursor:pointer;}
+                .vm-log-row:hover{background:rgba(59,130,246,.08);}
+                .vm-log-row.active{background:rgba(59,130,246,.16);}
+                .vm-log-row.err{background:rgba(192,57,43,.06);}
+                .vm-log-row .vm-view{opacity:0;color:#3b82f6;font-weight:600;white-space:nowrap;transition:opacity .1s;}
+                .vm-log-row:hover .vm-view,.vm-log-row.active .vm-view{opacity:1;}
+              </style>
               <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
                 <label class="form-label">Meter</label>
                 <select id="vmLogMeter" class="input" style="min-width:240px;">${meterOpts}</select>
@@ -689,7 +697,15 @@ class JanitzaMonitor {
                   <input type="checkbox" id="vmLogLive" checked> live</label>
                 <span id="vmLogMeta" style="color:#8a94a0;font-size:12.5px;margin-left:auto;"></span>
               </div>
-              <div id="vmLogContent"><p style="color:#8a94a0;">Select a running meter.</p></div>
+              <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+                <div id="vmLogContent" style="flex:2 1 380px;min-width:320px;"><p style="color:#8a94a0;">Select a running meter.</p></div>
+                <aside id="vmDecodePanel" style="flex:1 1 320px;min-width:300px;position:sticky;top:8px;align-self:flex-start;">
+                  <div class="settings-card" style="padding:16px;color:#8a94a0;">
+                    <div style="font-size:13px;margin-bottom:4px;"><i class="bi bi-braces"></i> Decode</div>
+                    <div style="font-size:12.5px;line-height:1.5;">Click any row on the left to decode that Modbus read — raw registers → value → the source variable each maps to.</div>
+                  </div>
+                </aside>
+              </div>
             </div>
             <div data-vmpanel="stats" hidden>
               <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
@@ -856,13 +872,24 @@ class JanitzaMonitor {
         if (!sel || !out) return;
         const id = sel.value;
         if (!id) { out.innerHTML = '<p style="color:#8a94a0;">No running meter selected.</p>'; return; }
-        if (!out._decodeWired) {                  // delegated: click a row → decode modal
+        if (this._vmLogLastId !== id) {           // meter changed → drop stale decode selection
+            this._vmLogLastId = id;
+            this._vmDecodeSel = null;
+            const panel = document.getElementById('vmDecodePanel');
+            if (panel) panel.innerHTML = `<div class="settings-card" style="padding:16px;color:#8a94a0;">
+                <div style="font-size:13px;margin-bottom:4px;"><i class="bi bi-braces"></i> Decode</div>
+                <div style="font-size:12.5px;line-height:1.5;">Click any row on the left to decode that Modbus read — raw registers → value → the source variable each maps to.</div></div>`;
+        }
+        if (!out._decodeWired) {                  // delegated: click a row → decode in side panel
             out._decodeWired = true;
             out.addEventListener('click', (e) => {
                 const row = e.target.closest('.vm-log-row');
                 if (!row) return;
+                out.querySelectorAll('.vm-log-row.active').forEach(r => r.classList.remove('active'));
+                row.classList.add('active');
                 const cur = document.getElementById('vmLogMeter');
-                this.showDecodeModal(cur ? cur.value : id, +row.dataset.addr, +row.dataset.count);
+                this._vmDecodeSel = { addr: +row.dataset.addr, count: +row.dataset.count };
+                this.renderDecodeInto(cur ? cur.value : id, this._vmDecodeSel.addr, this._vmDecodeSel.count);
             });
         }
         const load = async () => {
@@ -879,20 +906,26 @@ class JanitzaMonitor {
                 const resp = q.resp ? q.resp.slice(0, 6).join(' ') + (q.count > 6 ? ' …' : '') : '—';
                 const res = q.err ? '<span style="color:#c0392b;font-weight:600;">EXC</span>'
                                   : '<span style="color:#1a8f4c;">OK</span>';
-                return `<tr class="vm-log-row" data-addr="${q.addr}" data-count="${q.count}" title="click to decode this read" style="border-bottom:1px solid var(--border-light);cursor:pointer;">
+                return `<tr class="vm-log-row${q.err ? ' err' : ''}" data-addr="${q.addr}" data-count="${q.count}" title="click to decode this read" style="border-bottom:1px solid var(--border-light);">
                   <td style="padding:3px 10px 3px 0;color:#8a94a0;font-variant-numeric:tabular-nums;">${t}</td>
                   <td style="padding:3px 10px 3px 0;">FC${q.fc}</td>
                   <td style="padding:3px 10px 3px 0;font-variant-numeric:tabular-nums;">${q.addr}</td>
                   <td style="padding:3px 10px 3px 0;font-variant-numeric:tabular-nums;">${q.count}</td>
                   <td style="padding:3px 10px 3px 0;">${res}</td>
                   <td style="padding:3px 10px 3px 0;color:#8a94a0;font-variant-numeric:tabular-nums;">${q.lat_us}µs</td>
-                  <td style="padding:3px 0;font-family:monospace;font-size:12px;color:#5a6470;">${this._esc(resp)}</td></tr>`;
+                  <td style="padding:3px 10px 3px 0;font-family:monospace;font-size:12px;color:#5a6470;">${this._esc(resp)}</td>
+                  <td style="padding:3px 0;text-align:right;"><span class="vm-view">decode ›</span></td></tr>`;
             }).join('');
-            out.innerHTML = `<div style="max-height:60vh;overflow:auto;">
+            out.innerHTML = `<div style="max-height:62vh;overflow:auto;">
               <table style="width:100%;font-size:12.5px;border-collapse:collapse;">
                 <thead><tr style="text-align:left;color:#8a94a0;border-bottom:2px solid var(--border);position:sticky;top:0;background:var(--bg-secondary);">
-                  <th style="padding:4px 10px 4px 0;">time</th><th>fc</th><th>addr</th><th>count</th><th>result</th><th>latency</th><th>response</th>
-                </tr></thead><tbody>${rows || '<tr><td colspan="7" style="color:#8a94a0;padding:8px 0;">No queries yet.</td></tr>'}</tbody></table></div>`;
+                  <th style="padding:4px 10px 4px 0;">time</th><th>fc</th><th>addr</th><th>count</th><th>result</th><th>latency</th><th>response</th><th></th>
+                </tr></thead><tbody>${rows || '<tr><td colspan="8" style="color:#8a94a0;padding:8px 0;">No queries yet.</td></tr>'}</tbody></table></div>`;
+            // keep the decoded row highlighted across live refreshes
+            if (this._vmDecodeSel) {
+                const sel = out.querySelector(`.vm-log-row[data-addr="${this._vmDecodeSel.addr}"][data-count="${this._vmDecodeSel.count}"]`);
+                if (sel) sel.classList.add('active');
+            }
         };
         await load();
         this._stopVmPolls();
@@ -976,49 +1009,36 @@ class JanitzaMonitor {
     }
 
     // ── Decode a logged read: raw words → value → the source variable ──────
-    async showDecodeModal(id, addr, count) {
-        if (!id || !Number.isFinite(addr)) return;
-        let d;
-        try {
-            d = await (await fetch(`/api/virtual-meters/${encodeURIComponent(id)}/decode?addr=${addr}&count=${count}`)).json();
-        } catch (e) { this.showToast('error', 'Decode failed', `${addr}/${count}`); return; }
-        if (d.error) { this.showToast('error', 'Decode', d.error); return; }
+    _buildDecodeBody(d) {
         const rows = (d.registers || []).map(r => {
             const words = (r.words || []).join(' ');
             const val = (r.value === null || r.value === undefined) ? '—' : r.value;
             const scale = (r.scale !== 1) ? ` <span style="opacity:.6">×${r.scale}</span>` : '';
             return `<tr style="border-bottom:1px solid var(--border-light);">
-              <td style="padding:3px 12px 3px 0;font-variant-numeric:tabular-nums;color:#8a94a0;white-space:nowrap;">${r.addr} <span style="opacity:.55;">0x${(r.addr).toString(16)}</span></td>
-              <td style="padding:3px 12px 3px 0;font-family:monospace;">${this._esc(r.source)}</td>
-              <td style="padding:3px 12px 3px 0;color:#8a94a0;white-space:nowrap;">${this._esc(r.type)}${scale}</td>
-              <td style="padding:3px 12px 3px 0;font-family:monospace;font-size:11.5px;color:#5a6470;">${this._esc(words)}</td>
+              <td style="padding:3px 10px 3px 0;font-variant-numeric:tabular-nums;color:#8a94a0;white-space:nowrap;">${r.addr} <span style="opacity:.55;">0x${(r.addr).toString(16)}</span></td>
+              <td style="padding:3px 10px 3px 0;font-family:monospace;">${this._esc(r.source)}</td>
+              <td style="padding:3px 10px 3px 0;color:#8a94a0;white-space:nowrap;">${this._esc(r.type)}${scale}</td>
+              <td style="padding:3px 10px 3px 0;font-family:monospace;font-size:11.5px;color:#5a6470;">${this._esc(words)}</td>
               <td style="padding:3px 0;font-weight:600;font-variant-numeric:tabular-nums;">${this._esc(val)}</td></tr>`;
         }).join('');
-        const body = `<p style="color:#8a94a0;font-size:12px;margin:0 0 10px;">Live decode of the served block — raw registers → value → the source each maps to.</p>
-          <div style="overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+        return `<div style="overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;">
             <thead><tr style="text-align:left;color:#8a94a0;border-bottom:2px solid var(--border);">
-              <th style="padding:4px 12px 4px 0;">addr</th><th>source / variable</th><th>type</th><th>raw words</th><th>value</th>
+              <th style="padding:4px 10px 4px 0;">addr</th><th>source / variable</th><th>type</th><th>raw words</th><th>value</th>
             </tr></thead><tbody>${rows || '<tr><td colspan="5" style="color:#8a94a0;padding:8px 0;">No template registers map into this range.</td></tr>'}</tbody></table></div>`;
-        this._showModal(`Decode · FC3 · addr ${addr} · count ${count}`, body);
     }
 
-    _showModal(title, html) {
-        const old = document.getElementById('vmDecodeModal');
-        if (old) old.remove();
-        const ov = document.createElement('div');
-        ov.id = 'vmDecodeModal';
-        ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;';
-        ov.innerHTML = `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;max-width:780px;width:92%;max-height:82vh;overflow:auto;padding:18px;box-shadow:0 12px 44px rgba(0,0,0,.35);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;">
-              <h3 style="margin:0;font-size:15px;"><i class="bi bi-braces"></i> ${this._esc(title)}</h3>
-              <button class="btn btn-ghost btn-sm" id="vmDecodeClose" aria-label="Close">✕</button>
-            </div>${html}</div>`;
-        document.body.appendChild(ov);
-        const close = () => ov.remove();
-        ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
-        ov.querySelector('#vmDecodeClose').addEventListener('click', close);
-        const esc = (e) => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } };
-        document.addEventListener('keydown', esc);
+    async renderDecodeInto(id, addr, count) {
+        const panel = document.getElementById('vmDecodePanel');
+        if (!panel || !id || !Number.isFinite(addr)) return;
+        const wrap = (inner) => `<div class="settings-card" style="padding:14px;">
+            <h4 style="margin:0 0 8px;font-size:13.5px;"><i class="bi bi-braces"></i> Decode · addr ${addr} · count ${count}</h4>${inner}</div>`;
+        panel.innerHTML = wrap('<p style="color:#8a94a0;font-size:12.5px;margin:0;">Decoding…</p>');
+        let d;
+        try {
+            d = await (await fetch(`/api/virtual-meters/${encodeURIComponent(id)}/decode?addr=${addr}&count=${count}`)).json();
+        } catch (e) { panel.innerHTML = wrap('<p style="color:#c0392b;font-size:12.5px;margin:0;">Decode failed.</p>'); return; }
+        if (d.error) { panel.innerHTML = wrap(`<p style="color:#8a94a0;font-size:12.5px;margin:0;">${this._esc(d.error)}</p>`); return; }
+        panel.innerHTML = wrap(this._buildDecodeBody(d));
     }
 
     async openTemplateEditor(templateId) {
@@ -1309,6 +1329,8 @@ class JanitzaMonitor {
         document.getElementById('statusModbus').addEventListener('click', () => this.showStatusDetail('modbus'));
         document.getElementById('statusMqtt').addEventListener('click', () => this.showStatusDetail('mqtt'));
         document.getElementById('statusInflux').addEventListener('click', () => this.showStatusDetail('influxdb'));
+        const vmPill = document.getElementById('statusVmeter');
+        if (vmPill) vmPill.addEventListener('click', () => this.navigateTo('vmeters'));
 
         // Global keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
@@ -1452,6 +1474,28 @@ class JanitzaMonitor {
         }
     }
 
+    async _updateVmeterPill() {
+        const pill = document.getElementById('statusVmeter');
+        if (!pill) return;
+        let h;
+        try { h = await (await fetch('/health')).json(); } catch (e) { return; }
+        const total = h.enabled_meters || 0;
+        if (total === 0) { pill.hidden = true; return; }   // no virtual meters → hide the pill
+        pill.hidden = false;
+        const meters = h.meters || [];
+        const online = meters.filter(m => m.state === 'ok').length;
+        const down = meters.filter(m => m.state === 'down').length;
+        const stale = total - online - down;
+        const cnt = document.getElementById('vmeterCount');
+        if (cnt) cnt.textContent = `${online}/${total}`;
+        pill.classList.remove('connected', 'disconnected', 'disabled');
+        if (down > 0) pill.classList.add('disconnected');        // red — a meter is genuinely down
+        else if (online === total) pill.classList.add('connected'); // green — all serving + fresh
+        else pill.classList.add('disabled');                     // grey — some stale (source fail-safe)
+        pill.title = `Virtual meters: ${online} ok` + (stale ? `, ${stale} stale` : '')
+            + (down ? `, ${down} down` : '') + ` of ${total} — click to open`;
+    }
+
     async loadStatus() {
         try {
             const response = await fetch('/api/status');
@@ -1492,6 +1536,8 @@ class JanitzaMonitor {
                     statusInflux.classList.toggle('disconnected', !influx.connected);
                 }
             }
+
+            this._updateVmeterPill();
 
             // Update stats bar values
             const statRegisters = document.getElementById('statRegisters');

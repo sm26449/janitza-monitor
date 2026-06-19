@@ -172,7 +172,7 @@ O linie reală din jurnalul de interogări arată astfel:
 
 ![Contoare virtuale — jurnal de interogări live](img/vm-logs.png)
 
-**Decode** — click pe orice rând din jurnal pentru a desface răspunsul Modbus brut în valori inginerești. Modalul parcurge blocul cerut pe baza template-ului și afișează, pentru fiecare registru: `addr` (dec + hex) · `sursa / variabila` asociată (ex. `_G_ULN[0]`, `_PLN[0]`, `const 1651`) · tipul de date · cuvintele brute · valoarea decodată. E cel mai rapid mod de a confirma că o hartă e corectă — citești exact octeții pe care îi citește consumatorul, deja etichetați:
+**Decode** — click pe orice rând din jurnal și se decodează într-un **panou lateral** în dreapta tabelului (rândul rămâne evidențiat). Panoul parcurge blocul cerut pe baza template-ului și afișează, pentru fiecare registru: `addr` (dec + hex) · `sursa / variabila` asociată (ex. `_G_ULN[0]`, `_PLN[0]`, `const 1651`) · tipul de date · cuvintele brute · valoarea decodată. E cel mai rapid mod de a confirma că o hartă e corectă — citești exact octeții pe care îi citește consumatorul, deja etichetați:
 
 ![Contoare virtuale — decodarea unei interogări](img/vm-decode.png)
 

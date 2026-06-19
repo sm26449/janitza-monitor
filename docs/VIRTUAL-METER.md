@@ -157,7 +157,7 @@ A real query-log line looks like:
 
 ![Virtual Meters — live query log](img/vm-logs.png)
 
-**Decode** — click any log row to expand the raw Modbus response into engineering values. The modal walks the requested block against the template and shows, per register: `addr` (dec + hex) · the bound `source / variable` (e.g. `_G_ULN[0]`, `_PLN[0]`, `const 1651`) · data type · raw words · decoded value. This is the fastest way to confirm a map is correct — you read the same bytes the consumer reads, already labelled:
+**Decode** — click any log row and it decodes in a **side panel** to the right of the table (the row stays highlighted). The panel walks the requested block against the template and shows, per register: `addr` (dec + hex) · the bound `source / variable` (e.g. `_G_ULN[0]`, `_PLN[0]`, `const 1651`) · data type · raw words · decoded value. This is the fastest way to confirm a map is correct — you read the same bytes the consumer reads, already labelled:
 
 ![Virtual Meters — decode a query](img/vm-decode.png)
 

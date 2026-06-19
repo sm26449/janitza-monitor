@@ -10,6 +10,10 @@ Toate modificarile notabile ale proiectului sunt documentate in acest fisier.
 - **Endpoint `/health` constient de metere** - 200 pentru ok/degraded, 503 doar cand un contor activat e `down` (crash/pornire esuata). Healthcheck-ul Docker reflecta acum starea meterelor, nu doar „e serverul pornit". O sursa stale = degraded (200), fail-safe corect, fara restart inutil.
 - **Stare MQTT completa** - payload-ul `<prefix>/vmeter/<id>/state` include acum conexiunile active (ip:port), req/s, bytes RX/TX, uptime, vechimea datelor, ultima eroare si starea `ok/stale/down` — imaginea completa pentru monitorizare, fara a duplica datele electrice.
 - **Autodiscovery Home Assistant pentru contoare virtuale** - fiecare contor apare automat ca device HA (legat de Janitza prin `via_device`) cu entitati: serving, state, req/s, requests, errors, connections, data age, uptime, last error.
+- **Indicator vMeter in bara de status** - langa Modbus/MQTT/InfluxDB, un pill `vMeter N/M` arata cate contoare sunt online/total (verde toate ok, gri unele stale, rosu vreunul down); click deschide pagina Virtual Meters.
+
+### Imbunatatit
+- **Logs - panou de decodare lateral** - click pe un rand decodeaza in dreapta tabelului (rand evidentiat persistent), in loc de modal; hover + eticheta `decode ›` fac actiunea descoperibila; randurile cu exceptie (EXC) sunt evidentiate subtil rosu pentru depanare rapida a maparilor.
 
 ## [2.1.0] - 2026-06-18
 
