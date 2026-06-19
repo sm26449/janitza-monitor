@@ -227,6 +227,7 @@ class VirtualMeter:
         self._running = False
         self._last_fresh_ts = 0.0
         self._started_ts = 0.0                  # current serving session start (for uptime)
+        self._conn_seen: dict[str, float] = {}  # connection ident -> first-seen ts (uptime)
         self.stats = VMeterStats()              # in-RAM query log + counters
 
     # ── value resolution + encoding ────────────────────────────────────────
@@ -492,13 +493,17 @@ class VirtualMeter:
         return out
 
     def connections(self) -> list[dict]:
-        """Active client connections (ip, port) — best-effort from the pymodbus
-        server's active_connections map. Read-only snapshot (cross-thread safe
-        enough for display)."""
+        """Active client connections (ip, port, connected_s) — best-effort from
+        the pymodbus server's active_connections map. Per-connection uptime is
+        tracked here (first-seen registry keyed by ip:port): a consumer that
+        flaps shows a small, resetting connected_s — a clear trouble signal.
+        Read-only snapshot (cross-thread safe enough for display)."""
         srv = self._server
+        now = time.time()
         if not srv:
+            self._conn_seen.clear()
             return []
-        out: list[dict] = []
+        current: dict[str, tuple] = {}
         try:
             conns = getattr(srv, "active_connections", {}) or {}
             for key, handler in list(conns.items()):
@@ -512,11 +517,18 @@ class VirtualMeter:
                 if peer and len(peer) >= 2:
                     if peer[0] in ("127.0.0.1", "::1", "localhost"):
                         continue                       # our own liveness probe — not a real consumer
-                    out.append({"ip": peer[0], "port": peer[1]})
+                    current[f"{peer[0]}:{peer[1]}"] = (peer[0], peer[1])
                 else:
-                    out.append({"ip": str(key), "port": None})
+                    current[str(key)] = (str(key), None)
         except Exception:  # noqa: BLE001
             pass
+        # update the first-seen registry: drop gone, stamp new
+        for ident in [i for i in self._conn_seen if i not in current]:
+            del self._conn_seen[ident]
+        out: list[dict] = []
+        for ident, (ip, port) in current.items():
+            seen = self._conn_seen.setdefault(ident, now)
+            out.append({"ip": ip, "port": port, "connected_s": int(now - seen)})
         return out
 
     def health_state(self) -> str:

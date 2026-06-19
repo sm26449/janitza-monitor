@@ -210,7 +210,7 @@ the complete picture for monitoring, with **no electrical data duplicated**:
 { "id": "fronius_ts_native", "name": "Fronius Smart Meter TS 5kA-3 (native CG)",
   "bind": "0.0.0.0", "port": 502, "unit_id": 1, "registers": 62,
   "enabled": true, "running": true, "state": "ok",
-  "connections": [ { "ip": "192.168.1.241", "port": 45098 } ], "conn_count": 1,
+  "connections": [ { "ip": "192.168.1.241", "port": 45098, "connected_s": 4213 } ], "conn_count": 1,
   "requests": 84213, "req_rate": 2.1, "errors": 0,
   "bytes_rx": 4392, "bytes_tx": 21716,
   "last_fresh": "2026-06-18T22:29:17", "freshness_age_s": 1.6, "uptime_s": 198,

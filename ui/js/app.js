@@ -610,7 +610,8 @@ class JanitzaMonitor {
                 .join('');
             const conns = m.connections || [];
             const connRows = conns.length
-                ? conns.map(c => `<tr><td style="padding:2px 0;color:#5a6470;font-family:monospace;">${this._esc(c.ip)}${c.port ? ':' + c.port : ''}</td></tr>`).join('')
+                ? conns.map(c => `<tr><td style="padding:2px 14px 2px 0;color:#5a6470;font-family:monospace;">${this._esc(c.ip)}${c.port ? ':' + c.port : ''}</td>`
+                    + `<td style="padding:2px 0;color:#8a94a0;font-variant-numeric:tabular-nums;white-space:nowrap;" title="connection uptime">up ${this._dur(c.connected_s)}</td></tr>`).join('')
                 : '<tr><td style="color:#8a94a0;">no active connections</td></tr>';
             const summary = `:${m.port ?? '—'} · ${conns.length} conn${conns.length === 1 ? '' : 's'}`
                 + (m.running ? ` · ${m.requests ?? 0} req · ${m.req_rate ?? 0}/s` : '');
@@ -808,6 +809,14 @@ class JanitzaMonitor {
     _esc(s) {
         return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
             .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    _dur(s) {
+        s = Math.max(0, Math.floor(s || 0));
+        if (s < 60) return s + 's';
+        if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+        if (s < 86400) return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
+        return Math.floor(s / 86400) + 'd ' + Math.floor((s % 86400) / 3600) + 'h';
     }
 
     // ── Virtual-meter sub-tabs (Meters / Templates / Logs / Stats) ──────────

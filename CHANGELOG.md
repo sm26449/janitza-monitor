@@ -14,6 +14,7 @@ Toate modificarile notabile ale proiectului sunt documentate in acest fisier.
 
 ### Imbunatatit
 - **Logs - panou de decodare lateral** - click pe un rand decodeaza in dreapta tabelului (rand evidentiat persistent), in loc de modal; hover + eticheta `decode ›` fac actiunea descoperibila; randurile cu exceptie (EXC) sunt evidentiate subtil rosu pentru depanare rapida a maparilor.
+- **Uptime per conexiune** - fiecare conexiune activa afiseaza de cat timp e stabila (`connected_s` in payload-ul MQTT + `up 5m` in cardul Meters). O conexiune care flapeaza (uptime mic, mereu resetat) e un semnal clar ca un consumator se reconecteaza.
 
 ## [2.1.0] - 2026-06-18
 
