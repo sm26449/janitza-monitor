@@ -595,9 +595,13 @@ class JanitzaMonitor {
             ? '<p style="color:#8a94a0;">No virtual meters configured.</p>'
             : insts.map(m => {
             const on = m.running;
-            const badge = on
+            const badge = m.state === 'ok'
                 ? '<span style="color:#1a8f4c;font-weight:600;">● LISTENING</span>'
-                : (m.enabled ? '<span style="color:#e08e0b;font-weight:600;">● stale / starting</span>'
+                : m.state === 'stale'
+                ? '<span style="color:#e08e0b;font-weight:600;" title="source stale — meter stopped responding (consumer fail-safe)">● STALE</span>'
+                : m.state === 'down'
+                ? '<span style="color:#c0392b;font-weight:600;" title="enabled but not serving — crashed or failed to start">● DOWN</span>'
+                : (m.enabled ? '<span style="color:#e08e0b;font-weight:600;">● starting…</span>'
                              : '<span style="color:#8a94a0;">○ disabled</span>');
             const prev = Object.entries(m.preview || {})
                 .map(([k, v]) => `<tr><td style="padding:2px 10px 2px 0;color:#8a94a0;">${this._esc(k)}</td>`
@@ -609,7 +613,7 @@ class JanitzaMonitor {
                 ? conns.map(c => `<tr><td style="padding:2px 0;color:#5a6470;font-family:monospace;">${this._esc(c.ip)}${c.port ? ':' + c.port : ''}</td></tr>`).join('')
                 : '<tr><td style="color:#8a94a0;">no active connections</td></tr>';
             const summary = `:${m.port ?? '—'} · ${conns.length} conn${conns.length === 1 ? '' : 's'}`
-                + (m.running ? ' · ' + (m.requests ?? 0) + ' req' : '');
+                + (m.running ? ` · ${m.requests ?? 0} req · ${m.req_rate ?? 0}/s` : '');
             return `
             <div class="settings-card vm-acc" style="margin-bottom:12px;">
               <div class="settings-card-header vm-acc-head" role="button" tabindex="0" aria-expanded="false" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
@@ -631,7 +635,9 @@ class JanitzaMonitor {
                 <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px;font-size:13px;">
                   <div>template <b>${this._esc(m.template)}</b></div>
                   <div>port <b>${m.port ?? '—'}</b> · unit <b>${m.unit_id ?? 1}</b></div>
+                  ${m.running ? `<div>req <b>${m.requests ?? 0}</b> · <b>${m.req_rate ?? 0}</b>/s</div>` : ''}
                   ${m.errors ? `<div style="color:#c0392b;">${m.errors} errors</div>` : ''}
+                  ${m.last_error ? `<div style="color:#c77700;" title="${this._esc(m.last_error.message || '')}"><i class="bi bi-exclamation-triangle"></i> ${this._esc(m.last_error.kind || '')}</div>` : ''}
                 </div>
                 <div style="display:flex;gap:36px;flex-wrap:wrap;">
                   <div style="font-size:12.5px;">

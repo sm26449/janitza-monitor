@@ -520,14 +520,17 @@ class VirtualMeter:
         return out
 
     def health_state(self) -> str:
-        """ok (serving + fresh) · stale (serving but source stale = fail-safe) ·
-        down (not serving). The single classification the UI/MQTT/health agree on."""
-        if not self._alive():
-            return "down"
+        """ok · stale · down — the single classification the UI/MQTT/health share.
+
+        Freshness is checked FIRST: when the source is stale the supervisor has
+        (correctly) stopped the server, so the meter is NOT alive — but that is a
+        `stale` fail-safe, not a `down` fault. Only a meter whose source is fresh
+        yet is not serving is genuinely `down` (crashed / failed to start)."""
         lf = self._last_fresh_ts
-        if lf and (time.time() - lf) <= self.stale_after_s:
-            return "ok"
-        return "stale"
+        fresh = bool(lf) and (time.time() - lf) <= self.stale_after_s
+        if not fresh:
+            return "stale"
+        return "ok" if self._alive() else "down"
 
     def status(self) -> dict:
         now = time.time()
