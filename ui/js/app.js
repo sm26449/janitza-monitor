@@ -933,10 +933,27 @@ class JanitzaMonitor {
                 <code style="width:70px;text-align:right;color:#5a6470;">${addr}</code>
                 <div style="flex:1;background:var(--border-light);border-radius:3px;overflow:hidden;"><div style="width:${(c / maxc * 100).toFixed(1)}%;background:#3b82f6;height:14px;"></div></div>
                 <span style="width:52px;text-align:right;font-variant-numeric:tabular-nums;color:#8a94a0;">${c}</span></div>`).join('');
+            const evColor = { error: '#c0392b', warn: '#c77700', info: '#5a6470' };
+            const events = (d.events || []).slice().reverse();   // newest first
+            const evRows = events.map(e => {
+                const t = e.ts ? new Date(e.ts * 1000).toLocaleTimeString('en-GB') : '';
+                const c = evColor[e.level] || '#5a6470';
+                return `<tr>
+                  <td style="white-space:nowrap;color:#8a94a0;font-variant-numeric:tabular-nums;">${t}</td>
+                  <td><span style="display:inline-block;padding:1px 7px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:${c};">${this._esc(e.level || '')}</span></td>
+                  <td><code style="color:#5a6470;">${this._esc(e.kind || '')}</code></td>
+                  <td style="color:var(--text);">${this._esc(e.message || '')}</td></tr>`;
+            }).join('');
             out.innerHTML = `
               <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;">${cards}</div>
               <div class="settings-card" style="padding:14px;margin-bottom:16px;">
                 <div style="color:#8a94a0;font-size:12.5px;margin-bottom:8px;">Requests / second (last ${rate.length}s)</div>${spark}</div>
+              <div class="settings-card" style="padding:14px;margin-bottom:16px;">
+                <div style="color:#8a94a0;font-size:12.5px;margin-bottom:8px;">Recent events &amp; errors (last ${events.length}) — what happened to this meter</div>
+                ${events.length ? `<div style="overflow-x:auto;"><table class="data-table" style="width:100%;font-size:12.5px;">
+                  <thead><tr><th>Time</th><th>Level</th><th>Kind</th><th>Message</th></tr></thead>
+                  <tbody>${evRows}</tbody></table></div>`
+                  : '<span style="color:#1a8f4c;">No errors — meter has been healthy.</span>'}</div>
               <div class="settings-card" style="padding:14px;">
                 <div style="color:#8a94a0;font-size:12.5px;margin-bottom:8px;">Most-read registers (where the consumer looks)</div>
                 ${bars || '<span style="color:#8a94a0;">No reads yet.</span>'}</div>`;

@@ -155,7 +155,7 @@ caz de mai jos), acum integrat în interfață.
 | **Meters** | fiecare instanță: stare, valori live servite, port/unitate, comutator de activare |
 | **Templates** | listă · editor · **Import / Export YAML** |
 | **Logs** | tabel live al ultimelor interogări — `time · FC · addr · count · OK/EXC · latency · response` · **click pe orice rând pentru decodare** |
-| **Stats & Debug** | total / erori / rată-cereri / RX / TX / uptime · **grafic cereri-pe-secundă** · cele mai citite registre |
+| **Stats & Debug** | total / erori / rată-cereri / RX / TX / uptime · **grafic cereri-pe-secundă** · **evenimente și erori recente** · cele mai citite registre |
 
 O linie reală din jurnalul de interogări arată astfel:
 
@@ -179,6 +179,10 @@ O linie reală din jurnalul de interogări arată astfel:
 **Stats & Debug** — contoare, grafic cereri-pe-secundă și registrele pe care consumatorul le citește cel mai mult:
 
 ![Contoare virtuale — statistici și debug](img/vm-stats.png)
+
+**Evenimente și erori recente** — motorul ține ultimele 50 de evenimente de ciclu-de-viață per contor (în RAM): `started`, `crash` (firul serverului a murit → restart automat), `restart_failed`, `wedged` (viu dar nu mai acceptă conexiuni → force-restart), `stopped` (sursa a devenit stale → contorul oprește răspunsul, ca fail-safe pentru consumator), erori de `supervise`. Așa că, atunci când un consumator raportează o întrerupere, vezi *de ce* a tăcut contorul, nu doar *că* a tăcut. Cea mai recentă eroare/avertisment se publică și pe MQTT (`…/vmeter/<id>/state` → `last_error`), ca [alertd](#monitorizare-prin-mqtt-ex-alertd) să poată face reguli pe ea.
+
+![Contoare virtuale — evenimente și erori recente](img/vm-events.png)
 
 ### API
 

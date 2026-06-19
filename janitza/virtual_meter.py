@@ -96,6 +96,7 @@ class VMeterStats:
 
     LOG_SIZE = 1024          # last N queries kept (ring buffer)
     RATE_SIZE = 300          # per-second rate buckets kept (5 min)
+    EVENT_SIZE = 50          # last N lifecycle/error events kept (ring buffer)
 
     def __init__(self) -> None:
         self.queries: deque = deque(maxlen=self.LOG_SIZE)
@@ -105,6 +106,11 @@ class VMeterStats:
         self.bytes_tx = 0
         self.by_addr: dict[int, int] = {}
         self.rate: deque = deque(maxlen=self.RATE_SIZE)   # (epoch_sec, count)
+        # Engine lifecycle/error events — the "what happened" timeline (crash,
+        # restart-failed, wedged, stale→stopped, supervise error). Kept apart
+        # from the per-read query log so a noisy consumer probing illegal
+        # addresses can't drown out the rare-but-important meter events.
+        self.events: deque = deque(maxlen=self.EVENT_SIZE)
         self._cur_sec = 0
         self._cur_cnt = 0
         self.first_ts: Optional[float] = None
@@ -135,6 +141,29 @@ class VMeterStats:
                 self._cur_sec, self._cur_cnt = sec, 0
             self._cur_cnt += 1
 
+    def record_event(self, level: str, kind: str, message: str,
+                     ts: Optional[float] = None) -> None:
+        """Append an engine lifecycle/error event. level: error|warn|info.
+        Thread-safe; never raises (observability must not break metering)."""
+        try:
+            with self._lock:
+                self.events.append({
+                    "ts": round(ts if ts is not None else time.time(), 3),
+                    "level": level, "kind": kind,
+                    "message": str(message)[:300],
+                })
+        except Exception:  # noqa: BLE001
+            pass
+
+    def last_error(self) -> Optional[dict]:
+        """Most recent non-info event (error or warn), or None — surfaced in
+        status()/MQTT so alertd can rule on it."""
+        with self._lock:
+            for e in reversed(self.events):
+                if e["level"] in ("error", "warn"):
+                    return dict(e)
+        return None
+
     def snapshot(self, limit: int = 200) -> dict:
         with self._lock:
             rate = list(self.rate)
@@ -142,11 +171,13 @@ class VMeterStats:
                 rate.append((self._cur_sec, self._cur_cnt))
             top = sorted(self.by_addr.items(), key=lambda kv: -kv[1])[:15]
             ql = list(self.queries)[-limit:]
+            events = list(self.events)
             return {
                 "total": self.total, "errors": self.errors,
                 "bytes_rx": self.bytes_rx, "bytes_tx": self.bytes_tx,
                 "first_ts": self.first_ts, "last_ts": self.last_ts,
                 "rate": rate, "top_addrs": top, "queries": ql,
+                "events": events,
             }
 
 
@@ -299,6 +330,11 @@ class VirtualMeter:
                 loop.run_until_complete(_serve())
             except Exception as e:  # noqa: BLE001
                 logger.info("virtual meter %s server loop ended: %s", self.t.id, e)
+                # A genuine crash (not an intended shutdown, which returns
+                # cleanly). Record it so the UI can show why the meter dropped.
+                if threading.current_thread() is self._server_thread:
+                    self.stats.record_event("error", "server_exit",
+                                            f"server loop crashed: {e}")
             finally:
                 # Only relinquish the running flag if WE are still the active
                 # server thread — a newer restart may already own the slot, and
@@ -316,6 +352,8 @@ class VirtualMeter:
                                                name=f"vmeter-{self.t.id}")
         self._server_thread.start()
         self._running = True
+        self.stats.record_event("info", "started",
+                                f"listening on {host}:{port} unit {unit}")
         logger.info("virtual meter %s LISTENING on %s:%d unit %d",
                     self.t.id, host, port, unit)
 
@@ -334,7 +372,7 @@ class VirtualMeter:
         except Exception:  # noqa: BLE001
             return False
 
-    def _stop_server(self) -> None:
+    def _stop_server(self, reason: str = "") -> None:
         if self._server and self._server_loop:
             try:
                 fut = asyncio.run_coroutine_threadsafe(self._server.shutdown(),
@@ -343,6 +381,8 @@ class VirtualMeter:
             except Exception:  # noqa: BLE001
                 pass
         self._running = False
+        if reason:
+            self.stats.record_event("warn", "stopped", reason)
         logger.info("virtual meter %s STOPPED responding (stale/shutdown)", self.t.id)
 
     def _push_to_ctx(self) -> None:
@@ -376,12 +416,16 @@ class VirtualMeter:
                     if not self._alive():             # down OR crashed → (re)start
                         if self._running and not (self._server_thread and self._server_thread.is_alive()):
                             logger.warning("virtual meter %s server thread died — restarting", self.t.id)
+                            self.stats.record_event("error", "crash",
+                                                    "server thread died — restarting")
                         try:
                             self._start_server()
                             restart_fails = 0
                         except Exception as e:        # noqa: BLE001
                             restart_fails += 1
                             self._running = False
+                            self.stats.record_event("error", "restart_failed",
+                                                    f"restart attempt {restart_fails} failed: {e}")
                             logger.error("virtual meter %s restart failed (%d): %s",
                                          self.t.id, restart_fails, e)
                     else:
@@ -397,12 +441,18 @@ class VirtualMeter:
                                 probe_fails += 1
                                 if probe_fails >= 3:
                                     logger.warning("virtual meter %s alive but not serving — force-restarting", self.t.id)
-                                    self._stop_server()    # next tick → _alive False → restart
+                                    self._stop_server("alive but not serving (~30s) — force-restarting")
                                     probe_fails = 0
                 else:
                     if self._alive():
-                        self._stop_server()           # stale → stop responding
+                        stale_for = (time.time() - newest) if newest else None
+                        reason = (f"source stale >{self.stale_after_s:.0f}s "
+                                  f"(last fresh {stale_for:.0f}s ago) — stopped responding"
+                                  if stale_for else
+                                  f"no fresh source yet — not responding (>{self.stale_after_s:.0f}s)")
+                        self._stop_server(reason)     # stale → stop responding
             except Exception as e:  # noqa: BLE001
+                self.stats.record_event("error", "supervise", f"supervise loop error: {e}")
                 logger.warning("virtual meter %s supervise error: %s", self.t.id, e)
             # back off the poll a little after repeated restart failures (e.g. port
             # held in TIME_WAIT) so we don't hot-loop; normal cadence otherwise.
@@ -461,4 +511,5 @@ class VirtualMeter:
                 if self._last_fresh_ts else None,
                 "port": self.t.transport.get("port"), "registers": len(self.t.registers),
                 "connections": conns, "conn_count": len(conns),
-                "requests": self.stats.total, "errors": self.stats.errors}
+                "requests": self.stats.total, "errors": self.stats.errors,
+                "last_error": self.stats.last_error()}

@@ -140,7 +140,7 @@ Fronius Smart Meter protocol** (see the case study below), now built into the UI
 | **Meters** | every instance: status, served live values, port/unit, enable toggle |
 | **Templates** | list · editor · **Import / Export YAML** |
 | **Logs** | live table of the last queries — `time · FC · addr · count · OK/EXC · latency · response` · **click any row to decode** |
-| **Stats & Debug** | total / errors / req-rate / RX / TX / uptime · **requests-per-second chart** · most-read registers |
+| **Stats & Debug** | total / errors / req-rate / RX / TX / uptime · **requests-per-second chart** · **recent events & errors** · most-read registers |
 
 A real query-log line looks like:
 
@@ -164,6 +164,10 @@ A real query-log line looks like:
 **Stats & Debug** — counters, requests-per-second chart, and the registers the consumer reads most:
 
 ![Virtual Meters — stats & debug](img/vm-stats.png)
+
+**Recent events & errors** — the engine keeps the last 50 lifecycle events per meter (RAM): `started`, `crash` (server thread died → auto-restart), `restart_failed`, `wedged` (alive but not accepting connections → force-restart), `stopped` (source went stale → meter stops responding as a consumer fail-safe), `supervise` errors. So when a consumer reports a dropout you can see *why* the meter went quiet, not just *that* it did. The most recent error/warn is also published on MQTT (`…/vmeter/<id>/state` → `last_error`), so [alertd](#monitoring-via-mqtt-eg-alertd) can rule on it.
+
+![Virtual Meters — recent events & errors](img/vm-events.png)
 
 ### API
 
