@@ -1,0 +1,19 @@
+# Development override — live-edit the frontend WITHOUT rebuilding the image.
+#
+# Enable it (docker compose auto-merges docker-compose.override.yml):
+#   cp docker-compose.override.yml.example docker-compose.override.yml
+#   docker compose up -d
+#
+# This bind-mounts ./ui over the image's /app/ui, so edits to the HTML/CSS/JS
+# are served live — just reload the browser. No `docker compose build` and no
+# container recreate, so consumers polling the virtual meters are never dropped.
+#
+# Notes:
+#   * Frontend only. Python changes (janitza/*.py) still need a rebuild.
+#   * Bump the asset cache-buster (?v=vmNN in ui/templates/index.html) when you
+#     change app.js / a .css so the browser actually fetches the new file.
+#   * Remove docker-compose.override.yml to go back to the baked, shippable image.
+services:
+  janitza-monitor:
+    volumes:
+      - ./ui:/app/ui:ro
