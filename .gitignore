@@ -49,5 +49,6 @@ build/
 # Node
 node_modules/
 
-# Internal dev tools — kept in the private repo, not published to the public one
+# Internal dev tools / docs — kept in the private repo, not published to the public one
 tools/capture-screenshots.js
+docs/PUBLISHING.md
