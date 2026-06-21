@@ -240,6 +240,12 @@ Real-time graph with multiple overlapping registers. Drag & drop registers from 
 
 ![Monitor](screenshots/monitor.png)
 
+### History
+
+Read stored measurements **back** from InfluxDB. Pick one or more registers from a searchable, category-grouped list (click to add/remove — the colored dot matches its line), choose a time range and resolution, and get mean lines on a shared Y axis with a min/max band (for a single register) and a hover crosshair whose tooltip lists every series' value at the nearest time.
+
+![History](screenshots/history.png)
+
 ### Registers
 
 Browser for all 4126 available registers. Search, filter by categories, quick add to monitoring with full MQTT/InfluxDB/thresholds configuration.
@@ -274,7 +280,7 @@ Monitored registers list with category filtering. Edit label, poll group, widget
 
 Serve the live values as standard Modbus meters to other systems. Tabbed page: **Meters** (instances, status, live values, client connections ip:port — accordion cards), **Templates** (editor + YAML import/export), **Logs**, **Stats & Debug**. Full guide: **[docs/VIRTUAL-METER.md](docs/VIRTUAL-METER.md)**.
 
-![Virtual Meters](docs/img/vm-meters.png)
+![Virtual Meters](screenshots/vmeters.png)
 
 **Logs** - live log of the last 1024 Modbus requests (time, function code, address, count, OK/exception, latency, response) — exactly what the consumer reads.
 
@@ -283,6 +289,16 @@ Serve the live values as standard Modbus meters to other systems. Tabbed page: *
 **Stats & Debug** - counters (requests/errors/rate/RX/TX/uptime), a requests-per-second chart, and the most-read registers.
 
 ![Virtual Meters - Stats](docs/img/vm-stats.png)
+
+**Edit instance** - change an existing instance's port, unit id, freshness window (`stale_after_s`) and refresh interval right from the Meters tab; the meter restarts live to apply (it warns that a port/unit change briefly drops connected consumers).
+
+![Edit virtual-meter instance](screenshots/vmeter-edit.png)
+
+### Data-acquisition health
+
+The Modbus status detail surfaces **data freshness**, the **last successful read**, **per-poll-group ages**, and recent **read-failure events** — so a Janitza comms loss (like an upstream Modbus dropout) is visible first-class, not just in the container logs. The same is exposed on `/health` (a `modbus` block; HTTP stays 200 on a stale source so the container never restart-loops on an unreachable device) and published to MQTT on `<prefix>/data_health` for external alerting.
+
+![Modbus health](screenshots/modbus-health.png)
 
 ## API Endpoints
 

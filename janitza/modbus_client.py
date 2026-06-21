@@ -3,6 +3,7 @@
 import time
 import logging
 import threading
+from collections import deque
 from typing import Dict, List, Optional, Callable, Any
 
 from pymodbus.client import ModbusTcpClient
@@ -27,6 +28,24 @@ class ModbusConnection:
         self.lock = threading.Lock()
         self.successful_reads = 0
         self.failed_reads = 0
+        # First-class dropout observability (mirrors VMeterStats.record_event):
+        # a timestamped ring of read failures + last success/failure times, so a
+        # Janitza comms loss leaves a record in the app, not just docker logs.
+        self.events: deque = deque(maxlen=50)
+        self.last_success_ts: Optional[float] = None
+        self.last_failure_ts: Optional[float] = None
+        self._ev_lock = threading.Lock()
+
+    def record_event(self, level: str, kind: str, message: str, ts: Optional[float] = None) -> None:
+        """Append an acquisition event (level: error|warn|info). Never raises."""
+        try:
+            with self._ev_lock:
+                self.events.append({
+                    "ts": round(ts if ts is not None else time.time(), 3),
+                    "level": level, "kind": kind, "message": str(message)[:300],
+                })
+        except Exception:  # noqa: BLE001
+            pass
 
     def connect(self) -> bool:
         """Establish Modbus TCP connection."""
@@ -79,6 +98,7 @@ class ModbusConnection:
 
                     if not result.isError() and result.registers:
                         self.successful_reads += 1
+                        self.last_success_ts = time.time()
                         return result.registers
                     elif result.isError():
                         if attempt < self.config.retry_attempts - 1:
@@ -91,6 +111,10 @@ class ModbusConnection:
                         time.sleep(self.config.retry_delay)
 
             self.failed_reads += 1
+            self.last_failure_ts = time.time()
+            self.record_event("warn", "read_fail",
+                              f"addr {address} count {count} — no response after "
+                              f"{self.config.retry_attempts} attempts")
             return None
 
 
@@ -473,6 +497,15 @@ class ModbusClient:
             if poller.running and poller.interval > 0:
                 poll_rate += 1.0 / poller.interval
 
+        last_success = self.connection.last_success_ts
+        now = time.time()
+        poll_groups_detail = [
+            {'name': p.poll_group_name, 'interval': p.interval,
+             'last_poll_ts': p.last_poll_time,
+             'age_s': round(now - p.last_poll_time, 1) if p.last_poll_time else None,
+             'poll_count': p.poll_count}
+            for p in self.pollers]
+
         return {
             'connected': self.connected,
             'host': self.config.host,
@@ -485,4 +518,44 @@ class ModbusClient:
             'total_registers': len(self.registers),
             'total_polls': total_polls,
             'poll_rate': round(poll_rate, 2),
+            'last_success_ts': last_success,
+            'last_failure_ts': self.connection.last_failure_ts,
+            'staleness_age_s': round(now - last_success, 1) if last_success else None,
+            'poll_groups_detail': poll_groups_detail,
+            'events': list(self.connection.events),
         }
+
+    def data_health(self, stale_threshold_s: float = 30) -> Dict:
+        """Acquisition-pipeline health: ok | degraded | down.
+
+        Staleness uses the connection's last successful read (driven by the
+        FASTEST poll group). The effective threshold is raised to >= 3x the
+        fastest poll interval so a slow-only config can't false-positive. Returns
+        ``ok`` when nothing is configured to poll, and stays ``ok`` on cold start
+        until a read has actually failed (avoids a false 'down' right after boot)."""
+        now = time.time()
+        last = self.connection.last_success_ts
+        connected = self.connected
+        if not self.registers or not self.pollers:
+            return {"status": "ok", "stale": False, "staleness_age_s": None,
+                    "last_success_ts": last, "connected": connected}
+        fastest = min((p.interval for p in self.pollers if p.running),
+                      default=stale_threshold_s)
+        threshold = max(float(stale_threshold_s), fastest * 3 + 2)
+        if last is None:
+            status = "down" if self.connection.last_failure_ts else "ok"
+            age = None
+        else:
+            age = now - last
+            if age > threshold:
+                status = "down"
+            elif age > threshold / 2:
+                status = "degraded"
+            else:
+                status = "ok"
+        if not connected and status == "ok":
+            status = "degraded"
+        return {"status": status, "stale": status != "ok",
+                "staleness_age_s": round(age, 1) if age is not None else None,
+                "last_success_ts": last, "connected": connected,
+                "threshold_s": round(threshold, 1)}

@@ -1,6 +1,7 @@
 """InfluxDB Publisher for Janitza UMG 512-PRO with change detection and custom measurements."""
 
 import math
+import re
 import time
 import threading
 from typing import Dict, Any, Optional, List
@@ -505,3 +506,85 @@ class InfluxDBPublisher:
             'registered_addresses': len(self._register_map),
             'disconnection_count': self.disconnection_count,
         }
+
+    # ── read-back for the UI history/trend view ───────────────────────────
+    _EVERY_RE = re.compile(r"^\d+[smhd]$")
+    _RANGE_RE = re.compile(r"^-?\d+[smhdw]$")
+    _RFC3339_RE = re.compile(r"^\d{4}-\d\d-\d\dT")
+    _VALID_FN = {"mean", "min", "max", "last", "first"}
+
+    def query_history(self, name: str, start: str = "-6h", stop: str = "now()",
+                      every: str = "1m", fn: str = "mean",
+                      measurement: Optional[str] = None) -> Dict:
+        """Read aggregated history for a register (matched by its ``name`` tag)
+        back from InfluxDB. Returns ``{name, every, fn, series:[{t,v}]}`` (UTC
+        ISO timestamps), or ``{series_mean/min/max}`` when ``fn=='all'`` (for a
+        min/max band), or ``{"error": ...}``. Inputs are validated/escaped because
+        the register name is a user-supplied tag value flowing into Flux."""
+        if not self.config.enabled:
+            return {"error": "influxdb disabled"}
+        safe_name = str(name).replace("\\", "").replace('"', "")
+        if not safe_name:
+            return {"error": "name required"}
+        if not self._EVERY_RE.match(str(every)):
+            return {"error": "every must look like 30s / 5m / 1h / 1d"}
+        fns = ["mean", "min", "max"] if fn == "all" else [fn]
+        for f in fns:
+            if f not in self._VALID_FN:
+                return {"error": f"fn must be one of {sorted(self._VALID_FN)} or 'all'"}
+
+        def _tok(t, allow_now=True):
+            t = str(t)
+            if (allow_now and t == "now()") or self._RANGE_RE.match(t) or self._RFC3339_RE.match(t):
+                return t
+            return None
+        s = _tok(start, allow_now=False)
+        if s is None:
+            return {"error": "bad start (use -6h / -7d / RFC3339)"}
+        e = _tok(stop) or "now()"
+        meas_filter = ""
+        if measurement:
+            sm = str(measurement).replace('"', "")
+            meas_filter = f'  |> filter(fn: (r) => r["_measurement"] == "{sm}")\n'
+
+        own = False
+        client = self.client if (self.connected and self.client) else None
+        if client is None:
+            try:
+                from influxdb_client import InfluxDBClient
+                client = InfluxDBClient(url=self.config.url, token=self.config.token,
+                                        org=self.config.org)
+                own = True
+            except Exception as ex:  # noqa: BLE001
+                return {"error": f"influxdb client unavailable: {ex}"}
+
+        def _run(f):
+            flux = (f'from(bucket: "{self.config.bucket}")\n'
+                    f'  |> range(start: {s}, stop: {e})\n'
+                    f'  |> filter(fn: (r) => r["name"] == "{safe_name}")\n'
+                    f'  |> filter(fn: (r) => r["_field"] == "value")\n'
+                    f'{meas_filter}'
+                    f'  |> aggregateWindow(every: {every}, fn: {f}, createEmpty: false)\n'
+                    f'  |> keep(columns: ["_time", "_value"])')
+            out = []
+            for table in client.query_api().query(flux, org=self.config.org):
+                for rec in table.records:
+                    v = rec.get_value()
+                    out.append({"t": rec.get_time().isoformat().replace("+00:00", "Z"),
+                                "v": round(v, 4) if isinstance(v, (int, float)) else v})
+            return out
+
+        try:
+            if fn == "all":
+                return {"name": safe_name, "every": every, "fn": "all",
+                        "series_mean": _run("mean"), "series_min": _run("min"),
+                        "series_max": _run("max")}
+            return {"name": safe_name, "every": every, "fn": fn, "series": _run(fn)}
+        except Exception as ex:  # noqa: BLE001
+            return {"error": f"query failed: {ex}"}
+        finally:
+            if own:
+                try:
+                    client.close()
+                except Exception:  # noqa: BLE001
+                    pass

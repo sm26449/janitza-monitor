@@ -59,12 +59,13 @@ class VirtualMeterManager:
     def __init__(self, current_values: dict,
                  config_path: str = "config/virtual_meters.yaml",
                  templates_dir: str = "config/templates",
-                 mqtt_publisher=None):
+                 mqtt_publisher=None, modbus_client=None):
         self.current_values = current_values
         self.config_path = Path(config_path)
         self.templates_dir = Path(templates_dir)
         self.meters: list[VirtualMeter] = []
         self.mqtt_publisher = mqtt_publisher        # optional: publish state to MQTT
+        self.modbus_client = modbus_client          # optional: publish data-acquisition health
         self._states_stop = threading.Event()
         # Published host port range (docker-compose publishes this once). Instance
         # ports are constrained to it so an added meter is always LAN-reachable.
@@ -94,6 +95,7 @@ class VirtualMeterManager:
                     "state": st.get("state"),
                     "connections": st.get("connections", []),
                     "conn_count": st.get("conn_count", 0),
+                    "peers": st.get("peers", ""),
                     "requests": st.get("requests", 0),
                     "req_rate": st.get("req_rate", 0.0),
                     "errors": st.get("errors", 0),
@@ -107,6 +109,18 @@ class VirtualMeterManager:
                 pub.publish_state(f"vmeter/{st.get('id')}/state", json.dumps(payload))
             except Exception as e:  # noqa: BLE001
                 logger.debug("vmeter state publish failed: %s", e)
+        # Also publish data-acquisition (Modbus) health so alertd can alert on a
+        # Janitza comms loss DIRECTLY, instead of only inferring it from vmeter
+        # freshness (which requires an enabled meter). Retained, same cadence.
+        mc = self.modbus_client
+        if mc is not None and hasattr(mc, "data_health"):
+            try:
+                threshold = getattr(getattr(mc, "config", None), "stale_after_s", 30)
+                dh = mc.data_health(threshold)
+                dh["ts"] = int(time.time())
+                pub.publish_state("data_health", json.dumps(dh))
+            except Exception as e:  # noqa: BLE001
+                logger.debug("data_health publish failed: %s", e)
 
     def publish_ha_discovery(self) -> int:
         """Publish HA autodiscovery for every enabled instance (idempotent;
@@ -226,6 +240,8 @@ class VirtualMeterManager:
                     pass
             row = {"template": tid, "enabled": bool(inst.get("enabled", True)),
                    "port": inst.get("port"), "unit_id": inst.get("unit_id", 1),
+                   "stale_after_s": inst.get("stale_after_s", 15),
+                   "update_interval_s": inst.get("update_interval_s", 1.0),
                    "running": vm is not None and vm._running,
                    "name": name,
                    "preview": vm.preview() if vm else {}}
@@ -639,6 +655,71 @@ class VirtualMeterManager:
             vm.stop()
             self.meters.remove(vm)
         return {"template": template_id, "enabled": bool(on)}
+
+    def update_instance(self, template_id: str, port=None, unit_id=None,
+                        stale_after_s=None, update_interval_s=None) -> dict:
+        """Edit an existing instance's port / unit_id / stale_after_s /
+        update_interval_s (partial — only provided fields change). Persists, then
+        live-restarts the meter if it is running so port/unit/freshness/interval
+        all take effect (they are bound at server construction)."""
+        cfg = self._load_cfg()
+        inst = next((i for i in cfg.get("instances", []) if i.get("template") == template_id), None)
+        if inst is None:
+            return {"error": f"no instance for template {template_id}"}
+        if port is not None:
+            try:
+                port = int(port)
+            except (TypeError, ValueError):
+                return {"error": "port must be an integer"}
+            if port != int(inst.get("port", -1)):
+                if not self._port_in_range(port):
+                    return {"error": f"port {port} is outside the published range "
+                                     f"{self.port_start}-{self.port_end} — pick a free port in "
+                                     f"range, or widen VMETER_PORT_END and recreate the container"}
+                if any(int(i.get("port", -1)) == port for i in cfg["instances"] if i is not inst):
+                    return {"error": f"port {port} is already used by another instance"}
+                inst["port"] = port
+        if unit_id is not None:
+            try:
+                unit_id = int(unit_id)
+            except (TypeError, ValueError):
+                return {"error": "unit_id must be an integer"}
+            if not (0 <= unit_id <= 255):
+                return {"error": "unit_id must be 0..255"}
+            inst["unit_id"] = unit_id
+        if stale_after_s is not None:
+            try:
+                stale_after_s = float(stale_after_s)
+            except (TypeError, ValueError):
+                return {"error": "stale_after_s must be a number"}
+            if stale_after_s <= 0:
+                return {"error": "stale_after_s must be > 0"}
+            inst["stale_after_s"] = stale_after_s
+        if update_interval_s is not None:
+            try:
+                update_interval_s = float(update_interval_s)
+            except (TypeError, ValueError):
+                return {"error": "update_interval_s must be a number"}
+            if update_interval_s <= 0:
+                return {"error": "update_interval_s must be > 0"}
+            inst["update_interval_s"] = update_interval_s
+        self._save_cfg(cfg)
+        restarted = False
+        running = [m for m in self.meters if m.t.id == template_id]
+        if running and inst.get("enabled"):
+            for vm in running:
+                vm.stop()
+                self.meters.remove(vm)
+            try:
+                self._start_one(inst)
+                restarted = True
+            except Exception as e:  # noqa: BLE001
+                logger.error("update %s failed to restart: %s", template_id, e)
+                return {"error": f"saved but failed to restart: {e}"}
+        return {"template": template_id, "updated": True, "restarted": restarted,
+                "port": inst.get("port"), "unit_id": inst.get("unit_id", 1),
+                "stale_after_s": inst.get("stale_after_s", 15),
+                "update_interval_s": inst.get("update_interval_s", 1.0)}
 
     def _start_one(self, inst: dict) -> None:
         provider = make_provider(self.current_values)

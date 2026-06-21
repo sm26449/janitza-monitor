@@ -542,6 +542,8 @@ class JanitzaMonitor {
             this.renderStatusDetails();
         } else if (page === 'monitor') {
             this.initMonitorPage();
+        } else if (page === 'history') {
+            this.initHistoryPage();
         } else if (page === 'vmeters') {
             this.renderVirtualMeters();
         }
@@ -564,6 +566,7 @@ class JanitzaMonitor {
             return;
         }
         const insts = data.instances || [];
+        this._vmInsts = Object.fromEntries(insts.map(i => [i.template, i]));   // for the edit modal
         let templates = [];
         try { templates = (await (await fetch('/api/virtual-meters/templates')).json()).templates || []; } catch (e) {}
         const configured = new Set(insts.map(i => i.template));
@@ -633,9 +636,11 @@ class JanitzaMonitor {
                 </div>
               </div>
               <div class="settings-card-body vm-acc-body" hidden>
-                <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px;font-size:13px;">
+                <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:13px;">
                   <div>template <b>${this._esc(m.template)}</b></div>
                   <div>port <b>${m.port ?? '—'}</b> · unit <b>${m.unit_id ?? 1}</b></div>
+                  <div>stale <b>${m.stale_after_s ?? 15}s</b> · refresh <b>${this._fmtInterval(m.update_interval_s ?? 1)}</b></div>
+                  <button class="btn btn-sm" data-vm-editinst="${this._esc(m.template)}" title="Edit port / unit / freshness / refresh interval"><i class="bi bi-sliders"></i> Edit settings</button>
                   ${m.running ? `<div>req <b>${m.requests ?? 0}</b> · <b>${m.req_rate ?? 0}</b>/s</div>` : ''}
                   ${m.errors ? `<div style="color:#c0392b;">${m.errors} errors</div>` : ''}
                   ${m.last_error ? `<div style="color:#c77700;" title="${this._esc(m.last_error.message || '')}"><i class="bi bi-exclamation-triangle"></i> ${this._esc(m.last_error.kind || '')}</div>` : ''}
@@ -804,6 +809,315 @@ class JanitzaMonitor {
                 setTimeout(() => this.renderVirtualMeters(), 1200);
             });
         });
+        // wire per-instance settings edit
+        el.querySelectorAll('button[data-vm-editinst]').forEach(b => {
+            b.addEventListener('click', () => this.openEditInstance(b.dataset.vmEditinst));
+        });
+    }
+
+    _fmtInterval(s) {
+        s = Number(s);
+        return (isFinite(s) && s < 1) ? `${Math.round(s * 1000)}ms` : `${s}s`;
+    }
+
+    openEditInstance(template) {
+        const m = (this._vmInsts || {})[template];
+        if (!m) { this.showToast('error', 'Edit', `unknown instance ${template}`); return; }
+        const pr = this._vmPortRange || {};
+        const set = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+        document.getElementById('vmEditInstName').textContent = m.name || template;
+        set('vmEditInstTemplate', template);
+        const portEl = document.getElementById('vmEditPort');
+        set('vmEditPort', m.port ?? '');
+        if (portEl && pr.start != null) { portEl.min = pr.start; portEl.max = pr.end; }
+        document.getElementById('vmEditPortHint').textContent =
+            (pr.start != null) ? `published range ${pr.start}–${pr.end}` : '';
+        set('vmEditUnit', m.unit_id ?? 1);
+        set('vmEditStale', m.stale_after_s ?? 15);
+        set('vmEditInterval', m.update_interval_s ?? 1);
+        this.openModal('vmEditInstanceModal');
+    }
+
+    async saveEditInstance() {
+        const template = document.getElementById('vmEditInstTemplate').value;
+        const num = (id) => { const v = document.getElementById(id).value; return v === '' ? undefined : Number(v); };
+        const body = { port: num('vmEditPort'), unit_id: num('vmEditUnit'),
+                       stale_after_s: num('vmEditStale'), update_interval_s: num('vmEditInterval') };
+        try {
+            const r = await fetch(`/api/virtual-meters/${encodeURIComponent(template)}`, {
+                method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body) });
+            const d = await r.json().catch(() => ({}));
+            if (r.ok) {
+                this.showToast('success', 'Instance updated', `${template}${d.restarted ? ' · restarted' : ''}`);
+                this.closeModal('vmEditInstanceModal');
+            } else {
+                this.showToast('error', 'Update failed', d.detail || `HTTP ${r.status}`);
+                return;
+            }
+        } catch (e) { this.showToast('error', 'Update failed', template); return; }
+        setTimeout(() => this.renderVirtualMeters(), 700);
+    }
+
+    // ── History view (InfluxDB read-back) ─────────────────────────────────
+    _histColors() {
+        return ['#2f81f7', '#e0a000', '#3fb950', '#db61a2', '#f85149', '#1f9c9c', '#a371f7', '#d29922'];
+    }
+
+    _histCategory(reg) {
+        const u = (reg.unit || '').toLowerCase();
+        if (u === 'v') return 'voltage';
+        if (u === 'a') return 'current';
+        if (u === 'w' || u === 'kw') return 'power';
+        if (u === 'wh' || u === 'kwh') return 'energy';
+        if (u === 'hz') return 'frequency';
+        if (u === 'var' || u === 'kvar') return 'reactive';
+        if (u === 'va' || u === 'kva') return 'apparent';
+        if (u === '°c' || u === 'c') return 'temperature';
+        if (u === '%') return 'percentage';
+        return 'other';
+    }
+
+    initHistoryPage() {
+        if (!this._histWired) {
+            this._histWired = true;
+            document.getElementById('histSearch')?.addEventListener('input', (e) => {
+                this.histSearch = e.target.value.toLowerCase();
+                this.renderHistoryRegisters();
+            });
+            ['histRange', 'histEvery'].forEach(id =>
+                document.getElementById(id)?.addEventListener('change', () => this.loadHistory()));
+            document.getElementById('histRefresh')?.addEventListener('click', () => this.loadHistory());
+            document.getElementById('histClear')?.addEventListener('click', () => {
+                this.histSelected = []; this.renderHistoryRegisters(); this.loadHistory();
+            });
+            const canvas = document.getElementById('historyCanvas');
+            if (canvas) {
+                canvas.addEventListener('mousemove', (e) => {
+                    if (!this._histSeries) return;
+                    const rect = canvas.getBoundingClientRect();
+                    this._histHoverX = e.clientX - rect.left;
+                    this._renderHistory(this._histHoverX);
+                });
+                canvas.addEventListener('mouseleave', () => {
+                    this._histHoverX = null;
+                    this._renderHistory(null);
+                    if (this._histTip) this._histTip.style.display = 'none';
+                });
+            }
+        }
+        if (!this.histRegisters || !this.histRegisters.length) {
+            fetch('/api/history/registers').then(r => r.json()).then(d => {
+                this.histRegisters = d.registers || [];
+                this._histRegMeta = Object.fromEntries(this.histRegisters.map(r => [r.name, { unit: r.unit || '', label: r.label || r.name }]));
+                if (!this.histSelected) this.histSelected = [];
+                if (!this.histSelected.length && this.histRegisters.length) this.histSelected = [this.histRegisters[0].name];
+                this.renderHistoryRegisters();
+                this.loadHistory();
+            }).catch(() => {
+                const l = document.getElementById('histRegList');
+                if (l) l.innerHTML = '<div style="padding:20px;color:#8a94a0;">Could not load registers.</div>';
+            });
+        } else {
+            this.renderHistoryRegisters();
+            this.loadHistory();
+        }
+    }
+
+    renderHistoryRegisters() {
+        const container = document.getElementById('histRegList');
+        if (!container) return;
+        const sel = new Set(this.histSelected || []);
+        const palette = this._histColors();
+        const colorOf = (name) => palette[(this.histSelected || []).indexOf(name) % palette.length];
+        const cats = new Map();
+        (this.histRegisters || []).forEach(reg => {
+            const cat = this._histCategory(reg);
+            if (!cats.has(cat)) cats.set(cat, []);
+            cats.get(cat).push(reg);
+        });
+        let html = '';
+        for (const catName of Array.from(cats.keys()).sort()) {
+            const items = cats.get(catName).filter(it =>
+                !this.histSearch || `${it.name} ${it.label || ''} ${it.unit || ''}`.toLowerCase().includes(this.histSearch));
+            if (!items.length) continue;
+            const disp = catName.charAt(0).toUpperCase() + catName.slice(1);
+            html += `<div class="monitor-category expanded" data-category="${catName}">
+                <div class="monitor-category-header"><span class="arrow">&#9654;</span><span>${disp}</span><span style="margin-left:auto;opacity:.5;">(${items.length})</span></div>
+                <div class="monitor-category-items">
+                ${items.map(it => {
+                    const on = sel.has(it.name);
+                    const dot = on ? `<span class="hist-dot" style="background:${colorOf(it.name)};"></span>`
+                                   : '<span class="hist-dot hist-dot-empty"></span>';
+                    return `<div class="monitor-item hist-item ${on ? 'selected' : ''}" data-name="${this._esc(it.name)}" title="${this._esc(it.name)}">${dot}<span class="item-name">${this._esc(it.label || it.name)}</span><span class="item-unit">${this._esc(it.unit || '')}</span></div>`;
+                }).join('')}
+                </div></div>`;
+        }
+        container.innerHTML = html || '<div style="padding:20px;color:#8a94a0;">No registers match.</div>';
+        container.querySelectorAll('.monitor-category-header').forEach(h =>
+            h.addEventListener('click', () => h.parentElement.classList.toggle('expanded')));
+        container.querySelectorAll('.hist-item').forEach(item =>
+            item.addEventListener('click', () => this.toggleHistRegister(item.dataset.name)));
+    }
+
+    toggleHistRegister(name) {
+        if (!this.histSelected) this.histSelected = [];
+        const i = this.histSelected.indexOf(name);
+        if (i >= 0) this.histSelected.splice(i, 1);
+        else this.histSelected.push(name);
+        this.renderHistoryRegisters();
+        this.loadHistory();
+    }
+
+    async loadHistory() {
+        const names = (this.histSelected || []).slice();
+        const range = document.getElementById('histRange')?.value || '-6h';
+        const every = document.getElementById('histEvery')?.value || '5m';
+        const canvas = document.getElementById('historyCanvas');
+        const info = document.getElementById('histInfo');
+        const leg = document.getElementById('histLegend');
+        if (!canvas) return;
+        if (!names.length) {
+            if (info) info.textContent = 'Click registers in the list to add them to the chart.';
+            this._histSeries = null; this._clearCanvas(canvas); if (leg) leg.innerHTML = '';
+            return;
+        }
+        if (info) info.textContent = 'Loading…';
+        const single = names.length === 1;
+        const colors = this._histColors();
+        try {
+            const results = await Promise.all(names.map(n =>
+                fetch(`/api/history?name=${encodeURIComponent(n)}&start=${encodeURIComponent(range)}&every=${encodeURIComponent(every)}&fn=all`)
+                    .then(async r => r.ok ? r.json() : Promise.reject((await r.json().catch(() => ({}))).detail || ('HTTP ' + r.status)))));
+            const series = [];
+            results.forEach((d, i) => {
+                const mean = d.series_mean || [];
+                if (!mean.length) return;
+                const meta = (this._histRegMeta || {})[names[i]] || {};
+                series.push({
+                    name: names[i], label: meta.label || names[i], unit: meta.unit || '',
+                    color: colors[i % colors.length], mean,
+                    mins: single ? (d.series_min || mean) : null,
+                    maxs: single ? (d.series_max || mean) : null,
+                });
+            });
+            if (!series.length) {
+                if (info) info.textContent = 'No data in range';
+                this._histSeries = null; this._clearCanvas(canvas); if (leg) leg.innerHTML = '';
+                return;
+            }
+            this._histSeries = series;
+            const total = series.reduce((a, s) => a + s.mean.length, 0);
+            if (info) info.textContent = `${series.length} series · ${total} points` + (series.length > 1 ? ' · shared Y axis (best for same-unit registers)' : '');
+            this._renderHistory(this._histHoverX || null);
+        } catch (e) { if (info) info.textContent = typeof e === 'string' ? e : 'Query failed'; }
+    }
+
+    _clearCanvas(canvas) {
+        try { canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height); } catch (e) {}
+    }
+
+    _hexA(hex, a) {
+        hex = String(hex).trim().replace('#', '');
+        if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+        const n = parseInt(hex || '2f81f7', 16);
+        return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+    }
+
+    _renderHistory(hoverX) {
+        const canvas = document.getElementById('historyCanvas');
+        const series = this._histSeries;
+        if (!canvas || !series || !series.length) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.clientWidth || 800, H = canvas.clientHeight || 400;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = W * dpr; canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        const X = p => new Date(p.t).getTime();
+        let t0 = Infinity, t1 = -Infinity, vlo = Infinity, vhi = -Infinity;
+        series.forEach(s => {
+            s.mean.forEach(p => { const t = X(p); if (t < t0) t0 = t; if (t > t1) t1 = t; });
+            (s.mins || s.mean).forEach(p => { if (p.v < vlo) vlo = p.v; });
+            (s.maxs || s.mean).forEach(p => { if (p.v > vhi) vhi = p.v; });
+        });
+        if (!isFinite(t0)) return;
+        if (t1 <= t0) t1 = t0 + 1;
+        if (vlo === vhi) { vlo -= 1; vhi += 1; }
+        const pad = (vhi - vlo) * 0.08; vlo -= pad; vhi += pad;
+        const ml = 58, mr = 14, mt = 12, mb = 26;
+        const px = t => ml + (t - t0) / ((t1 - t0) || 1) * (W - ml - mr);
+        const py = v => mt + (1 - (v - vlo) / ((vhi - vlo) || 1)) * (H - mt - mb);
+        const css = getComputedStyle(document.body);
+        const muted = (css.getPropertyValue('--text-muted') || '#8a94a0').trim() || '#8a94a0';
+        ctx.font = '11px system-ui, sans-serif';
+        ctx.strokeStyle = 'rgba(128,128,128,0.18)'; ctx.lineWidth = 1; ctx.fillStyle = muted; ctx.textAlign = 'left';
+        for (let i = 0; i <= 4; i++) {
+            const v = vlo + (vhi - vlo) * i / 4, y = py(v);
+            ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(W - mr, y); ctx.stroke();
+            ctx.fillText(v.toFixed(1), 6, y + 3);
+        }
+        ctx.textAlign = 'center';
+        const span = t1 - t0;
+        for (let i = 0; i <= 4; i++) {
+            const t = t0 + span * i / 4, x = px(t), dt = new Date(t);
+            const lbl = span > 2 * 864e5 ? dt.toLocaleDateString() : dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            ctx.fillText(lbl, x, H - 8);
+        }
+        ctx.textAlign = 'left';
+        // min/max band only when a single register is shown
+        if (series.length === 1 && series[0].mins) {
+            const s = series[0];
+            ctx.beginPath();
+            s.maxs.forEach((p, i) => { const x = px(X(p)), y = py(p.v); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+            for (let i = s.mins.length - 1; i >= 0; i--) ctx.lineTo(px(X(s.mins[i])), py(s.mins[i].v));
+            ctx.closePath(); ctx.fillStyle = this._hexA(s.color, 0.13); ctx.fill();
+        }
+        series.forEach(s => {
+            s._pts = s.mean.map(p => ({ x: px(X(p)), y: py(p.v), t: X(p), v: p.v }));
+            ctx.beginPath();
+            s._pts.forEach((p, i) => { i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); });
+            ctx.strokeStyle = s.color; ctx.lineWidth = 1.6; ctx.stroke();
+        });
+        const leg = document.getElementById('histLegend');
+        if (leg) leg.innerHTML = series.map(s =>
+            `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;font-size:12px;"><span style="width:11px;height:11px;border-radius:2px;background:${s.color};display:inline-block;"></span>${this._esc(s.label)}${s.unit ? ' <span style="color:#8a94a0;">(' + this._esc(s.unit) + ')</span>' : ''}</span>`).join('');
+        if (hoverX != null) this._histHover(ctx, series, hoverX, { mt, mb, H });
+    }
+
+    _histHover(ctx, series, hoverX, g) {
+        let anchor = null, bd = Infinity;
+        (series[0]._pts || []).forEach(p => { const dx = Math.abs(p.x - hoverX); if (dx < bd) { bd = dx; anchor = p; } });
+        if (!anchor) return;
+        const x = anchor.x;
+        ctx.strokeStyle = 'rgba(128,128,128,0.55)'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(x, g.mt); ctx.lineTo(x, g.H - g.mb); ctx.stroke(); ctx.setLineDash([]);
+        const rows = [];
+        series.forEach(s => {
+            let bp = null, bbd = Infinity;
+            (s._pts || []).forEach(p => { const dx = Math.abs(p.x - x); if (dx < bbd) { bbd = dx; bp = p; } });
+            if (bp) {
+                ctx.fillStyle = s.color; ctx.beginPath(); ctx.arc(bp.x, bp.y, 3.2, 0, 2 * Math.PI); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.4; ctx.stroke();
+                rows.push(`<div style="display:flex;align-items:center;gap:6px;white-space:nowrap;"><span style="width:9px;height:9px;border-radius:2px;background:${s.color};display:inline-block;"></span><b>${bp.v.toFixed(2)}</b>${s.unit ? ' ' + this._esc(s.unit) : ''} <span style="opacity:.6;">${this._esc(s.label)}</span></div>`);
+            }
+        });
+        const canvas = document.getElementById('historyCanvas');
+        if (!this._histTip) {
+            const tip = document.createElement('div');
+            tip.style.cssText = 'position:absolute;pointer-events:none;background:rgba(18,22,27,0.94);color:#fff;padding:6px 9px;border-radius:5px;font-size:12px;z-index:6;display:none;box-shadow:0 2px 8px rgba(0,0,0,.3);';
+            canvas.parentElement.style.position = 'relative';
+            canvas.parentElement.appendChild(tip);
+            this._histTip = tip;
+        }
+        const tip = this._histTip;
+        tip.style.display = 'block';
+        tip.innerHTML = `<div style="opacity:.7;margin-bottom:3px;">${new Date(anchor.t).toLocaleString()}</div>${rows.join('')}`;
+        const cw = canvas.parentElement.clientWidth;
+        const tw = tip.offsetWidth || 170;
+        let left = x + 14; if (left + tw > cw) left = x - 14 - tw;
+        tip.style.left = Math.max(2, left) + 'px';
+        tip.style.top = (g.mt + 4) + 'px';
     }
 
     _esc(s) {
@@ -1615,11 +1929,27 @@ class JanitzaMonitor {
             this.selectedRegisters = data.registers || [];
             this.pollGroups = data.poll_groups || {};
 
+            this.updatePollGroupsStatus();
             this.updateDashboard();
 
         } catch (error) {
             console.error('Failed to load selected registers:', error);
         }
+    }
+
+    updatePollGroupsStatus() {
+        // Render the status-bar poll-group intervals from the live config
+        // (this.pollGroups) instead of a hardcoded label — keeps the bar in
+        // sync with config/selected_registers.json (e.g. realtime 250ms).
+        const el = document.getElementById('pollGroupsStatus');
+        if (!el || !this.pollGroups) return;
+        const icons = { realtime: 'lightning-fill', normal: 'clock', slow: 'hourglass' };
+        const fmt = (s) => (s < 1 ? `${Math.round(s * 1000)}ms` : `${s}s`);
+        const items = Object.entries(this.pollGroups);
+        if (!items.length) return;
+        el.innerHTML = items.map(([name, g]) =>
+            `<span class="poll-item"><i class="bi bi-${icons[name] || 'clock'}"></i> ${name}: ${fmt(g.interval)}</span>`
+        ).join('');
     }
 
     updateDashboard() {
@@ -2648,6 +2978,27 @@ class JanitzaMonitor {
                     <span class="status-detail-label">Errors</span>
                     <span class="status-detail-value ${data.errors > 0 ? 'error' : ''}">${data.errors || 0}</span>
                 </div>
+                <div class="status-detail-row">
+                    <span class="status-detail-label">Data freshness</span>
+                    <span class="status-detail-value ${data.staleness_age_s != null && data.staleness_age_s > 10 ? 'error' : 'success'}">
+                        ${data.staleness_age_s != null ? data.staleness_age_s + 's ago' : '-'}
+                    </span>
+                </div>
+                <div class="status-detail-row">
+                    <span class="status-detail-label">Last successful read</span>
+                    <span class="status-detail-value mono">${data.last_success_ts ? new Date(data.last_success_ts * 1000).toLocaleString() : '-'}</span>
+                </div>
+                ${(data.poll_groups_detail || []).map(g => `
+                <div class="status-detail-row">
+                    <span class="status-detail-label">↳ ${this._esc(g.name)} (${this._fmtInterval(g.interval)})</span>
+                    <span class="status-detail-value mono">${g.age_s != null ? g.age_s + 's' : '-'} · ${g.poll_count} polls</span>
+                </div>`).join('')}
+                ${(data.events && data.events.length) ? `<div class="status-detail-row"><span class="status-detail-label" style="color:#8a94a0;">Recent read failures</span><span class="status-detail-value">${data.events.length}</span></div>` : ''}
+                ${(data.events || []).slice(-6).reverse().map(e => `
+                <div class="status-detail-row">
+                    <span class="status-detail-label" style="color:#c77700;"><i class="bi bi-exclamation-triangle"></i> ${this._esc(e.kind || '')}</span>
+                    <span class="status-detail-value mono" style="font-size:11px;" title="${this._esc(e.message || '')}">${new Date(e.ts * 1000).toLocaleTimeString()}</span>
+                </div>`).join('')}
             `;
         } else if (service === 'mqtt') {
             const data = this.status.mqtt || {};

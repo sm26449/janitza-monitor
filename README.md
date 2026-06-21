@@ -240,6 +240,12 @@ Grafic real-time cu multiple registre suprapuse. Drag & drop registre din sideba
 
 ![Monitor](screenshots/monitor.png)
 
+### History
+
+Citește datele stocate **înapoi** din InfluxDB. Alegi unul sau mai mulți registri dintr-o listă căutabilă, grupată pe categorii (click pentru adăugare/scoatere — punctul colorat se potrivește cu linia lui), alegi intervalul și rezoluția, și obții linii medii pe axă Y comună, cu bandă min/max (pentru un singur registru) și un crosshair la hover cu tooltip ce listează valoarea fiecărei serii la momentul cel mai apropiat.
+
+![History](screenshots/history.png)
+
 ### Registers
 
 Browser pentru toti cei 4126 registri disponibili. Cautare, filtrare pe categorii, adaugare rapida la monitorizare cu configurare MQTT/InfluxDB/thresholds.
@@ -274,7 +280,7 @@ Lista registrilor monitorizati cu filtrare pe categorii. Editare label, poll gro
 
 Servește valorile live ca metere Modbus standard pentru alte sisteme. Pagină cu tab-uri: **Meters** (instanțe, status, valori live, conexiuni IP:port — carduri acordeon), **Templates** (editor + import/export YAML), **Logs**, **Stats & Debug**. Ghid complet: **[docs/VIRTUAL-METER.ro.md](docs/VIRTUAL-METER.ro.md)**.
 
-![Virtual Meters](docs/img/vm-meters.png)
+![Virtual Meters](screenshots/vmeters.png)
 
 **Logs** - jurnal live al ultimelor 1024 cereri Modbus (timp, function code, adresă, count, OK/excepție, latență, răspuns) — exact ce citește consumatorul.
 
@@ -283,6 +289,16 @@ Servește valorile live ca metere Modbus standard pentru alte sisteme. Pagină c
 **Stats & Debug** - countere (cereri/erori/rate/RX/TX/uptime), chart cereri/secundă și registrele cele mai citite.
 
 ![Virtual Meters - Stats](docs/img/vm-stats.png)
+
+**Editare instanță** - modifici portul, unit id, fereastra de prospețime (`stale_after_s`) și intervalul de refresh ale unei instanțe existente direct din tab-ul Meters; meterul repornește live ca să aplice (avertizează că o schimbare de port/unit scapă scurt consumatorii conectați).
+
+![Editare instanță meter virtual](screenshots/vmeter-edit.png)
+
+### Sănătatea achiziției de date
+
+Detaliul de status Modbus arată **prospețimea datelor**, **ultima citire reușită**, **vechimea per poll-group** și **evenimentele recente de eșec la citire** — așa că o pierdere de comunicație cu Janitza (ex. un dropout Modbus în amonte) e vizibilă first-class, nu doar în logurile containerului. Aceleași date sunt expuse pe `/health` (un bloc `modbus`; HTTP rămâne 200 la sursă stale ca să nu reporneacă containerul în buclă pe un dispozitiv inaccesibil) și publicate pe MQTT la `<prefix>/data_health` pentru alertare externă.
+
+![Modbus health](screenshots/modbus-health.png)
 
 ## API Endpoints
 

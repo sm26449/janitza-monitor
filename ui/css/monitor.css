@@ -282,3 +282,40 @@
         min-height: 300px;
     }
 }
+
+/* ==================== HISTORY REGISTER PICKER ==================== */
+.hist-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+.hist-item .item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.hist-item .item-unit {
+    color: var(--text-tertiary, #8a94a0);
+    font-size: 11px;
+    flex: 0 0 auto;
+}
+.hist-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex: 0 0 auto;
+}
+.hist-dot-empty {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--border, #5a6470);
+}
+.monitor-item.hist-item.selected {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+.monitor-item.hist-item.selected .item-name {
+    font-weight: 600;
+}
+#historyGraphContainer { flex: 1; min-height: 320px; }

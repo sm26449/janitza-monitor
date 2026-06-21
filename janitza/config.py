@@ -19,6 +19,9 @@ class ModbusConfig:
     timeout: int = 3
     retry_attempts: int = 3
     retry_delay: float = 1.0
+    # No successful read within this many seconds => data-acquisition is stale
+    # (surfaced in /health + /api/status; does NOT fail the container probe).
+    stale_after_s: int = 30
 
 
 @dataclass
@@ -132,6 +135,7 @@ class Config:
                     timeout=m.get('timeout', self.modbus.timeout),
                     retry_attempts=m.get('retry_attempts', self.modbus.retry_attempts),
                     retry_delay=m.get('retry_delay', self.modbus.retry_delay),
+                    stale_after_s=m.get('stale_after_s', self.modbus.stale_after_s),
                 )
 
             # MQTT
@@ -262,6 +266,8 @@ class Config:
             self.modbus.port = int(os.getenv('MODBUS_PORT'))
         if os.getenv('MODBUS_UNIT_ID'):
             self.modbus.unit_id = int(os.getenv('MODBUS_UNIT_ID'))
+        if os.getenv('MODBUS_STALE_AFTER_S'):
+            self.modbus.stale_after_s = int(os.getenv('MODBUS_STALE_AFTER_S'))
 
         # MQTT
         if os.getenv('MQTT_ENABLED'):

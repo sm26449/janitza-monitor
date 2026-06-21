@@ -254,15 +254,27 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
 
     @app.get("/health")
     async def health():
-        """Health for the container probe + external monitors. Returns 503 ONLY
-        when an enabled virtual meter is genuinely down (crashed / failed to
-        start); 200 for ok and for 'degraded' (a source went stale → the meter
-        correctly stops responding, and a restart would not fix the source)."""
+        """Health for the container probe + external monitors.
+
+        Body ``status`` = worst of (virtual-meter health, Modbus acquisition
+        health) and includes a ``modbus`` block (freshness of the upstream data).
+        The HTTP CODE is deliberately 503 ONLY when an enabled virtual meter is
+        genuinely ``down`` (a real fault a restart may clear). A stale/dead
+        Modbus source degrades the body ``status`` but returns HTTP 200 —
+        restarting the container cannot fix an unreachable meter, and we must not
+        restart-loop on an upstream-device problem (the vmeter freshness watchdog
+        already fail-safes the consumers)."""
+        rank = {"ok": 0, "degraded": 1, "down": 2}
         mgr = getattr(app.state, "vmeter_manager", None)
-        if mgr is None:
-            return {"status": "ok", "enabled_meters": 0, "meters": []}
-        h = mgr.health()
-        return JSONResponse(content=h, status_code=503 if h.get("status") == "down" else 200)
+        vh = mgr.health() if mgr else {"status": "ok", "enabled_meters": 0, "meters": []}
+        threshold = getattr(config.modbus, "stale_after_s", 30)
+        mh = modbus_client.data_health(threshold) if modbus_client else {"status": "ok"}
+        body = dict(vh)
+        body["modbus"] = mh
+        body["status"] = max([vh.get("status", "ok"), mh.get("status", "ok")],
+                             key=lambda s: rank.get(s, 0))
+        vmeter_down = vh.get("status") == "down"
+        return JSONResponse(content=body, status_code=503 if vmeter_down else 200)
 
     @app.get("/api/config")
     async def get_config():
@@ -370,6 +382,31 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
         if address in current_values:
             return current_values[address]
         raise HTTPException(status_code=404, detail=f"Register {address} not found")
+
+    @app.get("/api/history/registers")
+    async def history_registers():
+        """Registers with InfluxDB enabled — for the history view's picker."""
+        regs = [{"name": r.name, "label": getattr(r, "label", "") or r.name,
+                 "unit": getattr(r, "unit", "")}
+                for r in getattr(config, "selected_registers", [])
+                if getattr(r, "influxdb_enabled", False)]
+        return {"registers": regs}
+
+    @app.get("/api/history")
+    async def get_history(name: str = Query(...),
+                          start: str = Query("-6h"), stop: str = Query("now()"),
+                          every: str = Query("1m"), fn: str = Query("mean"),
+                          measurement: Optional[str] = Query(None)):
+        """Aggregated history for a register, read back from InfluxDB.
+        fn='all' returns mean/min/max series (for a band)."""
+        if influxdb_publisher is None or not influxdb_publisher.config.enabled:
+            raise HTTPException(status_code=503, detail="InfluxDB not enabled")
+        res = influxdb_publisher.query_history(name, start, stop, every, fn, measurement)
+        if "error" in res:
+            err = res["error"]
+            code = 503 if ("disabled" in err or "unavailable" in err) else 400
+            raise HTTPException(status_code=code, detail=err)
+        return res
 
     @app.get("/api/virtual-meters")
     async def list_virtual_meters():
@@ -508,6 +545,23 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
         res = mgr.set_enabled(template, on)
         if "error" in res:
             raise HTTPException(status_code=404, detail=res["error"])
+        return res
+
+    @app.patch("/api/virtual-meters/{template}")
+    async def edit_virtual_meter(template: str, payload: dict = Body(...)):
+        """Edit an existing instance (port / unit_id / stale_after_s /
+        update_interval_s — partial). Restarts the meter live if running."""
+        mgr = getattr(app.state, "vmeter_manager", None)
+        if mgr is None:
+            raise HTTPException(status_code=503, detail="virtual meters not initialized")
+        res = mgr.update_instance(
+            template_id=template,
+            port=payload.get("port"), unit_id=payload.get("unit_id"),
+            stale_after_s=payload.get("stale_after_s"),
+            update_interval_s=payload.get("update_interval_s"))
+        if "error" in res:
+            code = 404 if "no instance" in res["error"] else 400
+            raise HTTPException(status_code=code, detail=res["error"])
         return res
 
     @app.post("/api/query/register")

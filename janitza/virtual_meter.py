@@ -558,6 +558,11 @@ class VirtualMeter:
                 "freshness_age_s": round(now - lf, 1) if lf else None,
                 "uptime_s": int(now - self._started_ts) if self._started_ts else None,
                 "connections": conns, "conn_count": len(conns),
+                # flat CSV of connected client IPs — lets a monitor (alertd)
+                # match a specific consumer with contains() without parsing the
+                # connections list (e.g. alert when an expected IP drops, or an
+                # unexpected one appears).
+                "peers": ",".join(c["ip"] for c in conns),
                 "requests": self.stats.total, "req_rate": self.stats.req_rate(),
                 "errors": self.stats.errors,
                 "bytes_rx": self.stats.bytes_rx, "bytes_tx": self.stats.bytes_tx,

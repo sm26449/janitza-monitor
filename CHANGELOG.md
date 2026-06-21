@@ -2,6 +2,23 @@
 
 Toate modificarile notabile ale proiectului sunt documentate in acest fisier.
 
+## [2.4.0] - 2026-06-22
+
+### Adaugat
+- **Editare instanta vMeter din UI** - port / unit_id / stale_after_s / update_interval_s ale unei instante existente se modifica acum dintr-un dialog (buton „Edit settings" pe fiecare contor), nu doar editand `virtual_meters.yaml` manual. Endpoint `PATCH /api/virtual-meters/{template}`; schimbarea portului/unit reporneste contorul (avertisment in dialog ca scapa consumatorii conectati).
+- **Sanatate achizitie date + istoric dropout-uri** - `modbus_client` tine acum un inel de evenimente (esecuri de citire, cu timestamp) + ora ultimei citiri reusite si prospetimea per poll-group, expuse in `/api/status`, in `/health` (bloc `modbus`; `status` = cel mai prost dintre vmeter si modbus) si pe MQTT (`<prefix>/data_health`, pentru alertd). `/health` ramane probe-safe: o sursa Janitza stale degradeaza `status` dar intoarce **HTTP 200** (nu reporneste containerul — restart-ul nu repara un dispozitiv inaccesibil). Config `modbus.stale_after_s` / env `MODBUS_STALE_AFTER_S` (implicit 30s).
+- **Vedere istoric/trend (tab History)** - citeste datele **inapoi** din InfluxDB (pana acum app-ul doar scria). Selector de registri cautabil, grupat pe categorii, cu click pentru adaugare/scoatere (punct colorat = culoarea liniei); suprapune **mai multi registri** pe axa Y comuna; banda min/max pentru un singur registru; **hover** cu crosshair + tooltip ce listeaza valoarea fiecarei serii la momentul cel mai apropiat; ora locala. Endpoint `GET /api/history` (+ `GET /api/history/registers`).
+
+## [2.3.1] - 2026-06-21
+
+### Reparat
+- **Interval realtime afisat in bara de status** - bara afisa mereu `realtime: 1s` (text hardcodat in template), indiferent de intervalul configurat. Acum se randeaza dinamic din `poll_groups` (ex. `realtime: 250ms`), mereu sincron cu config-ul; etichetele cu interval hardcodat din dropdown-urile de poll-group au fost eliminate.
+
+## [2.3.0] - 2026-06-21
+
+### Adaugat
+- **IP-uri clienti in starea publicata (`peers`)** - payload-ul `<prefix>/vmeter/<id>/state` include acum `peers`, un CSV cu IP-urile clientilor conectati. Permite unui monitor (alertd) sa potriveasca un consumator anume cu `contains()` — alerta cand un IP asteptat se deconecteaza sau cand apare unul neasteptat — fara a parsa lista de conexiuni.
+
 ## [2.2.0] - 2026-06-19
 
 ### Adaugat

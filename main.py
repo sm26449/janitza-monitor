@@ -89,7 +89,8 @@ class JanitzaMonitor:
         # by default in config/virtual_meters.yaml — enable an instance only
         # when ready to validate it (control-critical: it can feed an ESS).
         self.vmeter_manager = VirtualMeterManager(self.app.state.current_values,
-                                                  mqtt_publisher=self.mqtt_publisher)
+                                                  mqtt_publisher=self.mqtt_publisher,
+                                                  modbus_client=self.modbus_client)
         self.app.state.vmeter_manager = self.vmeter_manager   # for the /api/virtual-meters routes
 
     def _connect_mqtt_background(self):

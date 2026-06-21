@@ -11,7 +11,7 @@
     <!-- Modular CSS -->
     <link rel="stylesheet" href="/static/css/base.css?v=vm9">
     <link rel="stylesheet" href="/static/css/dashboard.css?v=vm9">
-    <link rel="stylesheet" href="/static/css/monitor.css?v=vm9">
+    <link rel="stylesheet" href="/static/css/monitor.css?v=vm10">
     <link rel="stylesheet" href="/static/css/registers.css?v=vm9">
     <link rel="stylesheet" href="/static/css/config.css?v=vm9">
 </head>
@@ -39,6 +39,10 @@
                 <button class="nav-tab" data-page="monitor">
                     <i class="bi bi-graph-up"></i>
                     <span>Monitor</span>
+                </button>
+                <button class="nav-tab" data-page="history">
+                    <i class="bi bi-clock-history"></i>
+                    <span>History</span>
                 </button>
                 <button class="nav-tab" data-page="registers">
                     <i class="bi bi-list-ul"></i>
@@ -195,6 +199,52 @@
                                     <tbody id="monitorTableBody"></tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Page (InfluxDB trend read-back) -->
+            <div class="page" id="historyPage">
+                <div class="monitor-layout">
+                    <!-- Left: searchable register picker -->
+                    <div class="monitor-panel monitor-sidebar">
+                        <div class="panel-header">
+                            <h3>Registers</h3>
+                            <input type="text" id="histSearch" class="input input-sm" placeholder="Search…">
+                        </div>
+                        <div class="monitor-categories" id="histRegList"></div>
+                        <div class="panel-hint"><i class="bi bi-info-circle"></i> Click to add / remove a register</div>
+                    </div>
+                    <!-- Right: chart + controls -->
+                    <div class="monitor-content">
+                        <div class="monitor-main">
+                            <div class="graph-toolbar">
+                                <div class="graph-controls" style="display:flex;gap:8px;align-items:center;">
+                                    <select id="histRange" class="input input-sm" title="Time range">
+                                        <option value="-1h">Last 1h</option>
+                                        <option value="-6h" selected>Last 6h</option>
+                                        <option value="-24h">Last 24h</option>
+                                        <option value="-7d">Last 7d</option>
+                                        <option value="-30d">Last 30d</option>
+                                    </select>
+                                    <select id="histEvery" class="input input-sm" title="Resolution">
+                                        <option value="1m">1 min</option>
+                                        <option value="5m" selected>5 min</option>
+                                        <option value="15m">15 min</option>
+                                        <option value="1h">1 hour</option>
+                                    </select>
+                                </div>
+                                <div class="graph-actions">
+                                    <button class="btn btn-ghost btn-sm" id="histClear"><i class="bi bi-x-circle"></i> Clear</button>
+                                    <button class="btn btn-ghost btn-sm" id="histRefresh"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                                </div>
+                            </div>
+                            <div class="graph-container" id="historyGraphContainer">
+                                <canvas id="historyCanvas"></canvas>
+                            </div>
+                            <div id="histLegend" class="graph-legend"></div>
+                            <div id="histInfo" style="color:#8a94a0;font-size:11.5px;padding:2px 12px 8px;">Pick one or more registers · hover the chart for values · min/max band shown for a single register.</div>
                         </div>
                     </div>
                 </div>
@@ -510,9 +560,9 @@
                     <div class="form-group">
                         <label class="form-label">Poll Group</label>
                         <select id="editPollGroup" class="input">
-                            <option value="realtime">Realtime (1s)</option>
-                            <option value="normal">Normal (5s)</option>
-                            <option value="slow">Slow (60s)</option>
+                            <option value="realtime">Realtime</option>
+                            <option value="normal">Normal</option>
+                            <option value="slow">Slow</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -619,6 +669,43 @@
         </div>
     </div>
 
+    <!-- Virtual-meter instance settings editor -->
+    <div class="modal" id="vmEditInstanceModal">
+        <div class="modal-content" style="max-width:480px;">
+            <div class="modal-header">
+                <h3><i class="bi bi-sliders"></i> Edit instance — <span id="vmEditInstName"></span></h3>
+                <button class="modal-close" onclick="app.closeModal('vmEditInstanceModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="vmEditInstTemplate">
+                <div class="form-group">
+                    <label class="form-label">Port</label>
+                    <input type="number" id="vmEditPort" class="input">
+                    <small id="vmEditPortHint" style="color:#8a94a0;"></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Unit ID</label>
+                    <input type="number" id="vmEditUnit" class="input" min="0" max="255">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stale after (s) — source older than this stops the meter (fail-safe)</label>
+                    <input type="number" id="vmEditStale" class="input" min="1" step="1">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Refresh interval (s) — how often the meter re-samples the source (e.g. 0.25)</label>
+                    <input type="number" id="vmEditInterval" class="input" min="0.05" step="0.05">
+                </div>
+                <p style="color:#c77700;font-size:12.5px;margin:6px 0 0;"><i class="bi bi-exclamation-triangle"></i>
+                    Changing the port or unit restarts the meter and briefly drops connected consumers
+                    (Victron / Fronius fall back to their own grid-loss fail-safe).</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="app.closeModal('vmEditInstanceModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="app.saveEditInstance()"><i class="bi bi-save"></i> Save</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Register Modal -->
     <div class="modal" id="addRegisterModal">
         <div class="modal-content">
@@ -652,9 +739,9 @@
                     <div class="form-group">
                         <label class="form-label">Poll Group</label>
                         <select id="addPollGroup" class="input">
-                            <option value="realtime">Realtime (1s)</option>
-                            <option value="normal" selected>Normal (5s)</option>
-                            <option value="slow">Slow (60s)</option>
+                            <option value="realtime">Realtime</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="slow">Slow</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -837,6 +924,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=vm13"></script>
+    <script src="/static/js/app.js?v=vm17"></script>
 </body>
 </html>

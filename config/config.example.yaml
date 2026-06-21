@@ -19,6 +19,9 @@ modbus:
   retry_attempts: 3
   # Delay between retries in seconds
   retry_delay: 1
+  # No successful read within this many seconds => acquisition reported "stale"
+  # in /health and /api/status (does NOT fail the container healthcheck).
+  stale_after_s: 30
 
 polling:
   # Default poll interval in seconds
