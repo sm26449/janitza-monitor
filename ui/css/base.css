@@ -376,7 +376,7 @@ body {
 /* ==================== FORMS ==================== */
 .input {
     width: 100%;
-    padding: 10px 12px;
+    padding: 8px 12px;
     background: var(--bg-primary);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
@@ -397,6 +397,26 @@ body {
 .input-sm {
     padding: 6px 10px;
     font-size: 12px;
+}
+
+/* Consistent control heights — inputs and buttons of the same tier line up
+   everywhere (normal = 36px, small = 30px), regardless of padding/border. */
+.btn,
+.input,
+select.input {
+    box-sizing: border-box;
+    min-height: 36px;
+}
+.btn-sm,
+.input-sm {
+    min-height: 30px;
+}
+/* native date/month/time pickers render taller than other controls — cap them
+   so they line up with adjacent buttons/inputs */
+input[type="month"].input,
+input[type="date"].input,
+input[type="time"].input {
+    height: 36px;
 }
 
 .form-group {

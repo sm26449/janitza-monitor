@@ -938,9 +938,13 @@ class JanitzaMonitor {
         const canvas = document.getElementById('energyCanvas');
         if (!inp || !inp.value) return;
         const [y, m] = inp.value.split('-').map(Number);
+        const py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1;
         if (info) info.textContent = 'Loading…';
         try {
-            const r = await fetch(`/api/energy/monthly?year=${y}&month=${m}`);
+            const [r, rp] = await Promise.all([
+                fetch(`/api/energy/monthly?year=${y}&month=${m}`),
+                fetch(`/api/energy/monthly?year=${py}&month=${pm}`).then(x => x).catch(() => null),
+            ]);
             if (!r.ok) {
                 const d = await r.json().catch(() => ({}));
                 const msg = r.status === 503
@@ -952,13 +956,27 @@ class JanitzaMonitor {
                 return;
             }
             const d = await r.json();
+            const prev = {};
+            if (rp && rp.ok) { (await rp.json()).totals?.forEach(t => { prev[t.name] = t.delta; }); }
             const colors = { '_WH_V[4]': '#e0a000', '_WH_Z[4]': '#3fb950', '_QH[4]': '#a371f7', '_WH_S[4]': '#2f81f7' };
-            if (totals) totals.innerHTML = (d.totals || []).map(t =>
-                `<div class="settings-card" style="padding:14px 18px;min-width:150px;">
+            if (totals) totals.innerHTML = (d.totals || []).map(t => {
+                const pv = prev[t.name];
+                let trend = '<div style="font-size:11.5px;color:#8a94a0;margin-top:3px;">&nbsp;</div>';
+                if (t.delta != null && pv != null) {
+                    if (pv !== 0) {
+                        const pct = (t.delta - pv) / Math.abs(pv) * 100;
+                        const up = pct >= 0, col = up ? '#3fb950' : '#f85149';
+                        trend = `<div style="font-size:11.5px;color:${col};margin-top:3px;">${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}% <span style="color:#8a94a0;">vs prev</span></div>`;
+                    } else {
+                        trend = '<div style="font-size:11.5px;color:#8a94a0;margin-top:3px;">new vs prev</div>';
+                    }
+                }
+                return `<div class="settings-card" style="padding:14px 18px;min-width:160px;">
                     <div style="color:#8a94a0;font-size:12px;">${this._esc(t.label)}</div>
-                    <div style="font-size:24px;font-weight:700;color:${colors[t.name] || 'var(--text)'};">${t.delta == null ? '—' : Number(t.delta).toLocaleString()}</div>
-                    <div style="color:#8a94a0;font-size:12px;">${this._esc(t.unit)}</div>
-                </div>`).join('');
+                    <div style="font-size:24px;font-weight:700;line-height:1.2;color:${colors[t.name] || 'var(--text)'};">${t.delta == null ? '—' : Number(t.delta).toLocaleString()}</div>
+                    <div style="color:#8a94a0;font-size:12px;">${this._esc(t.unit)}</div>${trend}
+                </div>`;
+            }).join('');
             if (info) info.textContent = new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
             this.drawEnergyBars(canvas, d);
         } catch (e) { if (info) info.textContent = 'Query failed'; }
