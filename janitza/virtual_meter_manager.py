@@ -666,6 +666,7 @@ class VirtualMeterManager:
         inst = next((i for i in cfg.get("instances", []) if i.get("template") == template_id), None)
         if inst is None:
             return {"error": f"no instance for template {template_id}"}
+        old = dict(inst)                          # snapshot for rollback on restart failure
         if port is not None:
             try:
                 port = int(port)
@@ -715,7 +716,12 @@ class VirtualMeterManager:
                 restarted = True
             except Exception as e:  # noqa: BLE001
                 logger.error("update %s failed to restart: %s", template_id, e)
-                return {"error": f"saved but failed to restart: {e}"}
+                # roll the persisted config back to the last-good values so a
+                # later enable/restart doesn't reuse a bad port/unit
+                inst.clear()
+                inst.update(old)
+                self._save_cfg(cfg)
+                return {"error": f"failed to restart (reverted): {e}"}
         return {"template": template_id, "updated": True, "restarted": restarted,
                 "port": inst.get("port"), "unit_id": inst.get("unit_id", 1),
                 "stale_after_s": inst.get("stale_after_s", 15),

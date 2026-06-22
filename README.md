@@ -244,7 +244,18 @@ Grafic real-time cu multiple registre suprapuse. Drag & drop registre din sideba
 
 Citește datele stocate **înapoi** din InfluxDB. Alegi unul sau mai mulți registri dintr-o listă căutabilă, grupată pe categorii (click pentru adăugare/scoatere — punctul colorat se potrivește cu linia lui), alegi intervalul și rezoluția, și obții linii medii pe axă Y comună, cu bandă min/max (pentru un singur registru) și un crosshair la hover cu tooltip ce listează valoarea fiecărei serii la momentul cel mai apropiat.
 
+Necesita InfluxDB (citeste datele stocate inapoi); daca InfluxDB nu e activat, vederea arata un mesaj clar in loc de un grafic gol.
+
 ![History](screenshots/history.png)
+
+### Energy
+
+Contabilitate de energie lunara din InfluxDB: alegi o luna si vezi totalurile —
+**consum (import)**, **injectie (export)**, energie **reactiva** si **aparenta**
+(delta contoarelor cumulative pe luna) — plus o defalcare zilnica import vs
+export. Necesita InfluxDB.
+
+![Energy](screenshots/energy.png)
 
 ### Registers
 

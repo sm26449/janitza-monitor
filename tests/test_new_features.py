@@ -148,6 +148,17 @@ def test_query_history_rejects_bad_start():
     assert "bad start" in _pub().query_history("_TEMPERATUR", start="garbage; drop")["error"]
 
 
+def test_query_history_rejects_flux_injection_in_start():
+    # an RFC3339-prefixed payload must be rejected (regex is end-anchored)
+    bad = '2020-01-01T00:00:00Z) |> yield(name:"x")'
+    assert "bad start" in _pub().query_history("_TEMPERATUR", start=bad)["error"]
+
+
+def test_query_history_rejects_positive_relative_start():
+    # a relative start must be negative (6h would mean 6h in the future)
+    assert "bad start" in _pub().query_history("_TEMPERATUR", start="6h")["error"]
+
+
 # ── optional write-auth middleware ───────────────────────────────────────
 import os as _os
 import pytest
@@ -200,3 +211,10 @@ def test_write_guard_readonly_post_open():
     # on-demand register query is POST but read-only => allowlisted
     r = _client("secret123").post("/api/query/register", json={"address": 19000, "data_type": "float"})
     assert r.status_code != 401
+
+
+@_needs_tc
+def test_write_guard_gates_patch_and_delete():
+    c = _client("secret123")
+    assert c.patch("/api/virtual-meters/em24_av53", json={"unit_id": 1}).status_code == 401
+    assert c.delete("/api/virtual-meters/em24_av53").status_code == 401

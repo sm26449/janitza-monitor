@@ -402,12 +402,15 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
 
     @app.get("/api/history/registers")
     async def history_registers():
-        """Registers with InfluxDB enabled — for the history view's picker."""
+        """Registers with InfluxDB enabled — for the history view's picker.
+        Also reports whether InfluxDB is actually enabled, so the UI can show a
+        clear 'not configured' message instead of an empty/broken chart."""
         regs = [{"name": r.name, "label": getattr(r, "label", "") or r.name,
                  "unit": getattr(r, "unit", "")}
                 for r in getattr(config, "selected_registers", [])
                 if getattr(r, "influxdb_enabled", False)]
-        return {"registers": regs}
+        influx_on = bool(influxdb_publisher and getattr(influxdb_publisher.config, "enabled", False))
+        return {"registers": regs, "influx_enabled": influx_on}
 
     @app.get("/api/history")
     async def get_history(name: str = Query(...),
@@ -418,7 +421,28 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
         fn='all' returns mean/min/max series (for a band)."""
         if influxdb_publisher is None or not influxdb_publisher.config.enabled:
             raise HTTPException(status_code=503, detail="InfluxDB not enabled")
-        res = influxdb_publisher.query_history(name, start, stop, every, fn, measurement)
+        # off the event loop: a slow/hung InfluxDB must not stall the whole API
+        res = await asyncio.to_thread(influxdb_publisher.query_history,
+                                      name, start, stop, every, fn, measurement)
+        if "error" in res:
+            err = res["error"]
+            code = 503 if ("disabled" in err or "unavailable" in err) else 400
+            raise HTTPException(status_code=code, detail=err)
+        return res
+
+    @app.get("/api/energy/monthly")
+    async def energy_monthly(year: int = Query(...), month: int = Query(..., ge=1, le=12)):
+        """Energy for a calendar month: import/export/reactive/apparent totals
+        (deltas of the cumulative counters) + a per-day breakdown, from InfluxDB."""
+        if influxdb_publisher is None or not influxdb_publisher.config.enabled:
+            raise HTTPException(status_code=503, detail="InfluxDB not enabled")
+        regs = [
+            {"name": "_WH_V[4]", "label": "Consumption (import)", "unit": "kWh", "div": 1000},
+            {"name": "_WH_Z[4]", "label": "Injection (export)", "unit": "kWh", "div": 1000},
+            {"name": "_QH[4]", "label": "Reactive", "unit": "kvarh", "div": 1000},
+            {"name": "_WH_S[4]", "label": "Apparent", "unit": "kVAh", "div": 1000},
+        ]
+        res = await asyncio.to_thread(influxdb_publisher.energy_report, year, month, regs)
         if "error" in res:
             err = res["error"]
             code = 503 if ("disabled" in err or "unavailable" in err) else 400

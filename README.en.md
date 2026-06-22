@@ -244,7 +244,18 @@ Real-time graph with multiple overlapping registers. Drag & drop registers from 
 
 Read stored measurements **back** from InfluxDB. Pick one or more registers from a searchable, category-grouped list (click to add/remove — the colored dot matches its line), choose a time range and resolution, and get mean lines on a shared Y axis with a min/max band (for a single register) and a hover crosshair whose tooltip lists every series' value at the nearest time.
 
+Requires InfluxDB (it reads stored data back); if InfluxDB isn't enabled the view shows a clear hint instead of an empty chart.
+
 ![History](screenshots/history.png)
+
+### Energy
+
+Monthly energy accounting from InfluxDB: pick a month and see the totals —
+**consumption (import)**, **injection (export)**, **reactive** and **apparent**
+energy (the cumulative counters' delta over the month) — plus a daily
+import-vs-export breakdown. Requires InfluxDB.
+
+![Energy](screenshots/energy.png)
 
 ### Registers
 

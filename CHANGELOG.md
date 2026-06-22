@@ -2,6 +2,18 @@
 
 Toate modificarile notabile ale proiectului sunt documentate in acest fisier.
 
+## [2.5.0] - 2026-06-22
+
+### Adaugat
+- **Vedere Energy (energie lunara)** - alegi o luna -> totaluri **consum (import)**, **injectie (export)**, **reactiva**, **aparenta** (delta contoarelor cumulative pe luna) + grafic cu defalcare zilnica import/export, citite din InfluxDB. Endpoint `GET /api/energy/monthly?year=&month=`.
+
+### Reparat
+- **History fara InfluxDB** - cand InfluxDB nu e activat, History afiseaza acum un mesaj clar („not configured") in loc de un grafic gol/rupt (`/api/history/registers` raporteaza `influx_enabled`).
+- **Securitate: injectie Flux** prin `start`/`stop` (regex RFC3339 ne-ancorat lasa sa treaca un payload) si prin `measurement` (curata doar `"`) - acum validare ancorata + whitelist de caractere.
+- **query_history robust** - client cu **timeout** rulat **in afara event loop-ului** (un InfluxDB blocat nu mai ingheata tot API-ul) si client scurt dedicat (fara race cu clientul de scriere inchis de thread-ul de reconectare).
+- **update_instance** - **rollback** la configul anterior daca repornirea instantei esueaza (nu mai persista un port/unit invalid).
+- **Wrapper-ul de fetch al cheii API** - robust la `Headers`/`Request`, nu mai muta obiectul de optiuni al apelantului.
+
 ## [2.4.0] - 2026-06-22
 
 ### Adaugat

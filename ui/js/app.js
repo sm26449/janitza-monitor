@@ -477,27 +477,29 @@ class JanitzaMonitor {
 
     installApiAuth() {
         // If the server requires an API key for writes, attach it to every
-        // non-GET request and prompt once (stored in localStorage) on a 401.
-        // No-op when the server is open — writes just succeed as before.
+        // non-GET request and prompt once (localStorage) on a 401. No-op when
+        // the server is open. Robust to Headers/Request inputs; never mutates
+        // the caller's options object.
         const orig = window.fetch.bind(window);
         const KEY = 'janitza-api-key';
-        window.fetch = async (url, opts = {}) => {
-            const method = (opts.method || 'GET').toUpperCase();
+        window.fetch = (input, opts = {}) => {
+            const method = ((opts && opts.method) || (input && input.method) || 'GET').toUpperCase();
             const writing = method !== 'GET' && method !== 'HEAD';
-            if (writing) {
-                const k = localStorage.getItem(KEY);
-                if (k) opts.headers = { ...(opts.headers || {}), 'X-API-Key': k };
+            if (!writing || (typeof Request !== 'undefined' && input instanceof Request)) {
+                return orig(input, opts);
             }
-            let res = await orig(url, opts);
-            if (writing && res.status === 401) {
+            const send = (key) => {
+                const h = new Headers((opts && opts.headers) || {});
+                if (key) h.set('X-API-Key', key);
+                return orig(input, { ...opts, headers: h });
+            };
+            return send(localStorage.getItem(KEY)).then((res) => {
+                if (res.status !== 401) return res;
                 const k = window.prompt('This action needs the API key:');
-                if (k) {
-                    localStorage.setItem(KEY, k);
-                    opts.headers = { ...(opts.headers || {}), 'X-API-Key': k };
-                    res = await orig(url, opts);
-                }
-            }
-            return res;
+                if (!k) return res;
+                localStorage.setItem(KEY, k);
+                return send(k);
+            });
         };
     }
 
@@ -571,6 +573,8 @@ class JanitzaMonitor {
             this.initMonitorPage();
         } else if (page === 'history') {
             this.initHistoryPage();
+        } else if (page === 'energy') {
+            this.initEnergyPage();
         } else if (page === 'vmeters') {
             this.renderVirtualMeters();
         }
@@ -914,6 +918,97 @@ class JanitzaMonitor {
         return 'other';
     }
 
+    // ── Energy view (monthly totals + daily import/export, from InfluxDB) ──
+    initEnergyPage() {
+        const inp = document.getElementById('energyMonth');
+        if (!inp) return;
+        if (!inp._wired) {
+            inp._wired = true;
+            if (!inp.value) { const d = new Date(); inp.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
+            inp.addEventListener('change', () => this.loadEnergy());
+            document.getElementById('energyRefresh')?.addEventListener('click', () => this.loadEnergy());
+        }
+        this.loadEnergy();
+    }
+
+    async loadEnergy() {
+        const inp = document.getElementById('energyMonth');
+        const info = document.getElementById('energyInfo');
+        const totals = document.getElementById('energyTotals');
+        const canvas = document.getElementById('energyCanvas');
+        if (!inp || !inp.value) return;
+        const [y, m] = inp.value.split('-').map(Number);
+        if (info) info.textContent = 'Loading…';
+        try {
+            const r = await fetch(`/api/energy/monthly?year=${y}&month=${m}`);
+            if (!r.ok) {
+                const d = await r.json().catch(() => ({}));
+                const msg = r.status === 503
+                    ? 'InfluxDB is not configured — enable it in Config → Settings to use Energy.'
+                    : (d.detail || `HTTP ${r.status}`);
+                if (info) info.textContent = msg;
+                if (totals) totals.innerHTML = '';
+                this._clearCanvas(canvas);
+                return;
+            }
+            const d = await r.json();
+            const colors = { '_WH_V[4]': '#e0a000', '_WH_Z[4]': '#3fb950', '_QH[4]': '#a371f7', '_WH_S[4]': '#2f81f7' };
+            if (totals) totals.innerHTML = (d.totals || []).map(t =>
+                `<div class="settings-card" style="padding:14px 18px;min-width:150px;">
+                    <div style="color:#8a94a0;font-size:12px;">${this._esc(t.label)}</div>
+                    <div style="font-size:24px;font-weight:700;color:${colors[t.name] || 'var(--text)'};">${t.delta == null ? '—' : Number(t.delta).toLocaleString()}</div>
+                    <div style="color:#8a94a0;font-size:12px;">${this._esc(t.unit)}</div>
+                </div>`).join('');
+            if (info) info.textContent = new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+            this.drawEnergyBars(canvas, d);
+        } catch (e) { if (info) info.textContent = 'Query failed'; }
+    }
+
+    drawEnergyBars(canvas, d) {
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.clientWidth || 800, H = canvas.clientHeight || 340, dpr = window.devicePixelRatio || 1;
+        canvas.width = W * dpr; canvas.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+        const find = (n) => (d.daily || []).find(s => s.name === n) || {};
+        const series = [{ label: 'Import', color: '#e0a000', days: find('_WH_V[4]').days || [] },
+                        { label: 'Export', color: '#3fb950', days: find('_WH_Z[4]').days || [] }];
+        const dateSet = new Set(); series.forEach(s => s.days.forEach(x => dateSet.add(x.date)));
+        const dates = [...dateSet].sort();
+        const css = getComputedStyle(document.body); const muted = (css.getPropertyValue('--text-muted') || '#8a94a0').trim() || '#8a94a0';
+        ctx.fillStyle = muted; ctx.font = '12px system-ui, sans-serif';
+        if (!dates.length) { ctx.fillText('No daily data in this range.', 20, 28); return; }
+        const byDate = series.map(s => { const mm = {}; s.days.forEach(x => mm[x.date] = x.delta); return mm; });
+        let vhi = 0; dates.forEach(dt => byDate.forEach(mm => { const v = Math.abs(mm[dt] || 0); if (v > vhi) vhi = v; }));
+        if (vhi <= 0) vhi = 1;
+        const ml = 52, mr = 12, mt = 22, mb = 30;
+        ctx.font = '11px system-ui, sans-serif'; ctx.strokeStyle = 'rgba(128,128,128,0.18)'; ctx.textAlign = 'left';
+        for (let i = 0; i <= 4; i++) { const v = vhi * i / 4, y = mt + (1 - i / 4) * (H - mt - mb); ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(W - mr, y); ctx.stroke(); ctx.fillStyle = muted; ctx.fillText(v < 10 ? v.toFixed(2) : v.toFixed(0), 6, y + 3); }
+        const plotW = W - ml - mr, slot = plotW / dates.length, bw = Math.max(2, Math.min(16, slot / 3));
+        dates.forEach((dt, i) => { const cx = ml + slot * i + slot / 2;
+            byDate.forEach((mm, si) => { const v = Math.abs(mm[dt] || 0); const h = (v / vhi) * (H - mt - mb); const bx = cx - bw - 1 + si * (bw + 2);
+                ctx.fillStyle = series[si].color; ctx.fillRect(bx, H - mb - h, bw, h); }); });
+        ctx.fillStyle = muted; ctx.textAlign = 'center';
+        const step = Math.max(1, Math.ceil(dates.length / 10));
+        dates.forEach((dt, i) => { if (i % step === 0) ctx.fillText(String(Number(dt.slice(8))), ml + slot * i + slot / 2, H - 10); });
+        ctx.textAlign = 'left';
+        series.forEach((s, i) => { const lx = ml + i * 92; ctx.fillStyle = s.color; ctx.fillRect(lx, 6, 11, 11); ctx.fillStyle = muted; ctx.fillText(s.label, lx + 16, 15); });
+    }
+
+    _renderHistoryDisabled() {
+        const l = document.getElementById('histRegList');
+        const info = document.getElementById('histInfo');
+        const leg = document.getElementById('histLegend');
+        const canvas = document.getElementById('historyCanvas');
+        if (l) l.innerHTML = '<div style="padding:22px 16px;color:#8a94a0;font-size:13px;line-height:1.55;">'
+            + '<i class="bi bi-database-x" style="font-size:18px;"></i><br><br>'
+            + '<b>InfluxDB not configured.</b><br>History reads stored measurements back from '
+            + 'InfluxDB. Enable it in <b>Config → Settings</b> to use this view.</div>';
+        if (info) info.textContent = 'InfluxDB not configured.';
+        if (leg) leg.innerHTML = '';
+        this._histSeries = null;
+        if (canvas) this._clearCanvas(canvas);
+    }
+
     initHistoryPage() {
         if (!this._histWired) {
             this._histWired = true;
@@ -944,6 +1039,7 @@ class JanitzaMonitor {
         }
         if (!this.histRegisters || !this.histRegisters.length) {
             fetch('/api/history/registers').then(r => r.json()).then(d => {
+                if (d.influx_enabled === false) { this._renderHistoryDisabled(); return; }
                 this.histRegisters = d.registers || [];
                 this._histRegMeta = Object.fromEntries(this.histRegisters.map(r => [r.name, { unit: r.unit || '', label: r.label || r.name }]));
                 if (!this.histSelected) this.histSelected = [];

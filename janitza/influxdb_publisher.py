@@ -509,8 +509,8 @@ class InfluxDBPublisher:
 
     # ── read-back for the UI history/trend view ───────────────────────────
     _EVERY_RE = re.compile(r"^\d+[smhd]$")
-    _RANGE_RE = re.compile(r"^-?\d+[smhdw]$")
-    _RFC3339_RE = re.compile(r"^\d{4}-\d\d-\d\dT")
+    _RANGE_RE = re.compile(r"^-\d+[smhdw]$")                     # relative: must be negative
+    _RFC3339_RE = re.compile(r"^\d{4}-\d\d-\d\dT[0-9:.Z+-]*$")   # anchored, safe chars only
     _VALID_FN = {"mean", "min", "max", "last", "first"}
 
     def query_history(self, name: str, start: str = "-6h", stop: str = "now()",
@@ -544,19 +544,19 @@ class InfluxDBPublisher:
         e = _tok(stop) or "now()"
         meas_filter = ""
         if measurement:
-            sm = str(measurement).replace('"', "")
-            meas_filter = f'  |> filter(fn: (r) => r["_measurement"] == "{sm}")\n'
+            sm = re.sub(r"[^A-Za-z0-9_]", "", str(measurement))   # whitelist — no Flux injection
+            if sm:
+                meas_filter = f'  |> filter(fn: (r) => r["_measurement"] == "{sm}")\n'
 
-        own = False
-        client = self.client if (self.connected and self.client) else None
-        if client is None:
-            try:
-                from influxdb_client import InfluxDBClient
-                client = InfluxDBClient(url=self.config.url, token=self.config.token,
-                                        org=self.config.org)
-                own = True
-            except Exception as ex:  # noqa: BLE001
-                return {"error": f"influxdb client unavailable: {ex}"}
+        # Always use a short-lived client WITH a timeout: avoids racing the write
+        # client (closed/replaced under lock by the reconnect thread) and bounds
+        # the query so a hung InfluxDB can't stall the API event loop.
+        try:
+            from influxdb_client import InfluxDBClient
+            client = InfluxDBClient(url=self.config.url, token=self.config.token,
+                                    org=self.config.org, timeout=10_000)
+        except Exception as ex:  # noqa: BLE001
+            return {"error": f"influxdb client unavailable: {ex}"}
 
         def _run(f):
             flux = (f'from(bucket: "{self.config.bucket}")\n'
@@ -583,8 +583,82 @@ class InfluxDBPublisher:
         except Exception as ex:  # noqa: BLE001
             return {"error": f"query failed: {ex}"}
         finally:
-            if own:
-                try:
-                    client.close()
-                except Exception:  # noqa: BLE001
-                    pass
+            try:
+                client.close()
+            except Exception:  # noqa: BLE001
+                pass
+
+    _NAME_RE = re.compile(r"[^A-Za-z0-9_\[\]]")   # register names may contain [ ]
+
+    def energy_report(self, year: int, month: int, regs: list,
+                      tz: str = "Europe/Bucharest") -> Dict:
+        """Energy used in a local calendar month: for each cumulative-counter
+        register, the delta over the month (end-start) plus a per-day breakdown.
+        ``regs`` = list of ``{name,label,unit,div}`` (div scales the raw unit, e.g.
+        Wh→kWh with div=1000). Returns ``{year,month,totals:[...],daily:[...]}`` or
+        ``{"error": ...}``."""
+        if not self.config.enabled:
+            return {"error": "influxdb disabled"}
+        from datetime import datetime, timedelta
+        try:
+            from zoneinfo import ZoneInfo
+            loc, utc = ZoneInfo(tz), ZoneInfo("UTC")
+        except Exception as ex:  # noqa: BLE001
+            return {"error": f"timezone unavailable: {ex}"}
+        try:
+            y, m = int(year), int(month)
+            if not (1 <= m <= 12):
+                return {"error": "month must be 1..12"}
+            start_l = datetime(y, m, 1, tzinfo=loc)
+            end_l = datetime(y + (1 if m == 12 else 0), 1 if m == 12 else m + 1, 1, tzinfo=loc)
+            s = start_l.astimezone(utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            e = end_l.astimezone(utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        except Exception as ex:  # noqa: BLE001
+            return {"error": f"bad month: {ex}"}
+        try:
+            from influxdb_client import InfluxDBClient
+            client = InfluxDBClient(url=self.config.url, token=self.config.token,
+                                    org=self.config.org, timeout=15_000)
+        except Exception as ex:  # noqa: BLE001
+            return {"error": f"influxdb client unavailable: {ex}"}
+
+        def _q(flux):
+            return [r for t in client.query_api().query(flux, org=self.config.org) for r in t.records]
+
+        totals, daily = [], []
+        try:
+            for spec in regs:
+                nm = self._NAME_RE.sub("", str(spec.get("name", "")))
+                if not nm:
+                    continue
+                div = float(spec.get("div", 1)) or 1.0
+                label, unit = spec.get("label", nm), spec.get("unit", "")
+                base = (f'b = from(bucket:"{self.config.bucket}") |> range(start:{s}, stop:{e}) '
+                        f'|> filter(fn:(r)=> r["name"]=="{nm}" and r["_field"]=="value")\n')
+                # total = last - first over the month
+                rows = _q(base + 'union(tables:[b|>first()|>set(key:"k",value:"f"), '
+                                 'b|>last()|>set(key:"k",value:"l")]) |> keep(columns:["k","_value"])')
+                vals = {r.values.get("k"): r.get_value() for r in rows}
+                delta = None
+                if vals.get("f") is not None and vals.get("l") is not None:
+                    delta = round((vals["l"] - vals["f"]) / div, 3)
+                totals.append({"name": spec.get("name"), "label": label, "unit": unit, "delta": delta})
+                # per-day: cumulative value at each local day end, diffed in Python
+                drows = _q('import "timezone"\noption location = timezone.location(name:"' + tz + '")\n'
+                           + base + 'b |> aggregateWindow(every:1d, fn:last, createEmpty:false) '
+                           '|> keep(columns:["_time","_value"])')
+                pts = [(r.get_time().astimezone(loc), r.get_value()) for r in drows if r.get_value() is not None]
+                days = []
+                for i in range(1, len(pts)):
+                    # value stamped at window stop (next local midnight) => belongs to the day before
+                    day = (pts[i][0] - timedelta(seconds=1)).date().isoformat()
+                    days.append({"date": day, "delta": round((pts[i][1] - pts[i - 1][1]) / div, 3)})
+                daily.append({"name": spec.get("name"), "label": label, "unit": unit, "days": days})
+        except Exception as ex:  # noqa: BLE001
+            return {"error": f"query failed: {ex}"}
+        finally:
+            try:
+                client.close()
+            except Exception:  # noqa: BLE001
+                pass
+        return {"year": y, "month": m, "start": s, "stop": e, "totals": totals, "daily": daily}
