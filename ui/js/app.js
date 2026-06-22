@@ -475,7 +475,34 @@ class JanitzaMonitor {
         }, duration);
     }
 
+    installApiAuth() {
+        // If the server requires an API key for writes, attach it to every
+        // non-GET request and prompt once (stored in localStorage) on a 401.
+        // No-op when the server is open — writes just succeed as before.
+        const orig = window.fetch.bind(window);
+        const KEY = 'janitza-api-key';
+        window.fetch = async (url, opts = {}) => {
+            const method = (opts.method || 'GET').toUpperCase();
+            const writing = method !== 'GET' && method !== 'HEAD';
+            if (writing) {
+                const k = localStorage.getItem(KEY);
+                if (k) opts.headers = { ...(opts.headers || {}), 'X-API-Key': k };
+            }
+            let res = await orig(url, opts);
+            if (writing && res.status === 401) {
+                const k = window.prompt('This action needs the API key:');
+                if (k) {
+                    localStorage.setItem(KEY, k);
+                    opts.headers = { ...(opts.headers || {}), 'X-API-Key': k };
+                    res = await orig(url, opts);
+                }
+            }
+            return res;
+        };
+    }
+
     async init() {
+        this.installApiAuth();   // wrap fetch so writes carry the optional API key
         // Initialize theme FIRST to prevent flash
         this.initTheme();
 

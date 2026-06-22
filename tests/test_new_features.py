@@ -146,3 +146,57 @@ def test_query_history_rejects_empty_name():
 
 def test_query_history_rejects_bad_start():
     assert "bad start" in _pub().query_history("_TEMPERATUR", start="garbage; drop")["error"]
+
+
+# ── optional write-auth middleware ───────────────────────────────────────
+import os as _os
+import pytest
+from janitza.api import create_api
+from janitza.config import Config
+
+try:                                  # TestClient needs httpx (a test-only dep)
+    from fastapi.testclient import TestClient
+    _HAS_TESTCLIENT = True
+except Exception:                     # noqa: BLE001
+    _HAS_TESTCLIENT = False
+
+_needs_tc = pytest.mark.skipif(not _HAS_TESTCLIENT, reason="httpx/TestClient not installed")
+
+
+def _client(api_key=None):
+    _os.environ.pop("API_KEY", None)
+    _os.environ.pop("JANITZA_API_KEY", None)
+    if api_key:
+        _os.environ["API_KEY"] = api_key
+    app, _ = create_api(Config(), None, None, None)   # key captured at create time
+    return TestClient(app, raise_server_exceptions=False)
+
+
+@_needs_tc
+def test_write_guard_open_when_no_key():
+    assert _client(None).post("/api/config/apply").status_code != 401
+
+
+@_needs_tc
+def test_write_guard_blocks_write_without_key():
+    assert _client("secret123").post("/api/config/apply").status_code == 401
+
+
+@_needs_tc
+def test_write_guard_allows_write_with_key():
+    r = _client("secret123").post("/api/config/apply", headers={"X-API-Key": "secret123"})
+    assert r.status_code != 401
+
+
+@_needs_tc
+def test_write_guard_get_always_open():
+    c = _client("secret123")
+    assert c.get("/health").status_code != 401
+    assert c.get("/api/status").status_code != 401
+
+
+@_needs_tc
+def test_write_guard_readonly_post_open():
+    # on-demand register query is POST but read-only => allowlisted
+    r = _client("secret123").post("/api/query/register", json={"address": 19000, "data_type": "float"})
+    assert r.status_code != 401

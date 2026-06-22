@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+import os
 import threading
 from typing import Dict, Any, List, Optional, Set
 from datetime import datetime
@@ -186,6 +187,22 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Optional write protection (opt-in, defense-in-depth for a LAN appliance):
+    # if API_KEY (or JANITZA_API_KEY) is set, every state-changing request
+    # (POST/PUT/PATCH/DELETE) must carry a matching X-API-Key header. Read-only
+    # telemetry (GET) and the on-demand query POSTs stay open so the UI works
+    # without a key. Unset => fully open (default, backward-compatible).
+    _api_key = os.getenv("API_KEY") or os.getenv("JANITZA_API_KEY") or ""
+    _open_writes = {"/api/query/register", "/api/query/batch"}  # POST but read-only
+
+    @app.middleware("http")
+    async def _write_guard(request, call_next):
+        if (_api_key and request.method in ("POST", "PUT", "PATCH", "DELETE")
+                and request.url.path not in _open_writes):
+            if request.headers.get("X-API-Key", "") != _api_key:
+                return JSONResponse({"detail": "missing or invalid API key"}, status_code=401)
+        return await call_next(request)
 
     def data_callback(poll_group: str, data: Dict[int, Dict]):
         """Callback from Modbus poller to update values and publish."""

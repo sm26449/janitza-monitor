@@ -483,6 +483,12 @@ acest dispozitiv ca pe unul de **LAN de incredere**:
   (sau VPN). Nu face port-forward la 8080 / porturile contoarelor.
 - Contoarele virtuale asculta pe `0.0.0.0` implicit — restrictioneaza la nivel de retea.
 
+**Cheie de scriere optionala.** Seteaza `API_KEY` (env) ca sa ceri un header `X-API-Key`
+la fiecare cerere care modifica starea (POST/PUT/PATCH/DELETE); telemetria read-only
+(GET) si interogarile la cerere raman deschise. UI-ul cere cheia o data si o retine.
+Lasa gol (implicit) pentru un appliance complet deschis pe LAN de incredere. E aparare
+in adancime — nu inlocuieste tinerea portului 8080 in afara retelelor nedemne de incredere.
+
 ## Contributing
 
 Found a bug or have a feature request? Please open an issue on [GitHub Issues](https://github.com/sm26449/janitza-monitor/issues).

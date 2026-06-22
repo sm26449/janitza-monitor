@@ -482,6 +482,12 @@ loop (ESS / export limiting), so treat this as a trusted-LAN appliance:
   a VPN). Do not port-forward 8080 / the meter ports.
 - Virtual meters bind `0.0.0.0` by default — restrict at the network layer.
 
+**Optional write key.** Set `API_KEY` (env) to require an `X-API-Key` header on every
+state-changing request (POST/PUT/PATCH/DELETE); read-only telemetry (GET) and the
+on-demand register queries stay open. The Web UI prompts for the key once and
+remembers it. Leave it empty (default) for a fully open, trusted-LAN appliance. This
+is defense-in-depth — not a substitute for keeping 8080 off untrusted networks.
+
 ## Contributing
 
 Found a bug or have a feature request? Please open an issue on [GitHub Issues](https://github.com/sm26449/janitza-monitor/issues).

@@ -42,6 +42,8 @@ services:
       - INFLUXDB_PUBLISH_MODE
       # UI
       - UI_PORT
+      # Security — optional API key required for state-changing requests (empty = open)
+      - API_KEY
     networks:
       - monitoring
       - pv-stack-network
