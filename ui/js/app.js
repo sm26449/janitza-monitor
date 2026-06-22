@@ -2504,6 +2504,19 @@ class JanitzaMonitor {
         }
     }
 
+    // Shared sparkline geometry (dashboard SVG widgets). Returns the SVG path
+    // string + the value range used for the min/max labels.
+    _sparkPath(history, width = 200, height = 60) {
+        const values = history.map(h => h.value);
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
+        const range = maxVal - minVal || 1;
+        const pathD = 'M ' + history.map((h, i) =>
+            `${(i / (history.length - 1)) * width},${height - ((h.value - minVal) / range) * height}`
+        ).join(' L ');
+        return { pathD, minVal, maxVal };
+    }
+
     updateChartWidget(card, reg) {
         const history = this.valueHistory[String(reg.address)] || [];
 
@@ -2522,21 +2535,7 @@ class JanitzaMonitor {
             return; // Not enough data yet
         }
 
-        // Calculate min/max for scaling
-        const values = history.map(h => h.value);
-        const minVal = Math.min(...values);
-        const maxVal = Math.max(...values);
-        const range = maxVal - minVal || 1;
-
-        // Generate SVG path
-        const width = 200;
-        const height = 60;
-        const points = history.map((h, i) => {
-            const x = (i / (history.length - 1)) * width;
-            const y = height - ((h.value - minVal) / range) * height;
-            return `${x},${y}`;
-        });
-        const pathD = 'M ' + points.join(' L ');
+        const { pathD, minVal, maxVal } = this._sparkPath(history);
 
         // Update path
         const pathEl = card.querySelector('.chart-line');
@@ -2560,26 +2559,14 @@ class JanitzaMonitor {
     }
 
     getChartContent(reg, history) {
-        const values = history.map(h => h.value);
-        const minVal = Math.min(...values);
-        const maxVal = Math.max(...values);
-        const range = maxVal - minVal || 1;
-
-        const width = 200;
-        const height = 60;
-        const points = history.map((h, i) => {
-            const x = (i / (history.length - 1)) * width;
-            const y = height - ((h.value - minVal) / range) * height;
-            return `${x},${y}`;
-        });
-        const pathD = 'M ' + points.join(' L ');
+        const { pathD, minVal, maxVal } = this._sparkPath(history);
 
         const currentValue = history[history.length - 1]?.value;
         const displayValue = typeof currentValue === 'number' ? currentValue.toFixed(2) : '--';
 
         return `
             <div class="chart-current">${displayValue} <span>${reg.unit}</span></div>
-            <svg viewBox="0 0 ${width} ${height}" class="chart-svg" preserveAspectRatio="none">
+            <svg viewBox="0 0 200 60" class="chart-svg" preserveAspectRatio="none">
                 <path class="chart-line" d="${pathD}" />
             </svg>
             <div class="chart-range">
@@ -2677,21 +2664,7 @@ class JanitzaMonitor {
             `;
         }
 
-        // Calculate min/max for scaling
-        const values = history.map(h => h.value);
-        const minVal = Math.min(...values);
-        const maxVal = Math.max(...values);
-        const range = maxVal - minVal || 1;
-
-        // Generate SVG path
-        const width = 200;
-        const height = 60;
-        const points = history.map((h, i) => {
-            const x = (i / (history.length - 1)) * width;
-            const y = height - ((h.value - minVal) / range) * height;
-            return `${x},${y}`;
-        });
-        const pathD = 'M ' + points.join(' L ');
+        const { pathD, minVal, maxVal } = this._sparkPath(history);
 
         const currentValue = history[history.length - 1]?.value;
         const fmt = this.formatValueWithUnit(currentValue, reg.unit);
@@ -2702,7 +2675,7 @@ class JanitzaMonitor {
         return `
             <div class="widget-chart">
                 <div class="chart-current">${displayValue} <span>${fmt.unit}</span></div>
-                <svg viewBox="0 0 ${width} ${height}" class="chart-svg" preserveAspectRatio="none">
+                <svg viewBox="0 0 200 60" class="chart-svg" preserveAspectRatio="none">
                     <path class="chart-line" d="${pathD}" />
                 </svg>
                 <div class="chart-range">
