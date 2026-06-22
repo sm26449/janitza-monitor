@@ -52,3 +52,4 @@ node_modules/
 # Internal dev tools / docs — kept in the private repo, not published to the public one
 tools/capture-screenshots.js
 docs/PUBLISHING.md
+docs/ROADMAP.md
