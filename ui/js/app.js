@@ -503,10 +503,74 @@ class JanitzaMonitor {
         };
     }
 
+    // ── i18n (languages/*.json; English is the always-loaded fallback base) ──
+    async initI18n() {
+        this._tEn = {};
+        this._t = {};
+        this._langs = [];
+        this._defaultLang = 'en';
+        try {
+            const d = await (await fetch('/api/languages')).json();
+            this._langs = d.languages || [];
+            this._defaultLang = d.default || 'en';
+        } catch (e) { /* no languages dir → UI stays English (hardcoded) */ }
+        this._tEn = await this._fetchLang('en');
+        const saved = localStorage.getItem('janitza-lang') || this._defaultLang;
+        await this.setLanguage(saved, false);
+        this._renderLangSelector();
+    }
+
+    async _fetchLang(code) {
+        try { const r = await fetch(`/api/languages/${code}`); return r.ok ? await r.json() : {}; }
+        catch (e) { return {}; }
+    }
+
+    t(key, fallback) {
+        return (this._t && this._t[key]) || fallback || key;
+    }
+
+    async setLanguage(code, persist = true) {
+        const sel = (code && code !== 'en') ? await this._fetchLang(code) : this._tEn;
+        this._t = { ...this._tEn, ...sel };          // selected overrides the English base
+        this._lang = code;
+        if (persist) localStorage.setItem('janitza-lang', code);
+        document.documentElement.lang = code;
+        this.applyTranslations();
+        this._renderLangSelector();
+        // Re-render the current page only on a user-initiated switch (persist), so
+        // dynamic t() strings update without double-rendering during initial load.
+        if (persist && this.currentPage) this.navigateTo(this.currentPage);
+    }
+
+    applyTranslations() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            if (el.dataset.i18nOrig === undefined) el.dataset.i18nOrig = el.textContent;
+            el.textContent = this.t(el.getAttribute('data-i18n'), el.dataset.i18nOrig);
+        });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            if (el.dataset.i18nOrigPh === undefined) el.dataset.i18nOrigPh = el.getAttribute('placeholder') || '';
+            el.setAttribute('placeholder', this.t(el.getAttribute('data-i18n-placeholder'), el.dataset.i18nOrigPh));
+        });
+        document.querySelectorAll('[data-i18n-title]').forEach(el => {
+            if (el.dataset.i18nOrigTitle === undefined) el.dataset.i18nOrigTitle = el.getAttribute('title') || '';
+            el.setAttribute('title', this.t(el.getAttribute('data-i18n-title'), el.dataset.i18nOrigTitle));
+        });
+    }
+
+    _renderLangSelector() {
+        const el = document.getElementById('langSelect');
+        if (!el) return;
+        if (!this._langs.length) { el.style.display = 'none'; return; }
+        el.innerHTML = this._langs.map(l =>
+            `<option value="${l.code}" ${l.code === this._lang ? 'selected' : ''}>${l.flag || ''} ${this._esc(l.nativeName || l.name)}</option>`).join('');
+        if (!el._wired) { el._wired = true; el.addEventListener('change', () => this.setLanguage(el.value)); }
+    }
+
     async init() {
         this.installApiAuth();   // wrap fetch so writes carry the optional API key
         // Initialize theme FIRST to prevent flash
         this.initTheme();
+        await this.initI18n();   // load languages + apply the saved/default one
 
         // Setup navigation
         this.setupNavigation();
@@ -939,7 +1003,7 @@ class JanitzaMonitor {
         if (!inp || !inp.value) return;
         const [y, m] = inp.value.split('-').map(Number);
         const py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1;
-        if (info) info.textContent = 'Loading…';
+        if (info) info.textContent = this.t('common.loading');
         try {
             const [r, rp] = await Promise.all([
                 fetch(`/api/energy/monthly?year=${y}&month=${m}`),
@@ -948,7 +1012,7 @@ class JanitzaMonitor {
             if (!r.ok) {
                 const d = await r.json().catch(() => ({}));
                 const msg = r.status === 503
-                    ? 'InfluxDB is not configured — enable it in Config → Settings to use Energy.'
+                    ? this.t('energy.notConfigured')
                     : (d.detail || `HTTP ${r.status}`);
                 if (info) info.textContent = msg;
                 if (totals) totals.innerHTML = '';
@@ -966,9 +1030,9 @@ class JanitzaMonitor {
                     if (pv !== 0) {
                         const pct = (t.delta - pv) / Math.abs(pv) * 100;
                         const up = pct >= 0, col = up ? '#3fb950' : '#f85149';
-                        trend = `<div style="font-size:11.5px;color:${col};margin-top:3px;">${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}% <span style="color:#8a94a0;">vs prev</span></div>`;
+                        trend = `<div style="font-size:11.5px;color:${col};margin-top:3px;">${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}% <span style="color:#8a94a0;">${this._esc(this.t('energy.vsPrev'))}</span></div>`;
                     } else {
-                        trend = '<div style="font-size:11.5px;color:#8a94a0;margin-top:3px;">new vs prev</div>';
+                        trend = `<div style="font-size:11.5px;color:#8a94a0;margin-top:3px;">${this._esc(this.t('energy.vsPrev'))}</div>`;
                     }
                 }
                 return `<div class="settings-card" style="padding:14px 18px;min-width:160px;">
@@ -988,13 +1052,13 @@ class JanitzaMonitor {
         const W = canvas.clientWidth || 800, H = canvas.clientHeight || 340, dpr = window.devicePixelRatio || 1;
         canvas.width = W * dpr; canvas.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
         const find = (n) => (d.daily || []).find(s => s.name === n) || {};
-        const series = [{ label: 'Import', color: '#e0a000', days: find('_WH_V[4]').days || [] },
-                        { label: 'Export', color: '#3fb950', days: find('_WH_Z[4]').days || [] }];
+        const series = [{ label: this.t('energy.import'), color: '#e0a000', days: find('_WH_V[4]').days || [] },
+                        { label: this.t('energy.export'), color: '#3fb950', days: find('_WH_Z[4]').days || [] }];
         const dateSet = new Set(); series.forEach(s => s.days.forEach(x => dateSet.add(x.date)));
         const dates = [...dateSet].sort();
         const css = getComputedStyle(document.body); const muted = (css.getPropertyValue('--text-muted') || '#8a94a0').trim() || '#8a94a0';
         ctx.fillStyle = muted; ctx.font = '12px system-ui, sans-serif';
-        if (!dates.length) { ctx.fillText('No daily data in this range.', 20, 28); return; }
+        if (!dates.length) { ctx.fillText(this.t('energy.noDaily'), 20, 28); return; }
         const byDate = series.map(s => { const mm = {}; s.days.forEach(x => mm[x.date] = x.delta); return mm; });
         let vhi = 0; dates.forEach(dt => byDate.forEach(mm => { const v = Math.abs(mm[dt] || 0); if (v > vhi) vhi = v; }));
         if (vhi <= 0) vhi = 1;
@@ -1019,9 +1083,8 @@ class JanitzaMonitor {
         const canvas = document.getElementById('historyCanvas');
         if (l) l.innerHTML = '<div style="padding:22px 16px;color:#8a94a0;font-size:13px;line-height:1.55;">'
             + '<i class="bi bi-database-x" style="font-size:18px;"></i><br><br>'
-            + '<b>InfluxDB not configured.</b><br>History reads stored measurements back from '
-            + 'InfluxDB. Enable it in <b>Config → Settings</b> to use this view.</div>';
-        if (info) info.textContent = 'InfluxDB not configured.';
+            + `<b>${this._esc(this.t('history.notConfigured'))}</b><br>${this._esc(this.t('history.notConfiguredBody'))}</div>`;
+        if (info) info.textContent = this.t('history.notConfigured');
         if (leg) leg.innerHTML = '';
         this._histSeries = null;
         if (canvas) this._clearCanvas(canvas);

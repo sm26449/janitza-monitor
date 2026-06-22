@@ -2,6 +2,11 @@
 
 Toate modificarile notabile ale proiectului sunt documentate in acest fisier.
 
+## [2.6.0] - 2026-06-22
+
+### Adaugat
+- **Interfata multi-limba (i18n)** - selector de limba in bara de titlu, **implicit English** (mai international). Limbile sunt fisiere `ui/languages/<cod>.json` **descoperite dinamic**: copiezi `en.json` -> `es.json`, traduci valorile si limba apare in selector la urmatorul reload, fara modificari de cod si fara rebuild (`ui/` e servit live). `en.json` e **sursa de adevar si fallback** - English e mereu incarcat, apoi limba selectata e suprapusa, deci **traducerile partiale functioneaza** (orice cheie lipsa cade pe English). Alegerea persista in `localStorage`. Romana inclusa (`ro.json`). Ghid de contributie in `ui/languages/README.md`. Endpoint-uri `GET /api/languages` (listeaza limbile din director) si `GET /api/languages/{cod}`.
+
 ## [2.5.0] - 2026-06-22
 
 ### Adaugat

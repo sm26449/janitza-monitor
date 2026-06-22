@@ -12,7 +12,8 @@ Monitor profesional pentru analizoarele de calitate a energiei Janitza UMG 512-P
 - **Publicare MQTT** - Cu suport Home Assistant autodiscovery
 - **Publicare InfluxDB** - Pentru stocare time-series
 - **Mod "changed"** - Publica doar valorile modificate (reduce traficul)
-- **Web UI profesional** - Dashboard, Monitor, Registers, Config
+- **Web UI profesional** - Dashboard, Monitor, History, Energy, Registers, Config, Virtual Meters
+- **🌍 Multi-limba (i18n)** - selector EN/RO in UI (implicit English). Limbile sunt fisiere `ui/languages/<cod>.json` descoperite dinamic - copiezi `en.json`, traduci, apare in selector (fara rebuild). Vezi **[ui/languages/README.md](ui/languages/README.md)**.
 - **WebSocket real-time** - Actualizari live in UI
 - **Hot-reload** - Modificari configuratie fara restart container
 - **Configurare flexibila** - Topic-uri MQTT si tags InfluxDB per registru
@@ -330,6 +331,8 @@ Detaliul de status Modbus arată **prospețimea datelor**, **ultima citire reuș
 | `/api/config/influxdb` | GET/POST | Config InfluxDB |
 | `/api/config/apply` | POST | Aplica configuratie (reconnect) |
 | `/api/config/reload-registers` | POST | Reload registri |
+| `/api/languages` | GET | Limbi UI disponibile (scaneaza `ui/languages/`) |
+| `/api/languages/{cod}` | GET | Traducerile unei limbi |
 | `/ws` | WebSocket | Stream real-time |
 
 ## Home Assistant Integration

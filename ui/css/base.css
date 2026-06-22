@@ -209,6 +209,24 @@ body {
     .status-label { display: inline; }
 }
 
+/* Language selector */
+.lang-select {
+    height: 32px;
+    padding: 0 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+.lang-select:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+.lang-select option { color: var(--text-primary); background: var(--bg-secondary); }
+
 /* Theme Toggle */
 .theme-toggle {
     width: 32px;
