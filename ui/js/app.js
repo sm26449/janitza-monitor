@@ -864,6 +864,15 @@ class JanitzaMonitor {
         return ['#2f81f7', '#e0a000', '#3fb950', '#db61a2', '#f85149', '#1f9c9c', '#a371f7', '#d29922'];
     }
 
+    // Cap the bucket resolution on long ranges so we never pull ~tens of
+    // thousands of points/series (keeps the payload + canvas sane).
+    _effectiveEvery(range, sel) {
+        const toMin = (s) => { const m = String(s).match(/^(\d+)([mh])$/); return m ? (m[2] === 'h' ? +m[1] * 60 : +m[1]) : 5; };
+        const floors = { '-7d': 15, '-30d': 60 };   // minutes
+        const eff = Math.max(toMin(sel), floors[range] || 0);
+        return (eff >= 60 && eff % 60 === 0) ? `${eff / 60}h` : `${eff}m`;
+    }
+
     _histCategory(reg) {
         const u = (reg.unit || '').toLowerCase();
         if (u === 'v') return 'voltage';
@@ -972,7 +981,8 @@ class JanitzaMonitor {
     async loadHistory() {
         const names = (this.histSelected || []).slice();
         const range = document.getElementById('histRange')?.value || '-6h';
-        const every = document.getElementById('histEvery')?.value || '5m';
+        const selEvery = document.getElementById('histEvery')?.value || '5m';
+        const every = this._effectiveEvery(range, selEvery);   // cap resolution on large ranges
         const canvas = document.getElementById('historyCanvas');
         const info = document.getElementById('histInfo');
         const leg = document.getElementById('histLegend');
@@ -1008,7 +1018,8 @@ class JanitzaMonitor {
             }
             this._histSeries = series;
             const total = series.reduce((a, s) => a + s.mean.length, 0);
-            if (info) info.textContent = `${series.length} series · ${total} points` + (series.length > 1 ? ' · shared Y axis (best for same-unit registers)' : '');
+            const res = every !== selEvery ? ` · ${every} (raised for ${range.replace('-', '')})` : ` · ${every}`;
+            if (info) info.textContent = `${series.length} series · ${total} pts${res}` + (series.length > 1 ? ' · shared Y axis (same-unit)' : '');
             this._renderHistory(this._histHoverX || null);
         } catch (e) { if (info) info.textContent = typeof e === 'string' ? e : 'Query failed'; }
     }
@@ -1050,6 +1061,8 @@ class JanitzaMonitor {
         const py = v => mt + (1 - (v - vlo) / ((vhi - vlo) || 1)) * (H - mt - mb);
         const css = getComputedStyle(document.body);
         const muted = (css.getPropertyValue('--text-muted') || '#8a94a0').trim() || '#8a94a0';
+        const units = new Set(series.map(s => s.unit || '').filter(Boolean));
+        const commonUnit = units.size === 1 ? [...units][0] : '';
         ctx.font = '11px system-ui, sans-serif';
         ctx.strokeStyle = 'rgba(128,128,128,0.18)'; ctx.lineWidth = 1; ctx.fillStyle = muted; ctx.textAlign = 'left';
         for (let i = 0; i <= 4; i++) {
@@ -1057,6 +1070,8 @@ class JanitzaMonitor {
             ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(W - mr, y); ctx.stroke();
             ctx.fillText(v.toFixed(1), 6, y + 3);
         }
+        // unit label on the Y axis (meaningful because we only mix same-unit series)
+        if (commonUnit) { ctx.font = '600 11px system-ui, sans-serif'; ctx.fillText(commonUnit, 6, mt - 2); ctx.font = '11px system-ui, sans-serif'; }
         ctx.textAlign = 'center';
         const span = t1 - t0;
         for (let i = 0; i <= 4; i++) {
