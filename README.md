@@ -2,9 +2,33 @@
 
 🇷🇴 **Română** | [🇬🇧 English](README.en.md)
 
-Monitor profesional pentru analizoarele de calitate a energiei Janitza UMG 512-PRO. Citeste date prin Modbus TCP si le publica in MQTT si/sau InfluxDB.
+[![Release](https://img.shields.io/github/v/release/sm26449/janitza-monitor?sort=semver)](https://github.com/sm26449/janitza-monitor/releases)
+[![Container](https://img.shields.io/badge/container-ghcr.io-2496ED?logo=docker&logoColor=white)](https://github.com/sm26449/janitza-monitor/pkgs/container/janitza-monitor)
+![Modbus → MQTT](https://img.shields.io/badge/Modbus-MQTT-6f42c1)
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-autodiscovery-41BDF5?logo=homeassistant&logoColor=white)
+[![Licenta: PolyForm Noncommercial](https://img.shields.io/badge/licen%C8%9B%C4%83-PolyForm%20Noncommercial-blue)](LICENSE)
+
+> **Gateway Modbus-to-MQTT software — retrofit, nu inlocuire.**
+
+Aduci un analizor de calitate a energiei Janitza UMG existent pe platforme moderne MQTT / IoT — **fara rip-and-replace, fara cutie de gateway dedicata**. Citeste meterul prin Modbus TCP si publica in **MQTT, InfluxDB, Grafana si Home Assistant** — si, unic, re-serveste acel singur meter fizic ca **mai multe device-uri Modbus virtuale** (Carlo Gavazzi EM24, Fronius Smart Meter, SunSpec), astfel incat Victron, Fronius si altele vad fiecare meterul pe care il asteapta. Totul ruleaza intr-un container — *abordarea pentru care producatorii de hardware lanseaza acum aparate dedicate, in software pe care il controlezi tu.*
+
+- 🔌 **Retrofit in loc de inlocuire** — digitalizezi un meter deja instalat; **zero hardware nou**.
+- ☁️ **Date Modbus in cloud** — MQTT → InfluxDB, Grafana, Home Assistant autodiscovery.
+- 🪞 **Un meter, mai multi consumatori** — servesti un singur device fizic ca mai multe metere Modbus virtuale.
+- 🌍 **UI de operator** — multi-limba, monitorizare live, istoric & energie lunara, alerting.
+
+![Dashboard](screenshots/dashboard.png)
 
 📖 **[Manual de utilizare](docs/MANUAL.ro.md)** · 🔌 **[Ghid Virtual Meter](docs/VIRTUAL-METER.ro.md)**
+
+## De ce software, nu o cutie?
+
+Un aparat Modbus-to-MQTT dedicat e o variantă. Asta e cealaltă: aceeași treabă în software pe care îl deții și îl poți extinde — rulând pe hardware pe care îl ai deja, sau pe un Raspberry Pi de ~50€ cu un adaptor USB/HAT RS-485 (și CAN), montabil pe șină DIN la fel de bine. Fără lock-in de producător, fără cost per cutie.
+
+- ⚡ **Polling sub-secundă configurabil** — reglabil pe fiecare poll-group, fără prag fix (noi rulăm 250 ms pe grupul realtime); gateway-urile cu funcție fixă se opresc de obicei la ~5 s.
+- ♾️ **Fără limite de device-uri / valori** — mărginit doar de host, nu o limită fixă de 10 device-uri / 1000 de valori.
+- 🪞 **Metere virtuale** — re-servești un singur meter fizic ca mai multe device-uri emulate (Victron, Fronius, SunSpec); un gateway read-only nu poate.
+- 🔓 **Open-source, hardware de comodă** — îl inspectezi, îl forkezi, îi adaugi un protocol; îl rulezi pe un Pi.
 
 ## Caracteristici
 

@@ -2,9 +2,33 @@
 
 [🇷🇴 Română](README.md) | 🇬🇧 **English**
 
-Professional monitor for Janitza UMG 512-PRO power quality analyzers. Reads data via Modbus TCP and publishes to MQTT and/or InfluxDB.
+[![Release](https://img.shields.io/github/v/release/sm26449/janitza-monitor?sort=semver)](https://github.com/sm26449/janitza-monitor/releases)
+[![Container](https://img.shields.io/badge/container-ghcr.io-2496ED?logo=docker&logoColor=white)](https://github.com/sm26449/janitza-monitor/pkgs/container/janitza-monitor)
+![Modbus → MQTT](https://img.shields.io/badge/Modbus-MQTT-6f42c1)
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-autodiscovery-41BDF5?logo=homeassistant&logoColor=white)
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue)](LICENSE)
+
+> **Software-defined Modbus-to-MQTT gateway — retrofit, don't replace.**
+
+Bring an existing Janitza UMG power-quality analyzer to modern MQTT / IoT platforms — **no rip-and-replace, no dedicated gateway box**. It reads the meter over Modbus TCP and publishes to **MQTT, InfluxDB, Grafana and Home Assistant** — and, uniquely, re-serves that single physical meter as **several virtual Modbus devices** (Carlo Gavazzi EM24, Fronius Smart Meter, SunSpec), so Victron, Fronius and others each see the meter they expect. Everything runs in a container — *the approach hardware vendors now ship dedicated appliances for, in software you control.*
+
+- 🔌 **Retrofit instead of replacement** — digitize an installed meter; **zero new hardware**.
+- ☁️ **Modbus data to the cloud** — MQTT → InfluxDB, Grafana, Home Assistant autodiscovery.
+- 🪞 **One meter, many consumers** — serve a single physical device as multiple virtual Modbus meters.
+- 🌍 **Operator-grade UI** — multi-language, live monitoring, history & monthly energy, alerting.
+
+![Dashboard](screenshots/dashboard.png)
 
 📖 **[User Manual](docs/MANUAL.md)** · 🔌 **[Virtual Meter guide](docs/VIRTUAL-METER.md)**
+
+## Why software, not a box?
+
+A dedicated Modbus-to-MQTT appliance is one option. This is the other: the same job in software you own and can extend — running on hardware you already have, or on a ~€50 Raspberry Pi with a USB/HAT RS-485 (and CAN) adapter, DIN-rail-mountable all the same. No vendor lock-in, no per-box cost.
+
+- ⚡ **Configurable sub-second polling** — tunable per poll-group with no fixed floor (we run 250 ms on the realtime group); fixed-function gateways typically stop at ~5 s.
+- ♾️ **No device / value caps** — bounded only by your host, not a fixed 10-device / 1000-value limit.
+- 🪞 **Virtual meters** — re-serve one physical meter as many emulated devices (Victron, Fronius, SunSpec); a read-only gateway can't.
+- 🔓 **Open-source, commodity hardware** — inspect it, fork it, add a protocol; run it on a Pi.
 
 ## Features
 
