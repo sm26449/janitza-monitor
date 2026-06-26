@@ -52,6 +52,10 @@ That's it for a monitor-only setup. Logs: `docker compose logs -f`.
 
 ## 3. First configuration
 
+> **Tip:** after the first start you can set all of this from the UI (**Config → Settings**) —
+> it persists to `config/config.yaml` and applies without a restart. `.env` is just a convenient
+> way to pre-seed a fresh deploy. An env value takes precedence and locks that field in the UI.
+
 Edit `.env` (or set the same vars in your compose). The essentials:
 
 | Variable | What it is | Example |

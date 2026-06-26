@@ -136,6 +136,8 @@ docker-compose --profile influxdb --profile grafana up -d
 
 ## Configuration
 
+> **You can configure everything from the UI.** Modbus, MQTT and InfluxDB connection settings are editable live in **Config → Settings** — saved to `config/config.yaml` (a mounted volume) and applied **without a restart** (no `docker compose` edits, no recreate). The `.env` / environment variables below are **optional**: use them only to pre-seed a fresh deploy or to pin values in an immutable setup. A setting provided via env takes precedence and shows as **locked** in the UI; remove it from the environment to make that field editable.
+
 ### .env File
 
 Copy `.env.example` to `.env` and edit:

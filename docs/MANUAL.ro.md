@@ -53,6 +53,10 @@ Atât pentru o configurare doar de monitorizare. Jurnale: `docker compose logs -
 
 ## 3. Prima configurare
 
+> **Sfat:** după prima pornire poți seta tot din UI (**Config → Settings**) — se salvează în
+> `config/config.yaml` și se aplică fără restart. `.env` e doar o cale comodă de a pre-popula un
+> deploy nou. O valoare din env are întâietate și blochează acel câmp în UI.
+
 Editează `.env` (sau setează aceleași variabile în compose-ul tău). Esențialul:
 
 | Variabilă | Ce este | Exemplu |
