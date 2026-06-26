@@ -7,7 +7,8 @@ general:
   log_file: ""
 
 modbus:
-  # Janitza device IP address
+  # Janitza device IP address — or leave this and set it from the UI
+  # (Config → Settings) on first run; the app prompts you if it can't connect.
   host: 192.168.1.100
   # Modbus TCP port (default 502)
   port: 502

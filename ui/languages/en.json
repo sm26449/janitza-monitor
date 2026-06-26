@@ -78,5 +78,10 @@
   "vmeters.tabStats": "Stats & Debug",
   "vmeters.editSettings": "Edit settings",
   "vmeters.addInstance": "Add instance",
-  "vmeters.newTemplate": "New template"
+  "vmeters.newTemplate": "New template",
+
+  "firstrun.title": "Connect your meter",
+  "firstrun.body": "No Modbus data yet. Enter your Janitza UMG's IP address and port in Config → Settings, then press Apply.",
+  "firstrun.openSettings": "Open Settings",
+  "firstrun.later": "Later"
 }

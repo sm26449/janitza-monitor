@@ -78,5 +78,10 @@
   "vmeters.tabStats": "Statistici & Debug",
   "vmeters.editSettings": "Editează setări",
   "vmeters.addInstance": "Adaugă instanță",
-  "vmeters.newTemplate": "Șablon nou"
+  "vmeters.newTemplate": "Șablon nou",
+
+  "firstrun.title": "Conectează-ți meterul",
+  "firstrun.body": "Încă nu sunt date Modbus. Introdu adresa IP și portul Janitza UMG în Config → Settings, apoi apasă Apply.",
+  "firstrun.openSettings": "Deschide Settings",
+  "firstrun.later": "Mai târziu"
 }

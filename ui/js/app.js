@@ -24,6 +24,12 @@ class JanitzaMonitor {
         this.selectedRegisters = [];
         this.queryHistory = [];
         this.currentPage = 'dashboard';
+        // First-run prompt state: show a "connect your meter" modal only on a
+        // genuinely unconfigured system (Modbus never connected), never on a
+        // configured one having a temporary outage.
+        this._everConnected = false;
+        this._firstRunGraceOver = false;
+        this._firstRunShown = false;
         this.registerSearchPage = 1;
         this.registersPerPage = 50;
         this.maxHistoryPoints = 60;  // 60 puncte pentru chart
@@ -437,6 +443,33 @@ class JanitzaMonitor {
         }
     }
 
+    // ── First-run "connect your meter" prompt ──────────────────────────────
+    // Shows once per session only when Modbus has never connected (fresh/
+    // misconfigured deploy). Auto-closes the moment a read succeeds, and never
+    // appears on a configured system having a temporary outage.
+    _maybeFirstRun(modbus) {
+        if (modbus && modbus.last_success_ts) {
+            this._everConnected = true;
+            this._closeFirstRun();
+            return;
+        }
+        if (this._everConnected || !this._firstRunGraceOver || this._firstRunShown) return;
+        this._firstRunShown = true;
+        this.openModal('firstRunModal');
+    }
+
+    _closeFirstRun() {
+        const m = document.getElementById('firstRunModal');
+        if (m && m.classList.contains('active')) this.closeModal('firstRunModal');
+    }
+
+    dismissFirstRun() { this.closeModal('firstRunModal'); }
+
+    firstRunOpenSettings() {
+        this.closeModal('firstRunModal');
+        this.navigateTo('config');   // Settings is the config page's default tab
+    }
+
     // ============ Toast Notifications ============
 
     showToast(type, title, message, duration = 4000) {
@@ -571,6 +604,8 @@ class JanitzaMonitor {
         // Initialize theme FIRST to prevent flash
         this.initTheme();
         await this.initI18n();   // load languages + apply the saved/default one
+        // After a grace window, a still-never-connected Modbus means "unconfigured".
+        setTimeout(() => { this._firstRunGraceOver = true; }, 10000);
 
         // Setup navigation
         this.setupNavigation();
@@ -2052,6 +2087,8 @@ class JanitzaMonitor {
             const modbus = status.modbus || {};
             const mqtt = status.mqtt || {};
             const influx = status.influxdb || {};
+
+            this._maybeFirstRun(modbus);
 
             // Update status indicators in titlebar
             const statusModbus = document.getElementById('statusModbus');

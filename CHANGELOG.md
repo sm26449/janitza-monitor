@@ -2,6 +2,14 @@
 
 Toate modificarile notabile ale proiectului sunt documentate in acest fisier.
 
+## [2.6.1] - 2026-06-26
+
+### Adaugat
+- **Onboarding prim-run** - pe un deploy nou/neconfigurat (Modbus nu s-a conectat niciodata) apare un modal „Connect your meter" cu buton direct spre **Config → Settings**. Apare doar dupa o pauza de gratie si **doar** cand meterul nu s-a conectat niciodata - **nu** deranjeaza un sistem configurat aflat intr-o pana temporara, si se inchide singur cand prima citire reuseste. Tradus EN/RO.
+
+### Schimbat
+- **Config editabil din UI, autoritar** - documentatia (README + manuale) duce acum cu „seteaza din UI" (Config → Settings, persistat in `config.yaml`, aplicat fara restart); variabilele `.env`/env devin optionale (bootstrap) si au intaietate cand sunt setate.
+
 ## [2.6.0] - 2026-06-22
 
 ### Adaugat
