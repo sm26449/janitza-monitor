@@ -21,25 +21,27 @@ services:
       # Virtual meters (the UI uses this range to offer/validate instance ports)
       - VMETER_PORT_START=${VMETER_PORT_START:-1502}
       - VMETER_PORT_END=${VMETER_PORT_END:-1512}
-      # Modbus
-      - MODBUS_HOST
-      - MODBUS_PORT
-      - MODBUS_UNIT_ID
-      # MQTT
-      - MQTT_ENABLED
-      - MQTT_BROKER
-      - MQTT_PORT
-      - MQTT_USERNAME
-      - MQTT_PASSWORD
-      - MQTT_PREFIX
-      - MQTT_PUBLISH_MODE
-      # InfluxDB
-      - INFLUXDB_ENABLED
-      - INFLUXDB_URL
-      - INFLUXDB_TOKEN
-      - INFLUXDB_ORG
-      - INFLUXDB_BUCKET
-      - INFLUXDB_PUBLISH_MODE
+      # Modbus / MQTT / InfluxDB connection settings are configured from the UI
+      # (Config -> Settings) and persisted to the mounted config/config.yaml, applied
+      # live without a restart. The app prompts you on first run if it can't connect.
+      # If you'd rather pre-seed them from the environment, uncomment the lines below
+      # (and set them in .env) — note an env value OVERRIDES the UI/yaml on every start.
+      # - MODBUS_HOST
+      # - MODBUS_PORT
+      # - MODBUS_UNIT_ID
+      # - MQTT_ENABLED
+      # - MQTT_BROKER
+      # - MQTT_PORT
+      # - MQTT_USERNAME
+      # - MQTT_PASSWORD
+      # - MQTT_PREFIX
+      # - MQTT_PUBLISH_MODE
+      # - INFLUXDB_ENABLED
+      # - INFLUXDB_URL
+      # - INFLUXDB_TOKEN
+      # - INFLUXDB_ORG
+      # - INFLUXDB_BUCKET
+      # - INFLUXDB_PUBLISH_MODE
       # UI
       - UI_PORT
       # Security — optional API key required for state-changing requests (empty = open)

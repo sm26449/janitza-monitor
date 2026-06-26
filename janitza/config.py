@@ -391,9 +391,12 @@ class Config:
             'INFLUXDB_PUBLISH_MODE': 'influxdb.publish_mode',
             'UI_PORT': 'ui.port',
         }
+        # Secret-bearing paths: report only that they are env-pinned, never the
+        # value (this endpoint is readable without the API key).
+        secret_paths = {'mqtt.password', 'influxdb.token'}
         for env_var, config_path in env_mappings.items():
             if os.getenv(env_var):
-                overrides[config_path] = os.getenv(env_var)
+                overrides[config_path] = '***' if config_path in secret_paths else os.getenv(env_var)
         return overrides
 
     def save_yaml_config(self):

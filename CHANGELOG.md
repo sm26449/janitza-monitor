@@ -6,9 +6,23 @@ Toate modificarile notabile ale proiectului sunt documentate in acest fisier.
 
 ### Adaugat
 - **Onboarding prim-run** - pe un deploy nou/neconfigurat (Modbus nu s-a conectat niciodata) apare un modal „Connect your meter" cu buton direct spre **Config → Settings**. Apare doar dupa o pauza de gratie si **doar** cand meterul nu s-a conectat niciodata - **nu** deranjeaza un sistem configurat aflat intr-o pana temporara, si se inchide singur cand prima citire reuseste. Tradus EN/RO.
+- **Buton „Save & Apply" per sectiune** in Config → Settings (Modbus/MQTT/InfluxDB) cu feedback inline („✓ Saved & applied") - salvarea nu mai e doar un autosave invizibil.
+- **Istoric la click pe valoare** - click pe orice valoare live de pe Dashboard deschide un modal cu graficul ultimelor **1h / 3h / 6h** (din InfluxDB). Reutilizeaza render-ul paginii History. Tradus EN/RO.
 
 ### Schimbat
-- **Config editabil din UI, autoritar** - documentatia (README + manuale) duce acum cu „seteaza din UI" (Config → Settings, persistat in `config.yaml`, aplicat fara restart); variabilele `.env`/env devin optionale (bootstrap) si au intaietate cand sunt setate.
+- **„Modbus" → „Modbus TCP"** in indicatorul de status si in antetul cardului de setari (mai exact).
+- **Un singur flux de save in Settings** - s-a eliminat auto-save-ul invizibil + banner-ul global „Apply"; ramane doar butonul explicit **Save & Apply** per sectiune.
+- **Config editabil din UI, autoritar** - documentatia (README + manuale) duce acum cu „seteaza din UI" (Config → Settings, persistat in `config.yaml`, aplicat fara restart); variabilele `.env`/env devin optionale (bootstrap) si au intaietate cand sunt setate. Exemplul (`docker-compose.yml` + `.env.example`) comenteaza acum variabilele de conexiune.
+
+### Reparat (audit cap-coada)
+- **Securitate: scurgere de secrete** - `GET /api/config/env-overrides` returna `INFLUXDB_TOKEN`/`MQTT_PASSWORD` in clar; acum sunt **redactate** (`***`).
+- **Securitate: HTML injection** - `label`/`name`/`unit`/topic/measurement ale registrilor + titlurile/mesajele toast erau injectate raw in `innerHTML`; acum trec prin escaping.
+- **Bug: `showToast` cu argumente inversate** in 5 locuri (icon/stil gresit, titlu literal „error/success").
+- **Bug: leak de listeneri** pe pagina Monitor (re-legare la fiecare vizita + la schimbarea limbii) - acum se leaga o singura data.
+- **Robustete:** `ws.onmessage` prinde acum frame-uri JSON malformate; comparatie API key in timp constant (`hmac.compare_digest`).
+- **UX:** click pe valoare deschide istoricul si in vederea Table (nu doar Cards).
+- **Docs:** README corectat (variabile env **fara** prefix `JANITZA_`) + tabelul de endpoint-uri completat (`/api/history`, `/api/history/registers`, `/api/energy/monthly`).
+- **Teste:** +7 (languages + guard de path, redactare env-overrides, pastrarea secretului la update, 503 history/energy).
 
 ## [2.6.0] - 2026-06-22
 

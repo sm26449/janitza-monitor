@@ -470,6 +470,71 @@ class JanitzaMonitor {
         this.navigateTo('config');   // Settings is the config page's default tab
     }
 
+    // ── Dashboard value → recent-history modal ─────────────────────────────
+    _wireDashboardClicks() {
+        const grid = document.getElementById('dashboardGrid');
+        if (!grid || grid._histWired) return;
+        grid._histWired = true;
+        grid.addEventListener('click', (e) => {
+            // Works for both card view (.widget-card) and table view (tr[data-address]).
+            const el = e.target.closest('.widget-card, tr[data-address]');
+            if (!el || el.dataset.address == null) return;
+            this.openValueHistory(el.dataset.address);
+        });
+    }
+
+    openValueHistory(address) {
+        const reg = (this.selectedRegisters || []).find(r => String(r.address) === String(address));
+        if (!reg || !reg.name) return;
+        this._vhReg = reg;
+        this._vhRange = this._vhRange || '-1h';
+        const title = document.getElementById('valHistTitle');
+        if (title) title.textContent = reg.label || reg.name;
+        const ranges = document.querySelectorAll('#valueHistoryModal .vh-range');
+        if (!this._vhWired) {
+            this._vhWired = true;
+            ranges.forEach(b => b.addEventListener('click', () => {
+                this._vhRange = b.dataset.range;
+                ranges.forEach(x => x.classList.toggle('active', x === b));
+                this.loadValueHistory();
+            }));
+        }
+        ranges.forEach(x => x.classList.toggle('active', x.dataset.range === this._vhRange));
+        this.openModal('valueHistoryModal');
+        this.loadValueHistory();
+    }
+
+    async loadValueHistory() {
+        const reg = this._vhReg;
+        if (!reg) return;
+        const canvas = document.getElementById('valHistCanvas');
+        const info = document.getElementById('valHistInfo');
+        const leg = document.getElementById('valHistLegend');
+        const range = this._vhRange || '-1h';
+        const every = range === '-1h' ? '1m' : (range === '-3h' ? '2m' : '5m');
+        if (info) info.textContent = this.t('common.loading', 'Loading…');
+        if (leg) leg.innerHTML = '';
+        this._clearCanvas(canvas);
+        try {
+            const r = await fetch(`/api/history?name=${encodeURIComponent(reg.name)}&start=${encodeURIComponent(range)}&every=${every}&fn=all`);
+            if (r.status === 503) { if (info) info.textContent = this.t('valhist.needInflux'); return; }
+            if (!r.ok) { if (info) info.textContent = `HTTP ${r.status}`; return; }
+            const d = await r.json();
+            const mean = d.series_mean || [];
+            if (!mean.length) { if (info) info.textContent = this.t('valhist.noData'); return; }
+            const series = [{
+                name: reg.name, label: reg.label || reg.name, unit: reg.unit || '',
+                color: (this._histColors && this._histColors()[0]) || '#2f81f7',
+                mean, mins: d.series_min || mean, maxs: d.series_max || mean,
+            }];
+            if (info) info.textContent = '';
+            // Render next frame so the now-visible canvas has a measured width.
+            requestAnimationFrame(() => this._renderHistory(null, { canvas, series, legendId: 'valHistLegend' }));
+        } catch (e) {
+            if (info) info.textContent = this.t('settings.saveFailed', 'Failed');
+        }
+    }
+
     // ============ Toast Notifications ============
 
     showToast(type, title, message, duration = 4000) {
@@ -487,8 +552,8 @@ class JanitzaMonitor {
         toast.innerHTML = `
             <span class="toast-icon">${icons[type] || icons.info}</span>
             <div class="toast-content">
-                <div class="toast-title">${title}</div>
-                ${message ? `<div class="toast-message">${message}</div>` : ''}
+                <div class="toast-title">${this._esc(title)}</div>
+                ${message ? `<div class="toast-message">${this._esc(message)}</div>` : ''}
             </div>
             <button class="toast-close">&times;</button>
         `;
@@ -612,6 +677,7 @@ class JanitzaMonitor {
 
         // Setup event listeners
         this.setupEventListeners();
+        this._wireDashboardClicks();
 
         // Connect WebSocket
         this.connectWebSocket();
@@ -1274,9 +1340,11 @@ class JanitzaMonitor {
         return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
     }
 
-    _renderHistory(hoverX) {
-        const canvas = document.getElementById('historyCanvas');
-        const series = this._histSeries;
+    _renderHistory(hoverX, opts = {}) {
+        // Reusable: History page (defaults) or the dashboard value-history modal
+        // (opts.canvas / opts.series / opts.legendId).
+        const canvas = opts.canvas || document.getElementById('historyCanvas');
+        const series = opts.series || this._histSeries;
         if (!canvas || !series || !series.length) return;
         const ctx = canvas.getContext('2d');
         const W = canvas.clientWidth || 800, H = canvas.clientHeight || 400;
@@ -1333,13 +1401,13 @@ class JanitzaMonitor {
             s._pts.forEach((p, i) => { i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); });
             ctx.strokeStyle = s.color; ctx.lineWidth = 1.6; ctx.stroke();
         });
-        const leg = document.getElementById('histLegend');
+        const leg = document.getElementById(opts.legendId || 'histLegend');
         if (leg) leg.innerHTML = series.map(s =>
             `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;font-size:12px;"><span style="width:11px;height:11px;border-radius:2px;background:${s.color};display:inline-block;"></span>${this._esc(s.label)}${s.unit ? ' <span style="color:#8a94a0;">(' + this._esc(s.unit) + ')</span>' : ''}</span>`).join('');
-        if (hoverX != null) this._histHover(ctx, series, hoverX, { mt, mb, H });
+        if (hoverX != null) this._histHover(ctx, series, hoverX, { mt, mb, H }, canvas);
     }
 
-    _histHover(ctx, series, hoverX, g) {
+    _histHover(ctx, series, hoverX, g, hoverCanvas) {
         let anchor = null, bd = Infinity;
         (series[0]._pts || []).forEach(p => { const dx = Math.abs(p.x - hoverX); if (dx < bd) { bd = dx; anchor = p; } });
         if (!anchor) return;
@@ -1356,7 +1424,7 @@ class JanitzaMonitor {
                 rows.push(`<div style="display:flex;align-items:center;gap:6px;white-space:nowrap;"><span style="width:9px;height:9px;border-radius:2px;background:${s.color};display:inline-block;"></span><b>${bp.v.toFixed(2)}</b>${s.unit ? ' ' + this._esc(s.unit) : ''} <span style="opacity:.6;">${this._esc(s.label)}</span></div>`);
             }
         });
-        const canvas = document.getElementById('historyCanvas');
+        const canvas = hoverCanvas || document.getElementById('historyCanvas');
         if (!this._histTip) {
             const tip = document.createElement('div');
             tip.style.cssText = 'position:absolute;pointer-events:none;background:rgba(18,22,27,0.94);color:#fff;padding:6px 9px;border-radius:5px;font-size:12px;z-index:6;display:none;box-shadow:0 2px 8px rgba(0,0,0,.3);';
@@ -1987,7 +2055,9 @@ class JanitzaMonitor {
         };
 
         this.ws.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
+            let msg;
+            try { msg = JSON.parse(event.data); }
+            catch (e) { return; }   // ignore malformed frames
             this.handleWebSocketMessage(msg);
         };
     }
@@ -2327,7 +2397,7 @@ class JanitzaMonitor {
         const header = `
             <div class="widget-header">
                 <div class="widget-header-left">
-                    <span class="widget-label">${reg.label}</span>
+                    <span class="widget-label">${this._esc(reg.label)}</span>
                 </div>
                 <div class="widget-header-right">
                     <span class="badge ${pollClass}">${reg.poll_group}</span>
@@ -2351,13 +2421,13 @@ class JanitzaMonitor {
                 const colorClass = this.getValueColorClass(numValue, reg);
                 content = `
                     <div class="widget-value">
-                        <span class="value-number ${colorClass}">${displayValue}</span><span class="widget-unit">${fmt.unit}</span>
+                        <span class="value-number ${colorClass}">${displayValue}</span><span class="widget-unit">${this._esc(fmt.unit)}</span>
                     </div>
                 `;
         }
 
         // Footer with register name
-        const footer = `<div class="widget-footer">${reg.name}</div>`;
+        const footer = `<div class="widget-footer">${this._esc(reg.name)}</div>`;
 
         card.innerHTML = header + content + footer;
 
@@ -2484,13 +2554,13 @@ class JanitzaMonitor {
             return `
                 <tr data-address="${reg.address}">
                     <td>
-                        <div class="table-label">${reg.label}</div>
-                        <div class="table-name">${reg.name}</div>
+                        <div class="table-label">${this._esc(reg.label)}</div>
+                        <div class="table-name">${this._esc(reg.name)}</div>
                     </td>
                     <td>
                         <span class="table-value ${colorClass}">${displayValue}</span>
                     </td>
-                    <td class="table-unit">${fmt.unit}</td>
+                    <td class="table-unit">${this._esc(fmt.unit)}</td>
                     <td>
                         <span class="badge ${pollClass}">${reg.poll_group}</span>
                     </td>
@@ -2585,7 +2655,7 @@ class JanitzaMonitor {
         if (currentEl) {
             const currentValue = history[history.length - 1]?.value;
             const displayValue = typeof currentValue === 'number' ? currentValue.toFixed(2) : '--';
-            currentEl.innerHTML = `${displayValue} <span>${reg.unit}</span>`;
+            currentEl.innerHTML = `${displayValue} <span>${this._esc(reg.unit)}</span>`;
         }
 
         // Update range
@@ -2602,7 +2672,7 @@ class JanitzaMonitor {
         const displayValue = typeof currentValue === 'number' ? currentValue.toFixed(2) : '--';
 
         return `
-            <div class="chart-current">${displayValue} <span>${reg.unit}</span></div>
+            <div class="chart-current">${displayValue} <span>${this._esc(reg.unit)}</span></div>
             <svg viewBox="0 0 200 60" class="chart-svg" preserveAspectRatio="none">
                 <path class="chart-line" d="${pathD}" />
             </svg>
@@ -2711,7 +2781,7 @@ class JanitzaMonitor {
 
         return `
             <div class="widget-chart">
-                <div class="chart-current">${displayValue} <span>${fmt.unit}</span></div>
+                <div class="chart-current">${displayValue} <span>${this._esc(fmt.unit)}</span></div>
                 <svg viewBox="0 0 200 60" class="chart-svg" preserveAspectRatio="none">
                     <path class="chart-line" d="${pathD}" />
                 </svg>
@@ -2796,7 +2866,7 @@ class JanitzaMonitor {
                     ${badges ? `<div class="badges">${badges}</div>` : ''}
                 </td>
                 <td class="name-cell">
-                    <span class="reg-name-mono">${reg.name}</span>
+                    <span class="reg-name-mono">${this._esc(reg.name)}</span>
                 </td>
                 <td>${reg.unit || '-'}</td>
                 <td>${reg.category}${reg.subtype ? '/' + reg.subtype : ''}</td>
@@ -3625,18 +3695,18 @@ class JanitzaMonitor {
             tr.innerHTML = `
                 <td class="addr-cell">${reg.address}</td>
                 <td class="label-cell">
-                    <span class="reg-label">${reg.label}</span>
-                    <span class="reg-name">${reg.name}</span>
+                    <span class="reg-label">${this._esc(reg.label)}</span>
+                    <span class="reg-name">${this._esc(reg.name)}</span>
                 </td>
-                <td class="unit-cell">${reg.unit || '-'}</td>
-                <td><span class="badge poll-${reg.poll_group}">${reg.poll_group}</span></td>
+                <td class="unit-cell">${this._esc(reg.unit || '-')}</td>
+                <td><span class="badge poll-${reg.poll_group}">${this._esc(reg.poll_group)}</span></td>
                 <td class="center">
-                    <span class="status-icon ${reg.mqtt_enabled ? 'active' : ''}" title="${mqttTooltip}">
+                    <span class="status-icon ${reg.mqtt_enabled ? 'active' : ''}" title="${this._esc(mqttTooltip)}">
                         ${reg.mqtt_enabled ? '&#10003;' : '&#10005;'}
                     </span>
                 </td>
                 <td class="center">
-                    <span class="status-icon ${reg.influxdb_enabled ? 'active' : ''}" title="${influxTooltip}">
+                    <span class="status-icon ${reg.influxdb_enabled ? 'active' : ''}" title="${this._esc(influxTooltip)}">
                         ${reg.influxdb_enabled ? '&#10003;' : '&#10005;'}
                     </span>
                 </td>
@@ -3808,7 +3878,7 @@ class JanitzaMonitor {
 
         } catch (error) {
             console.error('Failed to load settings:', error);
-            this.showToast('Failed to load settings', 'error');
+            this.showToast('error', 'Failed to load settings');
         }
     }
 
@@ -3869,173 +3939,64 @@ class JanitzaMonitor {
     }
 
     setupSettingsListeners() {
-        // MQTT enabled toggle
+        // The enable toggles only show/hide the section body. Nothing is persisted
+        // until the section's explicit "Save & Apply" button is pressed — a single,
+        // clear save path (no silent autosave, no separate apply banner).
         document.getElementById('cfgMqttEnabled')?.addEventListener('change', (e) => {
             this.toggleSettingsBody('mqtt', e.target.checked);
-            this.checkConfigChanged();
         });
-
-        // InfluxDB enabled toggle
         document.getElementById('cfgInfluxEnabled')?.addEventListener('change', (e) => {
             this.toggleSettingsBody('influx', e.target.checked);
-            this.checkConfigChanged();
-        });
-
-        // Apply config button
-        document.getElementById('applyConfigBtn')?.addEventListener('click', () => {
-            this.applyConfiguration();
-        });
-
-        // Add change listeners to all settings fields
-        const settingsFields = [
-            'cfgModbusHost', 'cfgModbusPort', 'cfgModbusUnitId', 'cfgModbusTimeout',
-            'cfgModbusRetryAttempts', 'cfgModbusRetryDelay',
-            'cfgMqttEnabled', 'cfgMqttBroker', 'cfgMqttPort', 'cfgMqttUsername', 'cfgMqttPassword',
-            'cfgMqttPrefix', 'cfgMqttPublishMode', 'cfgMqttQos', 'cfgMqttRetain',
-            'cfgMqttHaEnabled', 'cfgMqttHaPrefix', 'cfgMqttHaDeviceName',
-            'cfgInfluxEnabled', 'cfgInfluxUrl', 'cfgInfluxToken', 'cfgInfluxOrg',
-            'cfgInfluxBucket', 'cfgInfluxWriteInterval', 'cfgInfluxPublishMode'
-        ];
-
-        settingsFields.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('change', () => this.saveSettingsDebounced());
-                if (el.type === 'text' || el.type === 'number' || el.type === 'password') {
-                    el.addEventListener('input', () => this.saveSettingsDebounced());
-                }
-            }
         });
     }
 
-    saveSettingsDebounced() {
-        clearTimeout(this._saveSettingsTimeout);
-        this._saveSettingsTimeout = setTimeout(() => {
-            this.saveAllSettings();
-        }, 500);
+    // Build [endpoint, body] for one settings section from its form fields.
+    _gatherSettings(section) {
+        const v = id => document.getElementById(id);
+        if (section === 'modbus') return ['/api/config/modbus', {
+            host: v('cfgModbusHost').value,
+            port: parseInt(v('cfgModbusPort').value) || 502,
+            unit_id: parseInt(v('cfgModbusUnitId').value) || 1,
+            timeout: parseInt(v('cfgModbusTimeout').value) || 3,
+            retry_attempts: parseInt(v('cfgModbusRetryAttempts').value) || 3,
+            retry_delay: parseFloat(v('cfgModbusRetryDelay').value) || 1.0,
+        }];
+        if (section === 'mqtt') return ['/api/config/mqtt', {
+            enabled: v('cfgMqttEnabled').checked, broker: v('cfgMqttBroker').value,
+            port: parseInt(v('cfgMqttPort').value) || 1883, username: v('cfgMqttUsername').value,
+            password: v('cfgMqttPassword').value || undefined, topic_prefix: v('cfgMqttPrefix').value,
+            publish_mode: v('cfgMqttPublishMode').value, qos: parseInt(v('cfgMqttQos').value) || 0,
+            retain: v('cfgMqttRetain').checked, ha_discovery_enabled: v('cfgMqttHaEnabled').checked,
+            ha_discovery_prefix: v('cfgMqttHaPrefix').value, ha_device_name: v('cfgMqttHaDeviceName').value,
+        }];
+        return ['/api/config/influxdb', {
+            enabled: v('cfgInfluxEnabled').checked, url: v('cfgInfluxUrl').value,
+            token: v('cfgInfluxToken').value || undefined, org: v('cfgInfluxOrg').value,
+            bucket: v('cfgInfluxBucket').value, write_interval: parseInt(v('cfgInfluxWriteInterval').value) || 5,
+            publish_mode: v('cfgInfluxPublishMode').value,
+        }];
     }
 
-    async saveAllSettings() {
+    // Explicit per-section Save & Apply: persist that section to config.yaml then
+    // reconnect the service, with inline feedback (clearer than the silent autosave).
+    async saveAndApply(section, btn) {
+        const [url, body] = this._gatherSettings(section);
+        const fb = document.getElementById(section + 'SaveFeedback');
+        const orig = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i>'; }
+        if (fb) { fb.textContent = ''; fb.className = 'save-feedback'; }
         try {
-            // Gather Modbus config
-            const modbusConfig = {
-                host: document.getElementById('cfgModbusHost').value,
-                port: parseInt(document.getElementById('cfgModbusPort').value) || 502,
-                unit_id: parseInt(document.getElementById('cfgModbusUnitId').value) || 1,
-                timeout: parseInt(document.getElementById('cfgModbusTimeout').value) || 3,
-                retry_attempts: parseInt(document.getElementById('cfgModbusRetryAttempts').value) || 3,
-                retry_delay: parseFloat(document.getElementById('cfgModbusRetryDelay').value) || 1.0
-            };
-
-            // Gather MQTT config
-            const mqttConfig = {
-                enabled: document.getElementById('cfgMqttEnabled').checked,
-                broker: document.getElementById('cfgMqttBroker').value,
-                port: parseInt(document.getElementById('cfgMqttPort').value) || 1883,
-                username: document.getElementById('cfgMqttUsername').value,
-                password: document.getElementById('cfgMqttPassword').value || undefined,
-                topic_prefix: document.getElementById('cfgMqttPrefix').value,
-                publish_mode: document.getElementById('cfgMqttPublishMode').value,
-                qos: parseInt(document.getElementById('cfgMqttQos').value) || 0,
-                retain: document.getElementById('cfgMqttRetain').checked,
-                ha_discovery_enabled: document.getElementById('cfgMqttHaEnabled').checked,
-                ha_discovery_prefix: document.getElementById('cfgMqttHaPrefix').value,
-                ha_device_name: document.getElementById('cfgMqttHaDeviceName').value
-            };
-
-            // Gather InfluxDB config
-            const influxConfig = {
-                enabled: document.getElementById('cfgInfluxEnabled').checked,
-                url: document.getElementById('cfgInfluxUrl').value,
-                token: document.getElementById('cfgInfluxToken').value || undefined,
-                org: document.getElementById('cfgInfluxOrg').value,
-                bucket: document.getElementById('cfgInfluxBucket').value,
-                write_interval: parseInt(document.getElementById('cfgInfluxWriteInterval').value) || 5,
-                publish_mode: document.getElementById('cfgInfluxPublishMode').value
-            };
-
-            // Save all configs
-            await Promise.all([
-                fetch('/api/config/modbus', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(modbusConfig)
-                }),
-                fetch('/api/config/mqtt', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(mqttConfig)
-                }),
-                fetch('/api/config/influxdb', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(influxConfig)
-                })
-            ]);
-
-            // Show apply banner
-            this.showApplyBanner();
-
-        } catch (error) {
-            console.error('Failed to save settings:', error);
-            this.showToast('Failed to save settings', 'error');
-        }
-    }
-
-    checkConfigChanged() {
-        // Simple check - could be enhanced
-        this.showApplyBanner();
-    }
-
-    showApplyBanner() {
-        const banner = document.getElementById('applyConfigBanner');
-        if (banner) {
-            banner.style.display = 'flex';
-        }
-    }
-
-    hideApplyBanner() {
-        const banner = document.getElementById('applyConfigBanner');
-        if (banner) {
-            banner.style.display = 'none';
-        }
-    }
-
-    async applyConfiguration() {
-        const btn = document.getElementById('applyConfigBtn');
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Applying...';
-        }
-
-        try {
-            const response = await fetch('/api/config/apply', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            const result = await response.json();
-
-            if (result.status === 'ok') {
-                this.showToast('Configuration applied successfully', 'success');
-                this.hideApplyBanner();
-
-                // Reload status to update connection states
-                await this.loadStatus();
-                this.updateSettingsStatusDots();
-                this.renderStatusDetails();
-            } else {
-                this.showToast('Failed to apply configuration', 'error');
-            }
-
-        } catch (error) {
-            console.error('Failed to apply configuration:', error);
-            this.showToast('Failed to apply configuration', 'error');
+            const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            await fetch('/api/config/apply', { method: 'POST' });
+            if (fb) { fb.textContent = '✓ ' + this.t('settings.saved', 'Saved & applied'); fb.className = 'save-feedback ok'; setTimeout(() => { if (fb.classList.contains('ok')) fb.textContent = ''; }, 4000); }
+            // Refresh connection state after the reconnect.
+            await this.loadStatus();
+            this.updateSettingsStatusDots();
+        } catch (e) {
+            if (fb) { fb.textContent = this.t('settings.saveFailed', 'Save failed'); fb.className = 'save-feedback err'; }
         } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Apply Configuration';
-            }
+            if (btn) { btn.disabled = false; btn.innerHTML = orig; }
         }
     }
 
@@ -4288,7 +4249,7 @@ class JanitzaMonitor {
                     <input type="checkbox" data-address="${reg.address}" ${checked}>
                     <div class="customize-item-info">
                         <div class="customize-item-label">${reg.label || reg.name}</div>
-                        <div class="customize-item-details">${reg.name} · ${reg.unit || 'N/A'}</div>
+                        <div class="customize-item-details">${this._esc(reg.name)} · ${this._esc(reg.unit || 'N/A')}</div>
                     </div>
                     <div class="customize-item-controls">
                         <select class="customize-select" data-address="${reg.address}" data-field="widget">
@@ -4439,18 +4400,19 @@ class JanitzaMonitor {
         // Render categories sidebar
         this.renderMonitorCategories();
 
-        // Setup drag and drop
-        this.setupMonitorDragDrop();
-
-        // Setup event listeners
-        this.setupMonitorEventListeners();
+        // Drag/drop, button + canvas listeners, and the window resize handler must
+        // bind ONCE — initMonitorPage re-runs on every Monitor visit and on each
+        // language switch (setLanguage → navigateTo), so re-binding would leak.
+        if (!this._monitorWired) {
+            this._monitorWired = true;
+            this.setupMonitorDragDrop();
+            this.setupMonitorEventListeners();
+            window.addEventListener('resize', () => this.resizeMonitorCanvas());
+        }
 
         // Update table and legend
         this.updateMonitorTable();
         this.updateMonitorLegend();
-
-        // Handle resize
-        window.addEventListener('resize', () => this.resizeMonitorCanvas());
 
         // Delay canvas resize to ensure layout is complete
         requestAnimationFrame(() => {

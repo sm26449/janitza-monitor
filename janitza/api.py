@@ -1,6 +1,7 @@
 """REST API and WebSocket server for Janitza Monitor."""
 
 import asyncio
+import hmac
 import json
 import logging
 import os
@@ -200,7 +201,7 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
     async def _write_guard(request, call_next):
         if (_api_key and request.method in ("POST", "PUT", "PATCH", "DELETE")
                 and request.url.path not in _open_writes):
-            if request.headers.get("X-API-Key", "") != _api_key:
+            if not hmac.compare_digest(request.headers.get("X-API-Key", ""), _api_key):
                 return JSONResponse({"detail": "missing or invalid API key"}, status_code=401)
         return await call_next(request)
 

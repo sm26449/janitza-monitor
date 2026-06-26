@@ -218,3 +218,61 @@ def test_write_guard_gates_patch_and_delete():
     c = _client("secret123")
     assert c.patch("/api/virtual-meters/em24_av53", json={"unit_id": 1}).status_code == 401
     assert c.delete("/api/virtual-meters/em24_av53").status_code == 401
+
+
+# ── red-block review fixes (2.6.1) ───────────────────────────────────────
+def test_env_overrides_redacts_secrets(monkeypatch):
+    """GET /api/config/env-overrides must never expose token/password values."""
+    monkeypatch.setenv("MODBUS_HOST", "10.0.0.5")
+    monkeypatch.setenv("MQTT_PASSWORD", "supersecret")
+    monkeypatch.setenv("INFLUXDB_TOKEN", "tok-abc123")
+    ov = Config().get_env_overrides()
+    assert ov.get("mqtt.password") == "***"
+    assert ov.get("influxdb.token") == "***"
+    assert "supersecret" not in ov.values()
+    assert "tok-abc123" not in ov.values()
+    assert ov.get("modbus.host") == "10.0.0.5"   # non-secret value still surfaced
+
+
+def test_update_mqtt_none_preserves_secret():
+    """A blank password (None) must not clobber a stored secret."""
+    c = Config()
+    c.mqtt.password = "kept-secret"
+    c.update_mqtt(broker="new-broker", password=None)
+    assert c.mqtt.broker == "new-broker"
+    assert c.mqtt.password == "kept-secret"
+
+
+@_needs_tc
+def test_languages_list_includes_en():
+    r = _client().get("/api/languages")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["default"] == "en"
+    assert "en" in [l["code"] for l in body["languages"]]
+
+
+@_needs_tc
+def test_language_get_valid():
+    r = _client().get("/api/languages/en")
+    assert r.status_code == 200 and r.json().get("nav.dashboard")
+
+
+@_needs_tc
+def test_language_bad_code_rejected():
+    c = _client()
+    assert c.get("/api/languages/EN").status_code == 400      # uppercase
+    assert c.get("/api/languages/e1").status_code == 400      # non-alpha
+    assert c.get("/api/languages/x").status_code == 400       # too short
+
+
+@_needs_tc
+def test_language_unknown_is_404():
+    assert _client().get("/api/languages/zz").status_code == 404
+
+
+@_needs_tc
+def test_history_and_energy_503_without_influx():
+    c = _client()   # influxdb_publisher is None
+    assert c.get("/api/history?name=_TEMP&start=-1h").status_code == 503
+    assert c.get("/api/energy/monthly?year=2026&month=6").status_code == 503

@@ -592,3 +592,9 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* Live values are clickable → recent-history modal */
+.widget-card { cursor: pointer; }
+.widget-card:hover { border-color: var(--accent, #2f81f7); }
+.dashboard-table tr[data-address] { cursor: pointer; }
+.dashboard-table tr[data-address]:hover { background: var(--bg-tertiary, rgba(128,128,128,0.08)); }

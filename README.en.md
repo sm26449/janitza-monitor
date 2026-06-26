@@ -356,6 +356,11 @@ The Modbus status detail surfaces **data freshness**, the **last successful read
 | `/api/config/influxdb` | GET/POST | InfluxDB config |
 | `/api/config/apply` | POST | Apply configuration (reconnect) |
 | `/api/config/reload-registers` | POST | Reload registers |
+| `/api/languages` | GET | Available UI languages (scans `ui/languages/`) |
+| `/api/languages/{code}` | GET | One language's translations |
+| `/api/history` | GET | Stored history for a register (InfluxDB) |
+| `/api/history/registers` | GET | Registers available for history |
+| `/api/energy/monthly` | GET | Monthly energy totals + daily breakdown |
 | `/ws` | WebSocket | Real-time stream |
 
 ## Home Assistant Integration
@@ -451,15 +456,17 @@ docker compose -f docker-compose.pv-stack.yml build janitza-monitor
 docker compose -f docker-compose.pv-stack.yml up -d janitza-monitor
 ```
 
-Variables are configured in `.env` with `JANITZA_` prefix:
+Environment variables are **unprefixed** (the app reads `MODBUS_HOST`, not
+`JANITZA_MODBUS_HOST`) and are all **optional** — prefer configuring from the UI.
+`API_KEY` is also honoured as `JANITZA_API_KEY`.
 
 ```bash
-JANITZA_MODBUS_HOST=192.168.1.100
-JANITZA_MQTT_BROKER=mosquitto
-JANITZA_INFLUXDB_ENABLED=true
-JANITZA_INFLUXDB_URL=http://influxdb:8086
-JANITZA_INFLUXDB_BUCKET=janitza
-JANITZA_UI_PORT=8080
+MODBUS_HOST=192.168.1.100
+MQTT_BROKER=mosquitto
+INFLUXDB_ENABLED=true
+INFLUXDB_URL=http://influxdb:8086
+INFLUXDB_BUCKET=janitza
+UI_PORT=8080
 ```
 
 See `service.yaml` for the complete list of variables and dependencies.

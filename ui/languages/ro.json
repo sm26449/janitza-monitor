@@ -9,7 +9,7 @@
   "nav.config": "Configurare",
   "nav.vmeters": "Contoare virtuale",
 
-  "status.modbus": "Modbus",
+  "status.modbus": "Modbus TCP",
   "status.mqtt": "MQTT",
   "status.influxdb": "InfluxDB",
   "status.vmeter": "vMetru",
@@ -83,5 +83,14 @@
   "firstrun.title": "Conectează-ți meterul",
   "firstrun.body": "Încă nu sunt date Modbus. Introdu adresa IP și portul Janitza UMG în Config → Settings, apoi apasă Apply.",
   "firstrun.openSettings": "Deschide Settings",
-  "firstrun.later": "Mai târziu"
+  "firstrun.later": "Mai târziu",
+
+  "settings.saveApply": "Salvează & Aplică",
+  "settings.saved": "Salvat & aplicat",
+  "settings.saveFailed": "Salvarea a eșuat",
+
+  "valhist.title": "Istoric",
+  "valhist.needInflux": "Activează InfluxDB (Config → Settings) ca să vezi istoricul acestei valori.",
+  "valhist.noData": "Încă nu există istoric stocat pentru această valoare.",
+  "valhist.hint": "Apasă pe orice valoare live de pe dashboard ca să-i vezi istoricul recent."
 }

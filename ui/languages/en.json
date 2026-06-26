@@ -9,7 +9,7 @@
   "nav.config": "Config",
   "nav.vmeters": "Virtual Meters",
 
-  "status.modbus": "Modbus",
+  "status.modbus": "Modbus TCP",
   "status.mqtt": "MQTT",
   "status.influxdb": "InfluxDB",
   "status.vmeter": "vMeter",
@@ -83,5 +83,14 @@
   "firstrun.title": "Connect your meter",
   "firstrun.body": "No Modbus data yet. Enter your Janitza UMG's IP address and port in Config → Settings, then press Apply.",
   "firstrun.openSettings": "Open Settings",
-  "firstrun.later": "Later"
+  "firstrun.later": "Later",
+
+  "settings.saveApply": "Save & Apply",
+  "settings.saved": "Saved & applied",
+  "settings.saveFailed": "Save failed",
+
+  "valhist.title": "History",
+  "valhist.needInflux": "Enable InfluxDB (Config → Settings) to see history for this value.",
+  "valhist.noData": "No history stored yet for this value.",
+  "valhist.hint": "Click any live value on the dashboard to see its recent history."
 }

@@ -359,6 +359,9 @@ Detaliul de status Modbus arată **prospețimea datelor**, **ultima citire reuș
 | `/api/config/reload-registers` | POST | Reload registri |
 | `/api/languages` | GET | Limbi UI disponibile (scaneaza `ui/languages/`) |
 | `/api/languages/{cod}` | GET | Traducerile unei limbi |
+| `/api/history` | GET | Istoric stocat pentru un registru (InfluxDB) |
+| `/api/history/registers` | GET | Registrii disponibili pentru istoric |
+| `/api/energy/monthly` | GET | Totaluri energie lunare + defalcare zilnica |
 | `/ws` | WebSocket | Stream real-time |
 
 ## Home Assistant Integration
@@ -454,15 +457,17 @@ docker compose -f docker-compose.pv-stack.yml build janitza-monitor
 docker compose -f docker-compose.pv-stack.yml up -d janitza-monitor
 ```
 
-Variabilele se configureaza in `.env` cu prefix `JANITZA_`:
+Variabilele de mediu sunt **fara prefix** (aplicatia citeste `MODBUS_HOST`, nu
+`JANITZA_MODBUS_HOST`) si toate sunt **optionale** — de preferat le setezi din UI.
+`API_KEY` e acceptat si ca `JANITZA_API_KEY`.
 
 ```bash
-JANITZA_MODBUS_HOST=192.168.1.100
-JANITZA_MQTT_BROKER=mosquitto
-JANITZA_INFLUXDB_ENABLED=true
-JANITZA_INFLUXDB_URL=http://influxdb:8086
-JANITZA_INFLUXDB_BUCKET=janitza
-JANITZA_UI_PORT=8080
+MODBUS_HOST=192.168.1.100
+MQTT_BROKER=mosquitto
+INFLUXDB_ENABLED=true
+INFLUXDB_URL=http://influxdb:8086
+INFLUXDB_BUCKET=janitza
+UI_PORT=8080
 ```
 
 Vezi `service.yaml` pentru lista completa de variabile si dependinte.

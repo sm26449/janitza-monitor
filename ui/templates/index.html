@@ -10,10 +10,10 @@
 
     <!-- Modular CSS -->
     <link rel="stylesheet" href="/static/css/base.css?v=vm13">
-    <link rel="stylesheet" href="/static/css/dashboard.css?v=vm9">
+    <link rel="stylesheet" href="/static/css/dashboard.css?v=vm11">
     <link rel="stylesheet" href="/static/css/monitor.css?v=vm10">
     <link rel="stylesheet" href="/static/css/registers.css?v=vm9">
-    <link rel="stylesheet" href="/static/css/config.css?v=vm9">
+    <link rel="stylesheet" href="/static/css/config.css?v=vm10">
 </head>
 <body>
     <!-- Toast Container -->
@@ -119,7 +119,7 @@
 
                 <!-- Dashboard Header -->
                 <div class="section-header">
-                    <h2><i class="bi bi-speedometer2"></i> Live Values</h2>
+                    <h2><i class="bi bi-speedometer2"></i> <span data-i18n="dashboard.liveValues">Live Values</span></h2>
                     <div class="header-actions">
                         <button class="btn btn-ghost btn-sm" id="dashboardViewToggle" title="Toggle view (Cards/Table)">
                             <i class="bi bi-table"></i>
@@ -308,17 +308,6 @@
 
             <!-- Config Page -->
             <div class="page" id="configPage">
-                <!-- Apply Configuration Banner -->
-                <div class="apply-config-banner" id="applyConfigBanner" style="display: none;">
-                    <div class="banner-content">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <span>Configuration changed. Apply to reconnect services.</span>
-                    </div>
-                    <button class="btn btn-warning btn-sm" id="applyConfigBtn">
-                        <i class="bi bi-arrow-repeat"></i> Apply Configuration
-                    </button>
-                </div>
-
                 <!-- Config Main Tabs -->
                 <div class="config-main-tabs">
                     <button class="config-main-tab active" data-tab="settings">
@@ -335,7 +324,7 @@
                         <!-- Modbus Settings -->
                         <div class="settings-card">
                             <div class="settings-card-header">
-                                <h3><i class="bi bi-hdd-network"></i> Modbus</h3>
+                                <h3><i class="bi bi-hdd-network"></i> <span data-i18n="status.modbus">Modbus TCP</span></h3>
                                 <span class="status-dot" id="modbusStatusDot"></span>
                             </div>
                             <div class="settings-card-body">
@@ -368,6 +357,10 @@
                                         <input type="number" id="cfgModbusRetryDelay" class="input" step="0.1" placeholder="1.0">
                                     </div>
                                 </div>
+                            </div>
+                            <div class="settings-card-footer">
+                                <span class="save-feedback" id="modbusSaveFeedback"></span>
+                                <button class="btn btn-primary btn-sm" onclick="app.saveAndApply('modbus', this)"><i class="bi bi-check-lg"></i> <span data-i18n="settings.saveApply">Save &amp; Apply</span></button>
                             </div>
                         </div>
 
@@ -451,6 +444,10 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="settings-card-footer">
+                                <span class="save-feedback" id="mqttSaveFeedback"></span>
+                                <button class="btn btn-primary btn-sm" onclick="app.saveAndApply('mqtt', this)"><i class="bi bi-check-lg"></i> <span data-i18n="settings.saveApply">Save &amp; Apply</span></button>
+                            </div>
                         </div>
 
                         <!-- InfluxDB Settings -->
@@ -499,6 +496,10 @@
                                         </select>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="settings-card-footer">
+                                <span class="save-feedback" id="influxSaveFeedback"></span>
+                                <button class="btn btn-primary btn-sm" onclick="app.saveAndApply('influx', this)"><i class="bi bi-check-lg"></i> <span data-i18n="settings.saveApply">Save &amp; Apply</span></button>
                             </div>
                         </div>
                     </div>
@@ -962,6 +963,26 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=vm24"></script>
+    <!-- Live-value recent-history (click a dashboard value) -->
+    <div class="modal" id="valueHistoryModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3><i class="bi bi-graph-up"></i> <span id="valHistTitle" data-i18n="valhist.title">History</span></h3>
+                <button class="modal-close" onclick="app.closeModal('valueHistoryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="graph-controls" style="display:flex;gap:6px;margin-bottom:8px;">
+                    <button class="btn btn-ghost btn-sm vh-range active" data-range="-1h">1h</button>
+                    <button class="btn btn-ghost btn-sm vh-range" data-range="-3h">3h</button>
+                    <button class="btn btn-ghost btn-sm vh-range" data-range="-6h">6h</button>
+                </div>
+                <div class="graph-container" style="height:300px;"><canvas id="valHistCanvas"></canvas></div>
+                <div id="valHistLegend" class="graph-legend"></div>
+                <div id="valHistInfo" style="color:#8a94a0;font-size:11.5px;padding:4px 2px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js?v=vm26"></script>
 </body>
 </html>
