@@ -4,6 +4,7 @@ import math
 import re
 import time
 import threading
+from collections import deque
 from typing import Dict, Any, Optional, List
 
 from .config import InfluxDBConfig, SelectedRegister
@@ -30,7 +31,12 @@ class InfluxDBPublisher:
     - NaN/Infinity guard to protect InfluxDB batches
     - Proactive health checks via ping()
     - Batched writes with error/retry callbacks
-    - Automatic reconnection
+    - Automatic reconnection (background — never blocks application boot)
+    - Points are stamped with the Modbus poll time, not the flush time
+    - Store-and-forward: points that cannot be delivered (InfluxDB down, batch
+      retries exhausted) go to a bounded RAM buffer and are replayed with their
+      original timestamps on reconnect. InfluxDB dedupes on (measurement, tags,
+      timestamp), so replay is idempotent — no duplicates by construction.
     """
 
     def __init__(self, config: InfluxDBConfig, registers: List[SelectedRegister],
@@ -44,7 +50,14 @@ class InfluxDBPublisher:
         self._connected = threading.Event()
         self.last_values: Dict[int, Dict] = {}
         self.last_write_time: Dict[int, float] = {}
+        # lock guards the client/write_api REFERENCES only — it must never be
+        # held across network I/O, or the Modbus poller threads (which take it
+        # per point in the hot path) stall behind a slow reconnect, the live
+        # cache goes stale and the virtual meters drop their consumers.
         self.lock = threading.Lock()
+        # the change-detection cache gets its own lock so the hot path never
+        # contends with client lifecycle at all
+        self._cache_lock = threading.Lock()
 
         # Build register lookup by address
         self._register_map: Dict[int, SelectedRegister] = {
@@ -57,13 +70,23 @@ class InfluxDBPublisher:
         self.writes_skipped = 0
         self.disconnection_count = 0
 
+        # Store-and-forward replay buffer: (poll_epoch_s, line_protocol) tuples,
+        # bounded by age (buffer_minutes) and count (buffer_max_points).
+        self._buffer: deque = deque()
+        self._buf_lock = threading.Lock()
+        self.points_buffered = 0
+        self.points_replayed = 0
+        self.points_dropped = 0
+
         # Reconnection thread
         self._stop_reconnect = threading.Event()
         self._reconnect_thread = None
 
         if config.enabled:
-            self._setup_client_with_retry()
-            # Always start persistent monitor thread for proactive health checks
+            # Non-blocking startup: the monitor thread performs the first
+            # connect (and every reconnect) in the background, so a down
+            # InfluxDB can never stall application boot. Points produced
+            # before the first connect land in the replay buffer.
             self._start_reconnect_thread()
 
     @property
@@ -80,69 +103,114 @@ class InfluxDBPublisher:
             self._connected.clear()
 
     def _on_write_error(self, conf, data, exception):
-        """Callback when InfluxDB batch write fails permanently (all retries exhausted)."""
-        logger.error(f"InfluxDB data lost permanently: {exception}")
+        """Callback when an InfluxDB batch write fails permanently (all client
+        retries exhausted). The batch is NOT lost: its line-protocol payload is
+        recovered into the replay buffer and re-delivered on reconnect."""
         self.writes_failed += 1
+        recovered = self._rebuffer_batch(data)
+        logger.error(f"InfluxDB batch failed permanently ({exception}) — "
+                     f"recovered {recovered} points into the replay buffer")
         self._handle_write_error(exception)
+
+    def _rebuffer_batch(self, data) -> int:
+        """Recover a failed batch (bytes/str/list of line protocol) into the
+        replay buffer, preserving each point's own timestamp. Never raises."""
+        try:
+            if isinstance(data, bytes):
+                data = data.decode('utf-8', 'replace')
+            if isinstance(data, str):
+                lines = data.splitlines()
+            elif isinstance(data, (list, tuple)):
+                lines = [str(l) for l in data]
+            else:
+                lines = [str(data)]
+        except Exception:  # noqa: BLE001
+            return 0
+        now = time.time()
+        recovered = 0
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                # trailing token of a line-protocol record is the ns timestamp
+                ts = int(line.rsplit(' ', 1)[1]) / 1e9
+            except Exception:  # noqa: BLE001
+                ts = now
+            self._buffer_line(line, ts)
+            recovered += 1
+        return recovered
 
     def _on_write_retry(self, conf, data, exception):
         """Callback when InfluxDB batch write is being retried."""
         logger.warning(f"InfluxDB write retry: {exception}")
 
     def _setup_client(self):
-        """Setup InfluxDB client with proper batching and error callbacks."""
-        with self.lock:
-            try:
-                from influxdb_client import InfluxDBClient, WriteOptions
+        """Setup InfluxDB client with proper batching and error callbacks.
 
-                # Clean up old connections first
-                if self.write_api:
+        All network I/O (ping, bucket check) happens WITHOUT holding self.lock;
+        only the final reference swap is locked. Holding the lock across a slow
+        connect (DNS timeouts while the server is down take seconds per try)
+        would stall every Modbus poller behind it — observed live as the
+        virtual meters dropping their consumers mid-reconnect."""
+        try:
+            from influxdb_client import InfluxDBClient, WriteOptions
+
+            new_client = InfluxDBClient(
+                url=self.config.url,
+                token=self.config.token,
+                org=self.config.org,
+                timeout=10_000,
+            )
+
+            # Test connection with ping() (replaces deprecated health())
+            if not new_client.ping():
+                logger.warning("InfluxDB ping failed")
+                try:
+                    new_client.close()
+                except Exception:  # noqa: BLE001
+                    pass
+                return
+
+            new_write_api = new_client.write_api(
+                write_options=WriteOptions(
+                    batch_size=100,
+                    flush_interval=10_000,
+                    jitter_interval=2_000,
+                    retry_interval=5_000,
+                    max_retries=10,
+                    max_retry_time=300_000,
+                    exponential_base=2,
+                ),
+                error_callback=self._on_write_error,
+                success_callback=None,
+                retry_callback=self._on_write_retry,
+            )
+
+            with self.lock:                       # swap references only
+                old_write_api, old_client = self.write_api, self.client
+                self.client, self.write_api = new_client, new_write_api
+
+            self.connected = True
+            logger.info(f"InfluxDB connected to {self.config.url}")
+            self._ensure_bucket()                 # auto-create if missing
+
+            # Retire old objects after the swap, outside the lock: closing a
+            # batching write_api can block while it flushes/abandons retries
+            # (its dead batches come back through _on_write_error → buffer).
+            for obj in (old_write_api, old_client):
+                if obj:
                     try:
-                        self.write_api.close()
-                    except Exception:
-                        pass
-                if self.client:
-                    try:
-                        self.client.close()
-                    except Exception:
+                        obj.close()
+                    except Exception:  # noqa: BLE001
                         pass
 
-                self.client = InfluxDBClient(
-                    url=self.config.url,
-                    token=self.config.token,
-                    org=self.config.org
-                )
-
-                self.write_api = self.client.write_api(
-                    write_options=WriteOptions(
-                        batch_size=100,
-                        flush_interval=10_000,
-                        jitter_interval=2_000,
-                        retry_interval=5_000,
-                        max_retries=10,
-                        max_retry_time=300_000,
-                        exponential_base=2,
-                    ),
-                    error_callback=self._on_write_error,
-                    success_callback=None,
-                    retry_callback=self._on_write_retry,
-                )
-
-                # Test connection with ping() (replaces deprecated health())
-                if self.client.ping():
-                    self.connected = True
-                    logger.info(f"InfluxDB connected to {self.config.url}")
-                    # Auto-create bucket if it doesn't exist
-                    self._ensure_bucket()
-                else:
-                    logger.warning("InfluxDB ping failed")
-
-            except ImportError:
-                logger.warning("influxdb-client not installed. Install with: pip install influxdb-client")
-                self.config.enabled = False
-            except Exception as e:
-                logger.warning(f"InfluxDB connection failed: {e}")
-                self.connected = False
+        except ImportError:
+            logger.warning("influxdb-client not installed. Install with: pip install influxdb-client")
+            self.config.enabled = False
+        except Exception as e:
+            logger.warning(f"InfluxDB connection failed: {e}")
+            self.connected = False
 
     def _ensure_bucket(self):
         """Auto-create bucket if it doesn't exist."""
@@ -165,22 +233,71 @@ class InfluxDBPublisher:
         except Exception as e:
             logger.warning(f"Bucket auto-create failed (non-fatal): {e}")
 
-    def _setup_client_with_retry(self):
-        """Setup InfluxDB client with retry logic."""
-        delay = RETRY_INITIAL_DELAY
+    # ── store-and-forward buffer ───────────────────────────────────────────
+    def _buffer_line(self, line: str, ts: float) -> None:
+        """Queue one line-protocol record for replay. Bounded: drop-oldest by
+        age (buffer_minutes) and count (buffer_max_points)."""
+        with self._buf_lock:
+            self._buffer.append((ts, line))
+            self.points_buffered += 1
+            self._prune_buffer_locked()
 
-        for attempt in range(1, RETRY_MAX_ATTEMPTS + 1):
-            self._setup_client()
+    def _prune_buffer_locked(self) -> None:
+        """Enforce buffer bounds. Caller holds _buf_lock."""
+        cutoff = time.time() - getattr(self.config, 'buffer_minutes', 10) * 60
+        while self._buffer and self._buffer[0][0] < cutoff:
+            self._buffer.popleft()
+            self.points_dropped += 1
+        overflow = len(self._buffer) - getattr(self.config, 'buffer_max_points', 50000)
+        if overflow > 0:
+            for _ in range(overflow):
+                self._buffer.popleft()
+            self.points_dropped += overflow
 
-            if self.connected:
-                return
-
-            if attempt < RETRY_MAX_ATTEMPTS:
-                logger.info(f"InfluxDB connection attempt {attempt}/{RETRY_MAX_ATTEMPTS} failed, retrying in {delay}s...")
-                time.sleep(delay)
-                delay = min(delay * RETRY_BACKOFF_FACTOR, RETRY_MAX_DELAY)
-
-        logger.warning(f"InfluxDB: all {RETRY_MAX_ATTEMPTS} connection attempts failed. Will continue trying in background.")
+    def _drain_buffer(self) -> None:
+        """Replay buffered points to InfluxDB in original order, in chunks,
+        via a synchronous write (so success is known before points are let go
+        of). A failed chunk goes back to the FRONT of the buffer and draining
+        stops until the next monitor tick. Runs on the monitor thread."""
+        with self._buf_lock:
+            self._prune_buffer_locked()
+            pending = len(self._buffer)
+        if not pending:
+            return
+        with self.lock:
+            client = self.client
+        if client is None:
+            return
+        logger.info(f"InfluxDB replaying {pending} buffered points...")
+        try:
+            from influxdb_client.client.write_api import SYNCHRONOUS
+            wapi = client.write_api(write_options=SYNCHRONOUS)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"InfluxDB replay unavailable: {e}")
+            return
+        try:
+            while True:
+                with self._buf_lock:
+                    chunk = [self._buffer.popleft()
+                             for _ in range(min(len(self._buffer), 5000))]
+                if not chunk:
+                    break
+                try:
+                    wapi.write(bucket=self.config.bucket,
+                               record="\n".join(line for _, line in chunk))
+                    self.points_replayed += len(chunk)
+                except Exception as e:  # noqa: BLE001
+                    with self._buf_lock:
+                        self._buffer.extendleft(reversed(chunk))
+                    logger.warning(f"InfluxDB replay failed ({e}) — will retry")
+                    self._handle_write_error(e)
+                    return
+            logger.info(f"InfluxDB replay complete: {pending} points delivered")
+        finally:
+            try:
+                wapi.close()
+            except Exception:  # noqa: BLE001
+                pass
 
     def _start_reconnect_thread(self):
         """Start background thread for reconnection and health monitoring."""
@@ -210,11 +327,7 @@ class InfluxDBPublisher:
                 try:
                     with self.lock:
                         client = self.client
-                    if not client:
-                        self.connected = False
-                        self._stop_reconnect.wait(RECONNECT_CHECK_INTERVAL)
-                        continue
-                    if not client.ping():
+                    if not client or not client.ping():
                         logger.warning("InfluxDB ping failed")
                         self.connected = False
                 except Exception as e:
@@ -226,6 +339,13 @@ class InfluxDBPublisher:
 
                 if self.connected:
                     logger.info("InfluxDB reconnected successfully")
+
+            # Deliver anything the outage left behind (no-op when empty).
+            if self.connected:
+                try:
+                    self._drain_buffer()
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(f"InfluxDB buffer drain error: {e}")
 
             self._stop_reconnect.wait(RECONNECT_CHECK_INTERVAL)
 
@@ -266,7 +386,7 @@ class InfluxDBPublisher:
         """
         current_time = time.time()
 
-        with self.lock:
+        with self._cache_lock:
             # Rate limiting
             if address in self.last_write_time:
                 elapsed = current_time - self.last_write_time[address]
@@ -282,8 +402,11 @@ class InfluxDBPublisher:
             return True
 
     def _confirm_write(self, address: int, value: Any):
-        """Update cache after successful write. Prevents data loss on transient failures."""
-        with self.lock:
+        """Update the change-detection cache once a point is on a guaranteed
+        path: either enqueued to the batching client (whose permanent failures
+        are recovered into the replay buffer via _on_write_error) or placed in
+        the replay buffer directly."""
+        with self._cache_lock:
             self.last_values[address] = value
             self.last_write_time[address] = time.time()
 
@@ -327,14 +450,52 @@ class InfluxDBPublisher:
 
         return tags
 
+    def _build_point(self, register: SelectedRegister, safe_val: Any, ts: float,
+                     poll_group: Optional[str] = None,
+                     extra_tags: Dict[str, str] = None):
+        """Build a Point stamped with the Modbus poll time (not the flush time),
+        so batching latency never skews the series and buffered replay lands the
+        point exactly where it was measured."""
+        from influxdb_client import Point, WritePrecision
+
+        point = Point(self._get_measurement(register))
+        for tag_key, tag_value in self._get_tags(register).items():
+            point = point.tag(tag_key, tag_value)
+        if extra_tags:
+            for tag_key, tag_value in extra_tags.items():
+                point = point.tag(tag_key, tag_value)
+        if poll_group:
+            point = point.tag('poll_group', poll_group)
+
+        field_name = register.name.lower().replace('[', '_').replace(']', '').replace('_g_', '')
+        if isinstance(safe_val, (int, float)):
+            point = point.field(field_name, float(safe_val))
+            point = point.field('value', float(safe_val))
+        else:
+            point = point.field(field_name, str(safe_val))
+        return point.time(int(ts * 1e9), WritePrecision.NS)
+
+    def _deliver(self, point, ts: float) -> None:
+        """Route one point: enqueue to the batching client when connected,
+        otherwise (or on enqueue failure) into the replay buffer. Either path
+        guarantees eventual delivery within the buffer bounds."""
+        if self.connected and self.write_api:
+            try:
+                self.write_api.write(bucket=self.config.bucket, record=point)
+                self.writes_total += 1
+                return
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"InfluxDB enqueue failed, buffering point: {e}")
+                self._handle_write_error(e)
+        self._buffer_line(point.to_line_protocol(), ts)
+
     def write_register_data(self, poll_group: str, data: Dict[int, Dict]):
-        """Write register data from a poll group."""
-        if not self.is_enabled():
+        """Write register data from a poll group. Works whether or not InfluxDB
+        is reachable — points produced during an outage go to the replay buffer."""
+        if not self.config.enabled:
             return
 
         try:
-            from influxdb_client import Point
-
             for address, item in data.items():
                 register = item.get('register')
                 value = item.get('value')
@@ -354,26 +515,9 @@ class InfluxDBPublisher:
                 else:
                     safe_val = value
 
-                # Create point
-                measurement = self._get_measurement(register)
-                point = Point(measurement)
-
-                for tag_key, tag_value in self._get_tags(register).items():
-                    point = point.tag(tag_key, tag_value)
-
-                point = point.tag('poll_group', poll_group)
-
-                field_name = register.name.lower().replace('[', '_').replace(']', '').replace('_g_', '')
-                if isinstance(safe_val, (int, float)):
-                    point = point.field(field_name, float(safe_val))
-                    point = point.field('value', float(safe_val))
-                else:
-                    point = point.field(field_name, str(safe_val))
-
-                self.write_api.write(bucket=self.config.bucket, record=point)
-                self.writes_total += 1
-
-                # Confirm write — update cache only after successful enqueue
+                ts = item.get('ts') or time.time()
+                point = self._build_point(register, safe_val, ts, poll_group=poll_group)
+                self._deliver(point, ts)
                 self._confirm_write(address, value)
 
         except Exception as e:
@@ -382,9 +526,9 @@ class InfluxDBPublisher:
             self._handle_write_error(e)
 
     def write_single(self, register: SelectedRegister, value: Any,
-                     extra_tags: Dict[str, str] = None):
+                     extra_tags: Dict[str, str] = None, ts: float = None):
         """Write a single register value."""
-        if not self.is_enabled():
+        if not self.config.enabled:
             return
 
         if not self._should_write(register.address, value):
@@ -400,29 +544,9 @@ class InfluxDBPublisher:
             safe_val = value
 
         try:
-            from influxdb_client import Point
-
-            measurement = self._get_measurement(register)
-            point = Point(measurement)
-
-            for tag_key, tag_value in self._get_tags(register).items():
-                point = point.tag(tag_key, tag_value)
-
-            if extra_tags:
-                for tag_key, tag_value in extra_tags.items():
-                    point = point.tag(tag_key, tag_value)
-
-            field_name = register.name.lower().replace('[', '_').replace(']', '').replace('_g_', '')
-            if isinstance(safe_val, (int, float)):
-                point = point.field(field_name, float(safe_val))
-                point = point.field('value', float(safe_val))
-            else:
-                point = point.field(field_name, str(safe_val))
-
-            self.write_api.write(bucket=self.config.bucket, record=point)
-            self.writes_total += 1
-
-            # Confirm write
+            ts = ts or time.time()
+            point = self._build_point(register, safe_val, ts, extra_tags=extra_tags)
+            self._deliver(point, ts)
             self._confirm_write(register.address, value)
 
         except Exception as e:
@@ -439,10 +563,17 @@ class InfluxDBPublisher:
                 logger.error(f"InfluxDB flush error: {e}")
 
     def close(self):
-        """Close InfluxDB connection."""
+        """Close InfluxDB connection. Best-effort final drain of the replay
+        buffer (RAM-only — whatever cannot be delivered now is gone)."""
         self._stop_reconnect.set()
         if self._reconnect_thread and self._reconnect_thread.is_alive():
             self._reconnect_thread.join(timeout=2)
+
+        if self.connected:
+            try:
+                self._drain_buffer()
+            except Exception:  # noqa: BLE001
+                pass
 
         if self.write_api:
             try:
@@ -472,7 +603,8 @@ class InfluxDBPublisher:
         logger.info(f"InfluxDB registers updated: {len(self._register_map)} enabled")
 
     def reconnect(self) -> bool:
-        """Reconnect to InfluxDB with current config."""
+        """Reconnect to InfluxDB with current config (one immediate attempt;
+        the monitor thread keeps retrying in the background either way)."""
         logger.info("InfluxDB reconnecting...")
         self.close()
 
@@ -480,17 +612,14 @@ class InfluxDBPublisher:
             logger.info("InfluxDB disabled, not reconnecting")
             return False
 
-        self._setup_client_with_retry()
+        self._setup_client()
+        self._start_reconnect_thread()
 
         if self.connected:
-            # Restart monitor thread
-            self._start_reconnect_thread()
             logger.info("InfluxDB reconnected successfully")
             return True
-        else:
-            self._start_reconnect_thread()
-            logger.warning("InfluxDB reconnection failed, monitor thread will keep trying")
-            return False
+        logger.warning("InfluxDB reconnection failed, monitor thread will keep trying")
+        return False
 
     def get_stats(self) -> Dict:
         """Return publisher statistics."""
@@ -505,6 +634,11 @@ class InfluxDBPublisher:
             'publish_mode': self.publish_mode,
             'registered_addresses': len(self._register_map),
             'disconnection_count': self.disconnection_count,
+            'buffer_points': len(self._buffer),
+            'buffered_total': self.points_buffered,
+            'replayed_total': self.points_replayed,
+            'dropped_total': self.points_dropped,
+            'buffer_minutes': getattr(self.config, 'buffer_minutes', 10),
         }
 
     # ── read-back for the UI history/trend view ───────────────────────────

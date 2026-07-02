@@ -151,6 +151,20 @@ the same bucket. Per-register measurement/tags are configurable in **Config →
 Registers**. The optional compose profiles can start a local InfluxDB + Grafana
 (see README).
 
+**Data guarantees.** Every point is stamped with the Modbus *read* time, not the
+flush time. If InfluxDB becomes unreachable, points go to an in-RAM
+store-and-forward buffer (default **10 minutes / 50,000 points**, tunable via
+`influxdb.buffer_minutes` / `buffer_max_points` in `config.yaml`) and are
+replayed with their original timestamps on reconnect — idempotently, since
+InfluxDB dedupes on measurement+tags+timestamp, so no duplicates. Batches the
+client gives up on after its own ~5 min of retries are recovered into the same
+buffer. Outages longer than the buffer window lose the oldest points (RAM only —
+a restart clears the buffer); for the voltages the meter's onboard recording can
+backfill those via `python -m janitza.backfill`. Watch `buffer_points` /
+`replayed_total` / `dropped_total` in **`/api/status`**. MQTT is deliberately
+*not* replayed: it is a live bus (consumers act on "now"), and on reconnect the
+full current state is republished instead.
+
 ---
 
 ## 8. Troubleshooting
@@ -162,7 +176,7 @@ Registers**. The optional compose profiles can start a local InfluxDB + Grafana
 | Virtual meter "stale / starting" | the Janitza source isn't fresh — check the Modbus connection; the watchdog won't serve stale data by design |
 | Consumer can't reach a virtual meter | is the port inside the published compose range? reachable from the consumer's network? check the **Logs** tab for incoming reads |
 | MQTT entities missing in HA | broker reachable? autodiscovery enabled? watch `docker compose logs` |
-| InfluxDB "data lost" warning | InfluxDB URL/token/bucket correct? it retries 10× before giving up |
+| InfluxDB write-retry warnings | InfluxDB URL/token/bucket correct? The client retries ~5 min, then the batch is recovered into the RAM buffer and replayed on reconnect — check `replayed_total`/`dropped_total` in `/api/status` |
 
 Still stuck? Open an issue — include `docker compose logs` and your (redacted)
 config. See **[VIRTUAL-METER.md](VIRTUAL-METER.md)** for the engine internals and

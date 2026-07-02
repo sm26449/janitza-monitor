@@ -35,6 +35,7 @@ A dedicated Modbus-to-MQTT appliance is one option. This is the other: the same 
 - **Modbus TCP Reader** - Direct connection to Janitza device
 - **MQTT Publishing** - With Home Assistant autodiscovery support
 - **InfluxDB Publishing** - Time-series storage
+- **🛡️ No data loss across InfluxDB outages** - in-RAM store-and-forward buffer (10 min default, configurable): points produced while InfluxDB is down are replayed on reconnect **with their original timestamps** (idempotent - no duplicates). Points are stamped at Modbus read time, and Modbus polling never depends on MQTT/InfluxDB - each pipeline reconnects independently.
 - **"Changed" Mode** - Publish only modified values (reduces traffic)
 - **Professional Web UI** - Dashboard, Monitor, Registers, Config
 - **Real-time WebSocket** - Live updates in UI

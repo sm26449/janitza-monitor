@@ -74,7 +74,9 @@ class MQTTPublisher:
         # Stats
         self.messages_published = 0
         self.messages_skipped = 0
+        self.messages_failed = 0
         self.connection_count = 0
+        self.last_disconnect_ts: Optional[float] = None
 
         # Reconnection thread
         self._stop_reconnect = threading.Event()
@@ -103,6 +105,7 @@ class MQTTPublisher:
         if reason_code == 0:
             self.connected = True
             self.connection_count += 1
+            self.last_disconnect_ts = None
             logger.info(f"MQTT connected to {self.config.broker}:{self.config.port}")
 
             # Clear cache to force re-publish of all current values
@@ -125,11 +128,15 @@ class MQTTPublisher:
             logger.error(f"MQTT connection failed: {reason_code}")
 
     def _on_disconnect(self, client, userdata, flags, reason_code, properties=None):
-        """Handle disconnection."""
+        """Handle disconnection. Recovery is paho's job: with the network loop
+        running and reconnect_delay_set(), it retries with backoff on its own.
+        Spawning our thread here too would give TWO writers racing on the same
+        socket — the custom thread exists only for the never-connected case
+        (see connect()). Here we just record state for observability."""
         self.connected = False
         if reason_code != 0:
-            logger.warning(f"MQTT disconnected unexpectedly: {reason_code}")
-            self._start_reconnect_thread()
+            self.last_disconnect_ts = time.time()
+            logger.warning(f"MQTT disconnected unexpectedly: {reason_code} — paho auto-reconnect active")
 
     def _try_connect(self) -> bool:
         """Attempt a single connection."""
@@ -183,13 +190,18 @@ class MQTTPublisher:
         logger.info("MQTT reconnection thread started")
 
     def _reconnect_loop(self):
-        """Background reconnection loop."""
+        """Background loop for the never-connected case only: paho cannot
+        auto-reconnect before a first successful connect() (there is no session
+        to resume). Once the first connection succeeds, this thread exits and
+        paho owns all subsequent recovery."""
         while not self._stop_reconnect.is_set():
             if not self.connected:
                 logger.debug("Attempting MQTT reconnection...")
                 if self._try_connect():
                     logger.info("MQTT reconnected successfully")
                     break
+            else:
+                break
             self._stop_reconnect.wait(RECONNECT_CHECK_INTERVAL)
 
     def disconnect(self):
@@ -271,19 +283,16 @@ class MQTTPublisher:
             if result.rc == mqtt.MQTT_ERR_SUCCESS:
                 self.messages_published += 1
                 return True
-            elif result.rc in (mqtt.MQTT_ERR_NO_CONN, mqtt.MQTT_ERR_CONN_LOST):
+            # NO_CONN/CONN_LOST: the socket died between the keepalive and this
+            # publish. Connection state is owned by the paho callbacks
+            # (on_disconnect fires and paho reconnects) — just count the miss.
+            self.messages_failed += 1
+            if result.rc in (mqtt.MQTT_ERR_NO_CONN, mqtt.MQTT_ERR_CONN_LOST):
                 logger.warning("MQTT connection lost during publish")
-                self.connected = False
-                self._start_reconnect_thread()
             return False
         except Exception as e:
-            error_str = str(e).lower()
-            if any(err in error_str for err in ['connection', 'socket', 'broken pipe']):
-                logger.warning(f"MQTT connection error during publish: {e}")
-                self.connected = False
-                self._start_reconnect_thread()
-            else:
-                logger.error(f"MQTT publish error: {e}")
+            self.messages_failed += 1
+            logger.error(f"MQTT publish error: {e}")
             return False
 
     def publish(self, topic: str, value: Any, retain: bool = None) -> bool:
@@ -416,7 +425,7 @@ class MQTTPublisher:
             "name": self.config.ha_device_name,
             "manufacturer": "Janitza electronics GmbH",
             "model": "UMG 512-PRO",
-            "sw_version": "2.2.0",
+            "sw_version": "2.7.0",
         }
 
     def _build_ha_sensor_config(self, register: SelectedRegister, device_info: Dict) -> Dict:
@@ -488,7 +497,10 @@ class MQTTPublisher:
             'prefix': self.config.topic_prefix,
             'messages_published': self.messages_published,
             'messages_skipped': self.messages_skipped,
+            'messages_failed': self.messages_failed,
             'publish_mode': self.publish_mode,
             'connection_count': self.connection_count,
             'registered_topics': len(self._register_map),
+            'disconnected_for_s': (round(time.time() - self.last_disconnect_ts, 1)
+                                   if (not self.connected and self.last_disconnect_ts) else None),
         }

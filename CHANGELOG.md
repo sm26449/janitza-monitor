@@ -2,6 +2,29 @@
 
 Toate modificarile notabile ale proiectului sunt documentate in acest fisier.
 
+## [2.7.0] - 2026-07-02
+
+Audit de fiabilitate cap-coada pe tot lantul de date (Modbus TCP → MQTT / InfluxDB / metere virtuale), cu garantii explicite de "zero pierderi" si igiena conexiunilor. Toate scenariile au fost validate live (pana InfluxDB simulata in productie: 923 puncte bufferate → 923 replay-ate → 0 pierdute, cu meterele virtuale neafectate).
+
+### Adaugat
+- **Buffer store-and-forward pentru InfluxDB** - punctele care nu pot fi livrate (InfluxDB picat, retry-uri epuizate) intra intr-un buffer RAM marginit (implicit **10 minute / 50.000 puncte**, configurabil prin `influxdb.buffer_minutes` / `buffer_max_points`) si sunt **replay-ate cu timestamp-urile originale** la reconectare. InfluxDB deduplica pe (measurement, taguri, timestamp), deci replay-ul e **idempotent - zero duplicate prin constructie**. Batch-urile abandonate de clientul oficial dupa ~5 min de retry sunt si ele **recuperate in buffer** (inainte se pierdeau definitiv).
+- **Timestamp la momentul citirii Modbus** - punctele InfluxDB sunt stampilate cu ora masuratorii, nu a flush-ului (batching-ul decala pana la ~12s), ceea ce face si replay-ul posibil.
+- **TCP keepalive pe meterele virtuale** - un consumator care dispare fara FIN/RST (ex. DataManager-ul Fronius care adoarme la apus) lasa conexiunea ESTABLISHED pe veci; kernelul o reapa acum in ~90s. Fix pentru **189 de conexiuni agatate** acumulate in 5 zile (epuizare de file descriptors in ~3 saptamani).
+- **Observabilitate noua** in `/api/status`: `buffer_points` / `buffered_total` / `replayed_total` / `dropped_total` (InfluxDB), `messages_failed` / `disconnected_for_s` (MQTT).
+
+### Schimbat
+- **Boot rezilient** - polling-ul Modbus porneste chiar daca meterul nu raspunde la boot (pollerele se reconecteaza singure la fiecare citire); inainte, un meter picat la pornire lasa colectorul mort pana la restart manual.
+- **Init InfluxDB non-blocant** - conectarea se face in thread-ul de monitor, ca la MQTT; inainte, un InfluxDB picat bloca pornirea intregii aplicatii (UI + Modbus) pana la ~6 minute.
+- **Reconnect MQTT consolidat** - dupa prima conexiune, auto-reconnect-ul paho e singura autoritate (inainte, doua mecanisme concurau pe acelasi socket); thread-ul propriu ramane doar pentru cazul "niciodata conectat".
+
+### Reparat
+- **Cache-ul de change-detection InfluxDB** se actualiza la enqueue, nu la livrare - un batch pierdut cu o valoare care se schimba rar lasa o gaura permanenta (valoarea nu se mai rescria niciodata).
+- **Leak de socket la reconectarea Modbus** - clientul vechi nu era inchis inainte de a fi inlocuit (FD-uri scurse la fiecare flap de legatura).
+- **Lock tinut peste I/O de retea** la reconectarea InfluxDB (gasit la validarea live a acestei versiuni): DNS-ul lent catre un server picat bloca pollerele Modbus prin lock-ul partajat → cache-ul live ingheta → meterele virtuale isi opreau consumatorii (~50s). Lock-ul de client acopera acum doar swap-ul de referinte, iar cache-ul are lock propriu; calea de scriere nu mai atinge niciodata lock-ul de client (acoperit de test de regresie).
+
+### Teste
+- **+14 teste** (`tests/test_reliability.py`): buffer/replay/margini (varsta+numar), recuperare batch esuat, ordinea la replay dupa esec, keepalive pe socketuri reale, calea de scriere fara lock de client, ownership-ul reconnect-ului MQTT, timestamp de poll atasat de poller.
+
 ## [2.6.1] - 2026-06-26
 
 ### Adaugat

@@ -388,6 +388,41 @@ class VirtualMeter:
         except Exception:  # noqa: BLE001
             return False
 
+    # keepalive timers: probe after 60s idle, then every 10s, 3 misses → dead.
+    # A vanished peer is reaped by the kernel in ~90s; a live consumer polling
+    # sub-second never even reaches the idle threshold.
+    _KEEPALIVE_OPTS = (
+        [(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)]
+        + ([(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 60)] if hasattr(socket, "TCP_KEEPIDLE") else [])
+        + ([(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)] if hasattr(socket, "TCP_KEEPINTVL") else [])
+        + ([(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)] if hasattr(socket, "TCP_KEEPCNT") else [])
+    )
+
+    def _apply_keepalive(self) -> None:
+        """Enable TCP keepalive on every accepted client socket. A Modbus server
+        never sends unsolicited data, so a consumer that vanishes without FIN/RST
+        (e.g. the Fronius DataManager sleeping at dusk) would otherwise leave its
+        connection ESTABLISHED forever — leaking one FD per wake-up cycle. With
+        keepalive the kernel probes the dead peer, asyncio gets connection_lost
+        and pymodbus drops the handler. Idempotent; swept periodically so new
+        connections are always covered. Never raises."""
+        srv = self._server
+        if not srv:
+            return
+        try:
+            for handler in list(getattr(srv, "active_connections", {}).values()):
+                tr = getattr(handler, "transport", None)
+                sock = tr.get_extra_info("socket") if tr is not None else None
+                if sock is None:
+                    continue
+                try:
+                    for level, opt, val in self._KEEPALIVE_OPTS:
+                        sock.setsockopt(level, opt, val)
+                except OSError:
+                    pass                    # socket already closing — kernel wins
+        except Exception:  # noqa: BLE001
+            pass
+
     def _stop_server(self, reason: str = "") -> None:
         if self._server and self._server_loop:
             try:
@@ -451,6 +486,7 @@ class VirtualMeter:
                         # (~30s) while data is fresh, force a restart.
                         tick += 1
                         if tick % 10 == 0:
+                            self._apply_keepalive()   # dead-peer reaping (same cadence)
                             if self._serving_ok(port):
                                 probe_fails = 0
                             else:

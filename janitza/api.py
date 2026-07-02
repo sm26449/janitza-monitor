@@ -170,7 +170,7 @@ def create_api(config, modbus_client, mqtt_publisher, influxdb_publisher) -> Fas
     app = FastAPI(
         title="Janitza UMG 512-PRO Monitor",
         description="Monitor and query Janitza power quality analyzer",
-        version="2.2.0",
+        version="2.7.0",
         lifespan=lifespan
     )
 

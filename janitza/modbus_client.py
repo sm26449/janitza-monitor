@@ -50,6 +50,11 @@ class ModbusConnection:
     def connect(self) -> bool:
         """Establish Modbus TCP connection."""
         try:
+            if self.client:
+                try:
+                    self.client.close()
+                except Exception:  # noqa: BLE001
+                    pass
             self.client = ModbusTcpClient(
                 host=self.config.host,
                 port=self.config.port,
@@ -76,8 +81,14 @@ class ModbusConnection:
         with self.lock:
             for attempt in range(self.config.retry_attempts):
                 try:
-                    # Reconnect if needed
+                    # Reconnect if needed — close the dead client first so its
+                    # socket FD is released now, not whenever GC gets to it.
                     if not self.connected or not self.client.is_socket_open():
+                        if self.client:
+                            try:
+                                self.client.close()
+                            except Exception:  # noqa: BLE001
+                                pass
                         self.client = ModbusTcpClient(
                             host=self.config.host,
                             port=self.config.port,
@@ -203,6 +214,7 @@ class RegisterPoller(threading.Thread):
 
         for group in self._read_groups:
             raw_data = self.connection.read_registers(group['start'], group['count'])
+            read_ts = time.time()   # measurement time — travels with the value
 
             if raw_data is None:
                 logger.warning(f"Failed to read registers {group['start']}-{group['end']}")
@@ -220,6 +232,7 @@ class RegisterPoller(threading.Thread):
                         results[reg.address] = {
                             'value': value,
                             'register': reg,
+                            'ts': read_ts,
                         }
 
         return results

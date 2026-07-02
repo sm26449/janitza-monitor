@@ -35,6 +35,7 @@ Un aparat Modbus-to-MQTT dedicat e o variantă. Asta e cealaltă: aceeași treab
 - **Citire Modbus TCP** - Conectare directa la dispozitivul Janitza
 - **Publicare MQTT** - Cu suport Home Assistant autodiscovery
 - **Publicare InfluxDB** - Pentru stocare time-series
+- **🛡️ Zero pierderi la pana InfluxDB** - buffer store-and-forward in RAM (implicit 10 min, configurabil): punctele produse cat timp InfluxDB e picat sunt replay-ate la reconectare **cu timestamp-urile originale** (idempotent - fara duplicate). Punctele sunt stampilate cu ora citirii Modbus, iar citirea Modbus nu depinde de MQTT/InfluxDB - fiecare pipeline reconecteaza independent.
 - **Mod "changed"** - Publica doar valorile modificate (reduce traficul)
 - **Web UI profesional** - Dashboard, Monitor, History, Energy, Registers, Config, Virtual Meters
 - **🌍 Multi-limba (i18n)** - selector EN/RO in UI (implicit English). Limbile sunt fisiere `ui/languages/<cod>.json` descoperite dinamic - copiezi `en.json`, traduci, apare in selector (fara rebuild). Vezi **[ui/languages/README.md](ui/languages/README.md)**.

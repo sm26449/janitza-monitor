@@ -49,6 +49,10 @@ class InfluxDBConfig:
     bucket: str = "janitza"
     write_interval: int = 5
     publish_mode: str = "changed"  # "changed" or "all"
+    # Store-and-forward buffer: points that cannot be delivered (InfluxDB down)
+    # are kept in RAM and replayed with their original timestamps on reconnect.
+    buffer_minutes: int = 10          # keep at most this much history
+    buffer_max_points: int = 50000    # hard cap (drop-oldest beyond this)
 
 
 @dataclass
@@ -168,6 +172,8 @@ class Config:
                     bucket=i.get('bucket', self.influxdb.bucket),
                     write_interval=i.get('write_interval', self.influxdb.write_interval),
                     publish_mode=i.get('publish_mode', self.influxdb.publish_mode),
+                    buffer_minutes=i.get('buffer_minutes', self.influxdb.buffer_minutes),
+                    buffer_max_points=i.get('buffer_max_points', self.influxdb.buffer_max_points),
                 )
 
             # UI
@@ -361,6 +367,8 @@ class Config:
                 "bucket": self.influxdb.bucket,
                 "write_interval": self.influxdb.write_interval,
                 "publish_mode": self.influxdb.publish_mode,
+                "buffer_minutes": self.influxdb.buffer_minutes,
+                "buffer_max_points": self.influxdb.buffer_max_points,
             },
             "poll_groups": {
                 name: {"interval": g.interval, "description": g.description}
@@ -434,6 +442,8 @@ class Config:
                 'bucket': self.influxdb.bucket,
                 'write_interval': self.influxdb.write_interval,
                 'publish_mode': self.influxdb.publish_mode,
+                'buffer_minutes': self.influxdb.buffer_minutes,
+                'buffer_max_points': self.influxdb.buffer_max_points,
             },
             'ui': {
                 'host': self.ui.host,

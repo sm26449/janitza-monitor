@@ -148,10 +148,14 @@ class JanitzaMonitor:
                         logger.warning(f"Modbus device {host}:{port} not reachable after 30s")
             logger.info("Attempting Modbus connection...")
             if self.modbus_client.connect():
-                self.modbus_client.start_polling()
-                logger.info("Modbus connected and polling started")
+                logger.info("Modbus connected")
             else:
-                logger.warning("Modbus connection failed - will retry")
+                logger.warning("Modbus connection failed - pollers will keep retrying")
+            # Start polling regardless of the first connect outcome: each read
+            # reconnects on demand, so a meter that is down at boot (or comes
+            # up later) is picked up automatically — no dead-on-arrival boot.
+            self.modbus_client.start_polling()
+            logger.info("Modbus polling started")
 
     def start(self):
         """Start all components."""

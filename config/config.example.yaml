@@ -78,6 +78,11 @@ influxdb:
   write_interval: 5
   # Publish mode: "changed" (only changed values) or "all" (all values every poll)
   publish_mode: "changed"
+  # Store-and-forward buffer: points produced while InfluxDB is unreachable are
+  # kept in RAM and replayed with their original timestamps on reconnect
+  # (idempotent - InfluxDB dedupes on measurement+tags+timestamp).
+  buffer_minutes: 10
+  buffer_max_points: 50000
 
 ui:
   # Web UI host

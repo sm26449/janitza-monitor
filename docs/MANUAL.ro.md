@@ -159,6 +159,21 @@ anti-NaN. Îndreaptă Grafana către același bucket. Măsurătoarea/tag-urile p
 registru sunt configurabile în **Config → Registers**. Profilurile compose
 opționale pot porni un InfluxDB + Grafana local (vezi README).
 
+**Garanții de date.** Fiecare punct e ștampilat cu ora *citirii* Modbus, nu a
+flush-ului. Dacă InfluxDB devine inaccesibil, punctele intră într-un buffer
+store-and-forward în RAM (implicit **10 minute / 50.000 de puncte**, reglabil
+prin `influxdb.buffer_minutes` / `buffer_max_points` în `config.yaml`) și sunt
+replay-ate cu timestamp-urile originale la reconectare — idempotent, pentru că
+InfluxDB deduplică pe măsurătoare+taguri+timestamp, deci fără duplicate.
+Batch-urile abandonate de client după ~5 min de reîncercări proprii sunt
+recuperate în același buffer. Panele mai lungi decât fereastra bufferului pierd
+punctele cele mai vechi (doar RAM — un restart golește bufferul); pentru
+tensiuni, înregistrarea internă a contorului le poate reface prin
+`python -m janitza.backfill`. Urmărește `buffer_points` / `replayed_total` /
+`dropped_total` în **`/api/status`**. MQTT nu se replay-ează intenționat: e o
+magistrală live (consumatorii acționează pe „acum”), iar la reconectare se
+republică întreaga stare curentă.
+
 ---
 
 ## 8. Depanare
@@ -170,7 +185,7 @@ opționale pot porni un InfluxDB + Grafana local (vezi README).
 | Contor virtual „stale / starting” | sursa Janitza nu este proaspătă — verifică conexiunea Modbus; watchdog-ul nu va servi date învechite, prin design |
 | Consumatorul nu poate ajunge la un contor virtual | este portul în interiorul intervalului compose publicat? accesibil din rețeaua consumatorului? verifică tab-ul **Logs** pentru citiri primite |
 | Entitățile MQTT lipsesc din HA | brokerul accesibil? autodiscovery activat? urmărește `docker compose logs` |
-| Avertisment InfluxDB „data lost” | URL/token/bucket InfluxDB corecte? reîncearcă de 10× înainte de a renunța |
+| Avertismente InfluxDB write-retry | URL/token/bucket InfluxDB corecte? Clientul reîncearcă ~5 min, apoi batch-ul e recuperat în bufferul RAM și replay-at la reconectare — vezi `replayed_total`/`dropped_total` în `/api/status` |
 
 Tot blocat? Deschide un issue — include `docker compose logs` și configurația ta
 (cu datele sensibile mascate). Vezi **[VIRTUAL-METER.ro.md](VIRTUAL-METER.ro.md)**
